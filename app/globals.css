@@ -1,0 +1,121 @@
+@import "tailwindcss";
+
+:root {
+  --background: #f6f3ee;
+  --surface: rgba(255, 255, 255, 0.8);
+  --surface-strong: rgba(255, 255, 255, 0.96);
+  --foreground: #161616;
+  --muted: #666666;
+  --border: rgba(20, 20, 20, 0.08);
+  --accent: #eb6a2f;
+  --accent-soft: rgba(235, 106, 47, 0.14);
+  --shadow: 0 18px 60px rgba(15, 23, 42, 0.08);
+  --grid: rgba(20, 20, 20, 0.04);
+}
+
+.dark {
+  --background: #101010;
+  --surface: rgba(24, 24, 24, 0.82);
+  --surface-strong: rgba(28, 28, 28, 0.96);
+  --foreground: #f4f1ec;
+  --muted: #a1a1a1;
+  --border: rgba(255, 255, 255, 0.08);
+  --accent: #ff8a50;
+  --accent-soft: rgba(255, 138, 80, 0.16);
+  --shadow: 0 18px 60px rgba(0, 0, 0, 0.35);
+  --grid: rgba(255, 255, 255, 0.05);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at top, rgba(235, 106, 47, 0.07), transparent 28%),
+    radial-gradient(circle at 20% 18%, rgba(255, 255, 255, 0.35), transparent 22%),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.12), transparent 35%),
+    var(--background);
+  color: var(--foreground);
+  font-family: var(--font-body), sans-serif;
+  text-rendering: optimizeLegibility;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -10;
+  background-image:
+    linear-gradient(to right, var(--grid) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--grid) 1px, transparent 1px);
+  background-size: 72px 72px;
+  mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.42), transparent 85%);
+  pointer-events: none;
+}
+
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -15;
+  background:
+    radial-gradient(circle at 50% 0%, rgba(235, 106, 47, 0.06), transparent 32%),
+    radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.18), transparent 24%);
+  pointer-events: none;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button,
+a {
+  transition:
+    transform 180ms ease,
+    background-color 180ms ease,
+    border-color 180ms ease,
+    color 180ms ease,
+    box-shadow 180ms ease,
+    opacity 180ms ease;
+}
+
+::selection {
+  background: var(--accent-soft);
+}
+
+.fade-up {
+  animation: fade-up 700ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+.fade-up-delay-1 {
+  animation-delay: 120ms;
+}
+
+.fade-up-delay-2 {
+  animation-delay: 220ms;
+}
+
+.fade-up-delay-3 {
+  animation-delay: 320ms;
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

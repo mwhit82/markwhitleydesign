@@ -1,0 +1,8 @@
+.next
+.next-dev
+node_modules
+.vercel
+dist
+coverage
+*.log
+.DS_Store
