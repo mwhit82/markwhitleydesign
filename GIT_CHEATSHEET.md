@@ -5,7 +5,7 @@ This Mac is now set up to use GitHub over SSH, which means you can work across m
 ## One-Time Setup Already Done
 
 - Git name: `Mark Whitley`
-- Git email: `whitley40@gmail.com`
+- Git email: `your-email@example.com`
 - Default branch for new repos: `main`
 - GitHub auth: SSH key connected to your GitHub account
 
