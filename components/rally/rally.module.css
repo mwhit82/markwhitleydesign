@@ -45,6 +45,14 @@
   overflow: hidden;
   box-shadow: 0 24px 60px #0003;
 }
+/* Held controls must not select nearby HUD text or open iOS callouts. */
+.game,
+.game *,
+.page button {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
 .game:fullscreen {
   height: 100vh;
   border-radius: 0;
