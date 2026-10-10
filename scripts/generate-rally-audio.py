@@ -56,15 +56,19 @@ for i in range(RATE):
     noise.append((sample - low) * (.5 + .5 * math.sin(i * .021) ** 2) * edge)
 save('gravel.wav', noise, .55)
 forest = []
+wind_rng = random.Random(419)
+wind_low = 0
 for i in range(RATE * 10):
     t = i / RATE
-    wind = sum(math.sin(2 * math.pi * f * t + f * .7) for f in [73, 139, 223, 347, 479, 613, 863, 1097, 1423, 1823]) * .002
-    wind *= .65 + .35 * math.sin(2 * math.pi * t / 10) ** 2
+    # Quiet broadband air instead of sustained musical tones.
+    wind_low += .035 * (wind_rng.uniform(-1, 1) - wind_low)
+    edge = min(1, i / (RATE * .3), (RATE * 10 - 1 - i) / (RATE * .3))
+    wind = wind_low * .008 * edge
     birds = 0
     for at, base in [(1.2, 2200), (1.6, 2600), (5.8, 1900), (6.15, 2350), (8.6, 2700)]:
         u = t - at
         if 0 < u < .16:
             birds += .017 * math.sin(math.pi * u / .16) ** 2 * math.sin(2 * math.pi * (base * u + 2200 * u * u))
     forest.append(wind + birds)
-save('forest.wav', forest)
+save('forest-air.wav', forest)
 print('Generated eight engine layers, gravel, and forest ambience.')

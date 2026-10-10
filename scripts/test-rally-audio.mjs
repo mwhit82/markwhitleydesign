@@ -229,3 +229,14 @@ test('all recorded layers are compact valid PCM WAV assets', async () => {
     }
   }
 });
+
+test('idle fades away at speed and the unloaded engine stays quiet', () => {
+  const drive = {speed: 20, throttle: 0, brake: 0, sliding: false, rpm: 6000};
+  const coast = soundMix(drive, 'race', 0);
+  const power = soundMix({...drive, throttle: 1}, 'race', 0);
+  const garage = soundMix(drive, 'garage', 0);
+  assert.equal(coast.idle, 0);
+  assert.ok(coast.load < power.load / 10);
+  assert.equal(garage.load, 0);
+  assert.ok(garage.idle <= .07);
+});

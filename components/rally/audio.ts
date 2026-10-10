@@ -17,8 +17,8 @@ export function soundMix(drive: DriveSound, mode: Mode, car: number) {
     rate:
       personality *
       Math.min(2.2, drive.rpm !== undefined && mode === "race" ? 0.72 + (drive.rpm - 950) / 4400 : 0.72 + speed * 0.043 + throttle * 0.42 - brake * 0.1),
-    idle: 0.24 - throttle * 0.12,
-    load: 0.035 + throttle * (drive.limited ? 0.08 : 0.48) + Math.min(speed / 24, 1) * 0.055,
+    idle: 0.07 * (1 - Math.min(speed / 9, 1)) * (1 - throttle * 0.85),
+    load: mode === "race" ? throttle * (drive.limited ? 0.06 : 0.48) + Math.min(speed / 24, 1) * 0.018 : 0,
     gravel:
       mode === "race"
         ? Math.min(speed / 12, 1) *
@@ -38,7 +38,7 @@ const assets = [
 
 /** Three small decoded loops run on the audio thread. No media-rate changes, per-frame work, or live synthesis. */
 export class RallyAudio {
-  private ambience = new Audio("/rally/forest.wav");
+  private ambience = new Audio("/rally/forest-air.wav");
   private context: AudioContext | null = null;
   private master: GainNode | null = null;
   private buffers = new Map<string, AudioBuffer>();
