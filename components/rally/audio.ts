@@ -176,6 +176,14 @@ export class RallyAudio {
     });
   }
 
+  setEnvironment(stage: string) {
+    const next = stage === "forest" || stage === "alpine" ? "/rally/forest-birds.wav" : "/rally/open-wind.wav";
+    if (this.ambience.getAttribute("src") === next) return;
+    this.ambience.pause();
+    this.ambience.src=next;
+    this.ambience.load();
+    if(this.playing) void this.ambience.play().catch(()=>{this.pause();this.onError();});
+  }
   setCar(car: number) {
     this.car = car;
     if (this.playing) this.installLayers();

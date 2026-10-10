@@ -673,3 +673,36 @@
     margin-top: 4px;
   }
 }
+
+.stageChoices { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:14px; }
+.stageChoices label:first-child { grid-column:1 / -1; }
+.stageChoices label, .boardFilter, .leaderboard label { display:grid; gap:5px; font-size:11px; font-weight:700; }
+.stageChoices select, .leaderboard select, .leaderboard input { width:100%; min-height:42px; padding:8px; color:#233c32; background:#fff8e6; border:1px solid #233c3230; border-radius:5px; font-size:13px; }
+.boardButton { font-size:12px; padding:10px 0 0; text-decoration:underline; }
+.garage { max-height:calc(100% - 90px); overflow:auto; }
+.garageCopy { top:15%; }
+.leaderboard { position:absolute; inset:0; z-index:70; background:#f2eddc; color:#233c32; padding:24px; display:flex; flex-direction:column; gap:14px; overflow:auto; }
+.leaderboard header { display:flex; justify-content:space-between; gap:12px; align-items:start; }
+.leaderboard h2 { font-size:26px; font-weight:900; }
+.leaderboard p, .leaderboard small { font-size:12px; }
+.leaderboard button { min-height:44px; padding:8px 12px; border-radius:6px; background:#233c32; color:#fff4df; }
+.leaderboard form { display:grid; grid-template-columns:1fr auto; gap:8px; align-items:end; }
+.leaderboard form small { grid-column:1 / -1; }
+.leaderboard input { -webkit-user-select:text; user-select:text; }
+.leaderboard button:disabled { opacity:.5; }
+.boardRows { min-height:100px; overflow:auto; flex:1; overscroll-behavior:contain; }
+.boardRows li, .myRank > div { display:grid; grid-template-columns:50px 1fr auto; gap:10px; align-items:center; padding:12px 8px; border-bottom:1px solid #233c3220; font-size:14px; }
+.boardRows small, .myRank small { display:block; opacity:.65; }
+.myRow, .myRank { background:#e5ba64; border-radius:6px; }
+.myRank { padding:8px; flex-shrink:0; }
+@media (orientation:portrait) and (max-width:650px) { .garageCopy { display:none; } .garage { bottom:16px; } }
+@media (orientation:landscape) and (max-height:550px) {
+ .garage { width:58%; padding:10px 14px; }
+ .stageChoices { grid-template-columns:1.4fr 1fr 1fr; gap:6px; margin-top:8px; }
+ .stageChoices label:first-child { grid-column:auto; }
+ .stageChoices select { min-height:36px; font-size:11px; padding:4px; }
+ .garage .hint { display:none; }
+ .garageCopy h2 { font-size:25px; }
+ .leaderboard { padding:12px; gap:8px; }
+ .leaderboard h2 { font-size:21px; }
+}

@@ -3,6 +3,8 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { cars, formatTime, type Mode } from "./data";
 import styles from "./rally.module.css";
+import { stages, initialStage, stageDefinition, weatherNames, type StageSelection, type Weather } from "./stages";
+import { Leaderboard, type RaceResult } from "./leaderboard";
 export function RallyGame() {
   const host = useRef<HTMLDivElement>(null);
   const game = useRef<HTMLDivElement>(null);
@@ -14,6 +16,10 @@ export function RallyGame() {
   const [notice, setNotice] = useState("");
   const api = useRef<import("./world").RallyWorld | null>(null);
   const [selected, setSelected] = useState(0);
+  const [selection, setSelection] = useState<StageSelection>({...initialStage});
+  const [leaderboard, setLeaderboard] = useState(false);
+  const [result, setResult] = useState<RaceResult|null>(null);
+  const run = useRef<Promise<string|null>>(Promise.resolve(null));
   const [mode, setMode] = useState<Mode>("garage");
   const [ready, setReady] = useState(false);
   const [error, setError] = useState("");
@@ -55,6 +61,12 @@ export function RallyGame() {
         if (disposed || !host.current) return;
         api.current = new RallyWorld(host.current, {
           stats: setStats,
+          start: () => {
+            setLeaderboard(false);setResult(null);
+            const world=api.current;
+            run.current=fetch('/api/rally/start',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({selection:world?.selection,car:world?.selected})}).then(async response=>response.ok?(await response.json()).run:null).catch(()=>null);
+          },
+          finish: (time,trace) => setResult({time,trace,run:run.current}),
           mode: setMode,
           pad: setPad,
           select: setSelected,
@@ -181,18 +193,22 @@ export function RallyGame() {
     </button>
   );
   const car = cars[selected];
+  const stage = stageDefinition(selection);
+  const changeStage = (next: StageSelection) => {
+    setSelection(next);setResult(null);api.current?.configure(next);
+  };
   return (
     <div className={styles.page}>
       <div className={styles.heading}>
         <div>
-          <p className={styles.eyebrow}>MARK WHITLEY / POCKET RALLY V1.6</p>
+          <p className={styles.eyebrow}>MARK WHITLEY / POCKET RALLY V2.0</p>
           <h1>
             POCKET<span>RALLY.</span>
           </h1>
         </div>
         <div className={styles.stageInfo}>
-          <b>FOREST RUN</b>
-          <span>SS01 · GRAVEL · CLEAR</span>
+          <b>{stage.name.toUpperCase()}</b>
+          <span>{stage.surface} · {weatherNames[selection.weather]} · {selection.reverse?"Reverse":"Forward"}</span>
         </div>
       </div>
       <div
@@ -283,8 +299,8 @@ export function RallyGame() {
                 Big sideways.
               </h2>
               <p>
-                A handmade forest stage.
-                <br />A race against yourself.
+                Four worlds. Twenty-four ways to race.
+                <br />Find your place on the leaderboard.
               </p>
             </div>
             <div className={styles.garage}>
@@ -309,6 +325,12 @@ export function RallyGame() {
                   →
                 </button>
               </div>
+              <div className={styles.stageChoices}>
+                <label>Environment<select value={selection.stage} onChange={e=>changeStage({stage:e.target.value as StageSelection["stage"],weather:"clear",reverse:selection.reverse})}>{stages.map(s=><option key={s.id} value={s.id}>{s.name} · {s.surface}</option>)}</select></label>
+                <label>Conditions<select value={selection.weather} onChange={e=>changeStage({...selection,weather:e.target.value as Weather})}>{stage.conditions.map(w=><option key={w} value={w}>{weatherNames[w]}</option>)}</select></label>
+                <label>Direction<select value={selection.reverse?"reverse":"forward"} onChange={e=>changeStage({...selection,reverse:e.target.value==="reverse"})}><option value="forward">Forward</option><option value="reverse">Reverse</option></select></label>
+              </div>
+              <button className={styles.boardButton} onClick={()=>setLeaderboard(true)}>View stage leaderboard ↗</button>
               <button
                 className={styles.start}
                 onClick={() => api.current?.start()}
@@ -395,8 +417,9 @@ export function RallyGame() {
               {stats.time < 70 ? "GOLD" : stats.time < 90 ? "SILVER" : "BRONZE"}
             </span>
             <h2>{formatTime(stats.time)}</h2>
-            <p>{car.name} · Forest Run</p>
+            <p>{car.name} · {stage.name} · {weatherNames[selection.weather]} · {selection.reverse?"Reverse":"Forward"}</p>
             <p>Personal best: {best ? formatTime(best) : "—"}</p>
+            <button onClick={()=>setLeaderboard(true)}>Submit time & view leaderboard ↗</button>
             <button
               className={styles.start}
               onClick={() => api.current?.start()}
@@ -408,6 +431,7 @@ export function RallyGame() {
             </button>
           </div>
         )}
+        {leaderboard && <Leaderboard selection={selection} result={result} onClose={()=>setLeaderboard(false)} />}
       </div>
       <div className={styles.below}>
         <div>

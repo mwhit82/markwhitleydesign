@@ -3,6 +3,7 @@ import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeom
 import { cars, type Mode } from "./data";
 import { RallyAudio } from "./audio";
 import { handling, engine } from "./handling";
+import { initialStage, stageDefinition, stagePoints, checkpointIndices, boardKey, surfaceGrip, type StageSelection } from "./stages";
 type Callbacks = {
   stats: (s: {
     time: number;
@@ -17,6 +18,8 @@ type Callbacks = {
   select: (i: number) => void;
   best: (n: number | null) => void;
   audio?: (muted: boolean) => void;
+  start?: () => void;
+  finish?: (time: number, trace: number[][]) => void;
 };
 export class RallyWorld {
   obstacles: { x: number; z: number; radius: number }[] = [];
@@ -51,6 +54,11 @@ export class RallyWorld {
   dust: T.Mesh[] = [];
   dustCursor = 0;
   dustClock = 0;
+  selection: StageSelection = { ...initialStage };
+  precipitation: T.Points | null = null;
+  trace: number[][] = [];
+  traceAt = 0;
+  cleanRun = true;
   constructor(
     public host: HTMLDivElement,
     public callbacks: Callbacks,
@@ -80,32 +88,8 @@ export class RallyWorld {
     });
     sun.shadow.bias = -0.001;
     this.scene.add(sun);
-    const curve = new T.CatmullRomCurve3(
-      [
-        [-64, 55],
-        [-66, 18],
-        [-45, -5],
-        [-64, -34],
-        [-35, -58],
-        [1, -48],
-        [24, -66],
-        [61, -48],
-        [64, -14],
-        [36, 0],
-        [60, 23],
-        [41, 55],
-        [5, 42],
-        [-20, 62],
-        [-49, 48],
-      ].map(([x, z]) => new T.Vector3(x, 0, z)),
-      false,
-      "catmullrom",
-      0.4,
-    );
-    this.points = curve.getSpacedPoints(650);
-    this.checkpoints = Array.from({ length: 18 }, (_, i) =>
-      Math.round(((i + 1) * 650) / 18),
-    );
+    this.points = stagePoints(this.selection);
+    this.checkpoints = [...checkpointIndices];
     this.buildStage();
     this.choose(0);
     this.observer = new ResizeObserver(() => this.resize());
@@ -141,8 +125,26 @@ export class RallyWorld {
     parent.add(mesh);
     return mesh;
   }
+  configure(selection: StageSelection) {
+    if (this.mode !== "garage") return;
+    this.selection = { ...selection };
+    this.release(this.root);
+    this.root.clear();
+    this.obstacles = [];
+    this.dust = [];
+    this.precipitation = null;
+    this.checkpoint = 0;
+    this.points = stagePoints(selection);
+    this.buildStage();
+    this.choose(this.selected);
+    this.audio?.setEnvironment(selection.stage);
+  }
   buildStage() {
-    this.box(170, 3, 160, "#87966d", 0, -1.8, 0);
+    const stage = stageDefinition(this.selection);
+    const weather = this.selection.weather;
+    this.renderer.setClearColor(stage.sky);
+    this.scene.fog = new T.Fog(stage.sky, weather === "fog" ? 28 : weather === "haze" ? 38 : 95, weather === "fog" ? 100 : weather === "haze" ? 115 : 240);
+    this.box(170, 3, 160, stage.ground, 0, -1.8, 0);
     // A single stamped surface cannot fold over itself at tight bends, unlike the old ribbon triangles.
     const canvas = document.createElement("canvas");
     canvas.width = canvas.height = 2048;
@@ -157,10 +159,10 @@ export class RallyWorld {
       if (i === 0) paint.moveTo(p.x, p.z);
       else paint.lineTo(p.x, p.z);
     });
-    paint.strokeStyle = "#ae9472";
+    paint.strokeStyle = stage.edge;
     paint.lineWidth = 11.8;
     paint.stroke();
-    paint.strokeStyle = "#baa17e";
+    paint.strokeStyle = stage.road;
     paint.lineWidth = 11.2;
     paint.stroke();
     paint.globalCompositeOperation = "source-atop";
@@ -184,7 +186,7 @@ export class RallyWorld {
       new T.MeshStandardMaterial({
         map: texture,
         alphaTest: 0.5,
-        roughness: 1,
+        roughness: weather === "rain" ? 0.35 : 1,
       }),
     );
     road.rotation.x = -Math.PI / 2;
@@ -202,11 +204,22 @@ export class RallyWorld {
       if (this.nearest(x, z).distance < 9) continue;
       this.obstacles.push({ x, z, radius: 1.5 });
       const h = 3 + random() * 5;
+      if (stage.id === "desert") {
+        this.box(.9,h,.9,"#74836a",x,h/2,z);
+        this.box(2.5,.6,.6,"#74836a",x+.6,h*.55,z);
+        this.box(.6,1.6,.6,"#74836a",x+1.5,h*.7,z);
+        continue;
+      }
+      if (stage.id === "mountain") {
+        const rock = new T.Mesh(new T.DodecahedronGeometry(2 + random()*3,0), this.material("#858984"));
+        rock.position.set(x,1.5,z); rock.scale.y=1.5; rock.castShadow=true; this.root.add(rock);
+        continue;
+      }
       this.box(0.6, h * 0.6, 0.6, "#705b42", x, h * 0.25, z);
       for (let j = 0; j < 3; j++) {
         const crown = new T.Mesh(
           new T.ConeGeometry(2.5 - j * 0.55, h * 0.65, 7),
-          this.material(["#48694c", "#56794e", "#6c8055"][i % 3]),
+          this.material(stage.id === "alpine" ? ["#dde8e8", "#b9cecc", "#e8ece8"][j] : ["#48694c", "#56794e", "#6c8055"][i % 3]),
         );
         crown.position.set(x, h * 0.5 + j * h * 0.21, z);
         crown.rotation.y = random();
@@ -220,7 +233,7 @@ export class RallyWorld {
       if (this.nearest(x, z).distance < 7) continue;
       const rock = new T.Mesh(
         new T.DodecahedronGeometry(0.5 + random(), 0),
-        this.material("#a3a48e"),
+        this.material(stage.id === "desert" ? "#b68057" : stage.id === "alpine" ? "#eceded" : "#a3a48e"),
       );
       rock.position.set(x, 0.3, z);
       rock.scale.y = 0.65;
@@ -277,7 +290,7 @@ export class RallyWorld {
       const mesh = new T.Mesh(
         new T.IcosahedronGeometry(0.3, 0),
         new T.MeshStandardMaterial({
-          color: "#cab998",
+          color: weather === "rain" ? "#adbdc4" : stage.dust,
           transparent: true,
           opacity: 0,
           depthWrite: false,
@@ -286,6 +299,25 @@ export class RallyWorld {
       this.root.add(mesh);
       this.dust.push(mesh);
     }
+    if (["rain","snow","wind","haze"].includes(weather)) {
+      const geometry = new T.BufferGeometry();
+      const positions = new Float32Array(180 * 3);
+      for(let i=0;i<180;i++) positions.set([(random()-.5)*170,random()*26,(random()-.5)*160],i*3);
+      geometry.setAttribute("position",new T.BufferAttribute(positions,3));
+      this.precipitation = new T.Points(geometry,new T.PointsMaterial({color:weather==="snow"?"#ffffff":weather==="rain"?"#b9d7e7":"#e6c38c",size:weather==="snow"?.24:.13,transparent:true,opacity:.55,depthWrite:false}));
+      this.root.add(this.precipitation);
+    }
+  }
+  updateWeather(dt: number) {
+    if (!this.precipitation) return;
+    const p = this.precipitation.geometry.attributes.position;
+    const snow = this.selection.weather === "snow";
+    const wind = this.selection.weather === "wind" || this.selection.weather === "haze";
+    for (let i=0;i<p.count;i++) {
+      p.setY(i, (p.getY(i) - dt * (snow ? 3 : wind ? 1 : 24) + 26) % 26);
+      p.setX(i, (p.getX(i) + dt * (wind ? 12 : snow ? 1.5 : 4) + 85) % 170 - 85);
+    }
+    p.needsUpdate=true;
   }
   nearest(x: number, z: number) {
     let index = 0,
@@ -302,7 +334,7 @@ export class RallyWorld {
   }
   release(group: T.Object3D) {
     group.traverse((obj) => {
-      if (obj instanceof T.Mesh) {
+      if (obj instanceof T.Mesh || obj instanceof T.Points) {
         obj.geometry.dispose();
         const materials = Array.isArray(obj.material)
           ? obj.material
@@ -379,7 +411,7 @@ export class RallyWorld {
       }
     try {
       const value = Number(
-        localStorage.getItem(`pocket-rally-best-${this.selected}`),
+        localStorage.getItem(`pocket-rally-best-${boardKey(this.selection)}-${this.selected}`),
       );
       this.best = Number.isFinite(value) && value > 0 ? value : null;
     } catch {
@@ -395,6 +427,7 @@ export class RallyWorld {
     this.callbacks.mode(mode);
   }
   resetPosition() {
+    if(this.mode === "race") this.cleanRun=false;
     const idx = this.checkpoint ? this.checkpoints[this.checkpoint - 1] : 0;
     const p = this.points[idx],
       next = this.points[Math.min(idx + 3, 650)];
@@ -409,6 +442,10 @@ export class RallyWorld {
     this.checkpoint = 0;
     this.time = 0;
     this.countdown = 3;
+    this.cleanRun = true;
+    this.trace = [];
+    this.traceAt = 0;
+    this.callbacks.start?.();
     this.resetPosition();
     this.setMode("countdown");
     void this.ensureAudio().catch(() => {
@@ -471,6 +508,8 @@ export class RallyWorld {
     await this.audio?.enable();
   }
   keydown = (event: KeyboardEvent) => {
+    const target=event.target;
+    if(target instanceof HTMLElement && (target.matches("input,select,textarea,button") || target.isContentEditable)) return;
     if (
       ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Space"].includes(
         event.code,
@@ -585,7 +624,7 @@ export class RallyWorld {
         this.vehicle.position.x,
         this.vehicle.position.z,
       );
-      const tuning = handling(speed, steer, c.grip, hand, road.distance > 5.6);
+      const tuning = handling(speed, steer, c.grip * surfaceGrip(this.selection), hand, road.distance > 5.6);
       const motor = engine(speed, throttle, this.rpm, this.limited, dt);
       this.rpm = motor.rpm;
       this.limited = motor.limited;
@@ -636,6 +675,10 @@ export class RallyWorld {
         );
         this.velocity.multiplyScalar(0.3);
       }
+      if(this.time >= this.traceAt) {
+        this.trace.push([Number(this.time.toFixed(3)), Number(this.vehicle.position.x.toFixed(2)), Number(this.vehicle.position.z.toFixed(2))]);
+        this.traceAt=this.time+.25;
+      }
       const next = this.checkpoints[this.checkpoint];
       if (
         next !== undefined &&
@@ -647,17 +690,20 @@ export class RallyWorld {
             this.best = this.time;
             try {
               localStorage.setItem(
-                `pocket-rally-best-${this.selected}`,
+                `pocket-rally-best-${boardKey(this.selection)}-${this.selected}`,
                 String(this.best),
               );
             } catch {}
             this.callbacks.best(this.best);
           }
+          this.trace.push([this.time,this.vehicle.position.x,this.vehicle.position.z]);
+          this.callbacks.finish?.(this.time,this.cleanRun ? this.trace : []);
           this.setMode("finished");
         }
       }
       if (Math.abs(speed) > 4) {
         const sliding = hand || Math.abs(steer) > 0.5;
+        const tarmac = this.selection.stage === "mountain" && this.selection.weather !== "rain";
         this.dustClock += dt;
         if (this.dustClock >= 1 / 24) {
           this.dustClock %= 1 / 24;
@@ -668,11 +714,12 @@ export class RallyWorld {
           dust.position.z -= Math.sin(this.angle) * side;
           dust.position.y = 0.6;
           dust.scale.set(sliding ? 2.5 : 1.8, 1.4, 2);
-          (dust.material as T.MeshStandardMaterial).opacity = sliding ? 0.65 : 0.5;
+          (dust.material as T.MeshStandardMaterial).opacity = tarmac ? (sliding ? .16 : 0) : sliding ? 0.65 : 0.5;
           dust.visible = true;
         }
       }
     }
+    if(this.mode === "race" || this.mode === "garage") this.updateWeather(dt);
     this.dust.forEach((d) => {
       const m = d.material as T.MeshStandardMaterial;
       m.opacity = Math.max(0, m.opacity - dt * 0.35);
