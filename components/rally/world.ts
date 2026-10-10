@@ -827,6 +827,7 @@ export class RallyWorld {
       this.audio.drive.speed = this.velocity.length();
       this.audio.drive.throttle = throttle;
       this.audio.drive.brake = brake;
+      this.audio.drive.corner = Math.abs(steer);
       this.audio.drive.rpm = this.rpm;
       this.audio.drive.limited = this.limited;
       this.audio.drive.sliding =

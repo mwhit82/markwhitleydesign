@@ -158,7 +158,7 @@ test("bounded audio graph: no native media rate mutations, cached decoding, paus
   try {
     assert.equal(mediaPlays, 0, "preloading must not autoplay");
     await audio.enable();
-    assert.equal(decodes, 49);
+    assert.equal(decodes, 50);
     assert.equal(sources, 5);
     assert.deepEqual(periods, [50]);
     const previous = automation;
@@ -182,14 +182,14 @@ test("bounded audio graph: no native media rate mutations, cached decoding, paus
     const voiceSources=sources;audio.speak(["crest"]);assert.equal(sources,voiceSources,"never overlap calls");
     audio.stopVoice();assert.equal(audio.voiceLayers.length,0);
     audio.setCar(2);
-    assert.equal(decodes, 49);
+    assert.equal(decodes, 50);
     assert.equal(sources, 11);
     audio.setMode("paused");
     assert.equal(timers.size, 0);
     assert.ok(mediaPauses > 0);
     audio.setMode("race");
     await audio.enable();
-    assert.equal(decodes, 49);
+    assert.equal(decodes, 50);
     assert.equal(timers.size, 1);
     audio.cue('select');const selectedCue=audio.uiLayer;audio.cue('start');assert.notEqual(audio.uiLayer,selectedCue);audio.cue('restart');assert.ok(audio.uiLayer);
     audio.setMode('celebrating');const finishSources=sources;audio.setMode('celebrating');assert.equal(sources,finishSources);
@@ -261,8 +261,18 @@ test('crowd falloff stays subtle far away and rises near spectators',()=>{
  assert.equal(soundMix({speed:0,throttle:0,brake:0,sliding:false},'finished',0).idle,0);
 });
 test('crowd assets are bounded mono PCM recordings',async()=>{
- for(const name of ['crowd-bed','crowd-cheer','crowd-applause','ui-select','ui-start','ui-restart']){
+ for(const name of ['crowd-bed','crowd-cheer','crowd-applause','ui-select','ui-start','ui-restart','kart-tyres']){
   const data=await readFile(new URL(`../public/rally/${name}.wav`,import.meta.url));
   assert.equal(data.toString('ascii',0,4),'RIFF');assert.equal(data.readUInt16LE(22),1);assert.equal(data.readUInt32LE(24),22050);assert.ok(data.length<550000);
  }
 });
+
+ test('kart engine stays in a warm pitch range and tyre squeal follows cornering',()=>{
+ const d={speed:18,throttle:1,brake:0,sliding:false,rpm:7000,corner:0};
+ const straight=soundMix(d,'race',4),turn=soundMix({...d,corner:.8},'race',4);
+ assert.equal(straight.tyre,0);assert.ok(turn.tyre>0&&turn.tyre<.15);
+ assert.ok(straight.rate<1.5);assert.ok(soundMix({...d,rpm:950},'race',4).rate<straight.rate);
+ assert.equal(soundMix({...d,corner:1,sliding:true},'paused',4).tyre,0);
+ assert.equal(soundMix({...d,speed:0,corner:1,sliding:true},'race',4).tyre,0);
+ assert.equal(soundMix({...d,corner:1},'race',0).tyre,0);
+ });

@@ -5,6 +5,7 @@ export type DriveSound = {
   throttle: number;
   brake: number;
   sliding: boolean;
+  corner?: number;
   rpm?: number;
   limited?: boolean;
 };
@@ -13,8 +14,11 @@ export function soundMix(drive: DriveSound, mode: Mode, car: number) {
   const throttle = mode === "race" ? drive.throttle : 0;
   const brake = mode === "race" ? drive.brake : 0;
   const personality = [0.9, 1.04, 0.97, 1.1][car] ?? 1;
+  const kart = car === 4;
+  const revs = Math.max(0, Math.min(1, ((drive.rpm ?? (950 + speed * 180)) - 950) / 6050));
   return {
-    rate:
+    tyre: kart && mode === "race" ? Math.min(1, Math.max(0, (speed - 4) / 10)) * Math.min(.15, (drive.sliding ? .095 : 0) + Math.max(0, (drive.corner ?? 0) - .25) * .07 + brake * .025) : 0,
+    rate: kart ? .78 + revs * .64 :
       personality *
       Math.min(2.2, drive.rpm !== undefined && mode === "race" ? 0.72 + (drive.rpm - 950) / 4400 : 0.72 + speed * 0.043 + throttle * 0.42 - brake * 0.1),
     idle: (mode==="celebrating"||mode==="finished"?0:0.07) * (1 - Math.min(speed / 9, 1)) * (1 - throttle * 0.85),
@@ -37,7 +41,7 @@ const assets = [
     `recorded-car-${i}-load`,
     `recorded-car-${i}-lift`,
   ]).flat(),
-  "gravel", "crowd-bed", "crowd-cheer", "crowd-applause", "ui-select", "ui-start", "ui-restart",
+  "gravel", "kart-tyres", "crowd-bed", "crowd-cheer", "crowd-applause", "ui-select", "ui-start", "ui-restart",
 ];
 
 export function crowdLevel(distance:number){return .004+.048*Math.max(0,Math.min(1,(35-distance)/25));}
@@ -178,7 +182,7 @@ export class RallyAudio {
     this.layers = [
       `recorded-car-${this.car}-idle`,
       `recorded-car-${this.car}-load`,
-      "gravel",
+      this.car === 4 ? "kart-tyres" : "gravel",
       `recorded-car-${this.car}-lift`,
     ].map((name) => {
       const source = context.createBufferSource();
@@ -252,7 +256,7 @@ export class RallyAudio {
     this.layers[1].source.playbackRate.setTargetAtTime(mix.rate, time, 0.09);
     this.layers[0].gain.gain.setTargetAtTime(mix.idle, time, 0.08);
     this.layers[1].gain.gain.setTargetAtTime(mix.load, time, 0.07);
-    this.layers[2].gain.gain.setTargetAtTime(this.indoor?mix.gravel*.15:mix.gravel, time, 0.1);
+    this.layers[2].gain.gain.setTargetAtTime(this.car===4?mix.tyre:mix.gravel, time, 0.1);
     this.layers[3].source.playbackRate.setTargetAtTime(mix.rate,time,.14);
     this.layers[3].gain.gain.setTargetAtTime(mix.lift,time,.12);
     const celebration=this.mode==='celebrating'||this.mode==='finished';

@@ -80,3 +80,10 @@ Offline 105–920 Hz source-band isolation, layer-specific upward resampling,
 3.3 kHz soft high-frequency rolloff, raised-cosine loop crossfades and level trim.
 Stylised high-rev/F1-inspired kart sound, not an authentic Formula One recording.
 Prepared with scripts/prepare-kart-v27.py. Rally engine files are unchanged.
+
+V2.7.1 kart audio: replaces V2.7's high-pitched venue recording with the
+existing domasx2 CC0 car-engine recording credited above. Offline lower
+resampling, gentle saturation, low-pass EQ, crossfades and level control.
+Stylised warm sports-car character, not a recording of a particular supercar.
+Kart tyre friction is an original offline procedural cue, softly band-limited
+and mixed quietly on corners. Rebuild: scripts/prepare-kart-v271.py (numpy).
