@@ -9,7 +9,7 @@ export function lighting(selection:StageSelection){
   night:{sky:'#101d35',fill:'#9cbbe9',sun:'#9cbbe9',ground:'#283d62',ambient:.65,power:.5,position:[-35,75,25],lamps:65},
  };
  const p=presets[day];
- return {...p,ambient:p.ambient*(wet?.85:1),power:p.power*(wet?.48:fog?.65:1),near:fog?28:wet?55:95,far:fog?100:wet?160:240};
+ return {...p,ambient:p.ambient*(wet?.85:1),power:p.power*(wet?.48:fog?.65:1),near:fog?45:wet?55:95,far:fog?76:wet?160:240};
 }
 export class WeatherParticles {
  object:T.Points|T.LineSegments;

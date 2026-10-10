@@ -70,7 +70,7 @@ test("bounded audio graph: no native media rate mutations, cached decoding, paus
   const timers = new Map();
   const periods = [];
   const param = () => ({
-    value: 0,
+    value: 0, cancelScheduledValues(){},setValueAtTime(){},
     setTargetAtTime() {
       automation++;
     },
@@ -158,7 +158,7 @@ test("bounded audio graph: no native media rate mutations, cached decoding, paus
   try {
     assert.equal(mediaPlays, 0, "preloading must not autoplay");
     await audio.enable();
-    assert.equal(decodes, 12);
+    assert.equal(decodes, 15);
     assert.equal(sources, 4);
     assert.deepEqual(periods, [50]);
     const previous = automation;
@@ -178,17 +178,18 @@ test("bounded audio graph: no native media rate mutations, cached decoding, paus
       "one fixed-rate update schedules six parameters",
     );
     audio.setCar(2);
-    assert.equal(decodes, 12);
+    assert.equal(decodes, 15);
     assert.equal(sources, 7);
     audio.setMode("paused");
     assert.equal(timers.size, 0);
     assert.ok(mediaPauses > 0);
     audio.setMode("race");
     await audio.enable();
-    assert.equal(decodes, 12);
+    assert.equal(decodes, 15);
     assert.equal(timers.size, 1);
+    audio.cue('select');const selectedCue=audio.uiLayer;audio.cue('start');assert.notEqual(audio.uiLayer,selectedCue);audio.cue('restart');assert.ok(audio.uiLayer);
     audio.setMode('celebrating');const finishSources=sources;audio.setMode('celebrating');assert.equal(sources,finishSources);
-    audio.setMode('finished');assert.equal(sources,finishSources+1);audio.setMode('finished');assert.equal(sources,finishSources+1);
+    audio.setMode('finished');assert.equal(sources,finishSources);audio.setMode('finished');assert.equal(sources,finishSources);
     assert.ok(audio.cheers.length<=2);audio.setMode('countdown');assert.equal(audio.cheers.length,0);
     audio.setMode('race');audio.crowdDistance=10;
     for(let i=1;i<8;i++){audio.context.currentTime=i*8;[...timers.values()][0]();assert.ok(audio.cheers.length<=2);}
@@ -256,7 +257,7 @@ test('crowd falloff stays subtle far away and rises near spectators',()=>{
  assert.equal(soundMix({speed:0,throttle:0,brake:0,sliding:false},'finished',0).idle,0);
 });
 test('crowd assets are bounded mono PCM recordings',async()=>{
- for(const name of ['crowd-bed','crowd-cheer','crowd-applause']){
+ for(const name of ['crowd-bed','crowd-cheer','crowd-applause','ui-select','ui-start','ui-restart']){
   const data=await readFile(new URL(`../public/rally/${name}.wav`,import.meta.url));
   assert.equal(data.toString('ascii',0,4),'RIFF');assert.equal(data.readUInt16LE(22),1);assert.equal(data.readUInt32LE(24),22050);assert.ok(data.length<550000);
  }

@@ -1,4 +1,6 @@
 import * as T from "three";
+import {SurfaceEffects,createMud} from "./surface-effects";
+import {RallyHaptics,defaultControls,type ControlSettings} from "./controls";
 import {lighting,WeatherParticles} from "./conditions";
 import {CheckpointEffects} from "./checkpoint-effects";
 import { advanceCheckpoints, CheckpointNotifications, type CheckpointNotice, type Eligibility, type RunReason } from "./checkpoints";
@@ -32,6 +34,11 @@ type Callbacks = {
   ghostVisibility?: (visible:boolean) => void;
 };
 export class RallyWorld {
+  controls:ControlSettings={...defaultControls};
+  touchSteer=0;touchHeld=false;touchActive=false;
+  private haptics=new RallyHaptics();
+  private surfaceEffects!:SurfaceEffects;
+  private mud:T.InstancedMesh|null=null;
   obstacles: { x: number; z: number; radius: number }[] = [];
   scene = new T.Scene();
   camera = new T.OrthographicCamera();
@@ -177,7 +184,8 @@ export class RallyWorld {
     this.atmosphere = new Atmosphere(this.points);
     const stage = stageDefinition(this.selection);
     const weather = this.selection.weather,preset=lighting(this.selection),sky=timeOfDay(this.selection)==='midday'?stage.sky:preset.sky;
-    this.renderer.setClearColor(sky);this.scene.fog=new T.Fog(sky,preset.near,preset.far);
+    const fogColor=new T.Color(sky);if(weather==="fog"||weather==="haze")fogColor.lerp(new T.Color(timeOfDay(this.selection)==="night"?"#657487":"#c2c9c4"),.55);
+    this.renderer.setClearColor(fogColor);this.scene.fog=new T.Fog(fogColor,preset.near,preset.far);
     this.hemisphere.color.set(preset.fill);this.hemisphere.groundColor.set(preset.ground);this.hemisphere.intensity=preset.ambient;
     this.sun.color.set(preset.sun);this.sun.intensity=preset.power;this.sun.position.set(...preset.position as [number,number,number]);
     this.checkpointEffects=new CheckpointEffects(this.atmosphere.reduced);this.root.add(this.checkpointEffects.group);
@@ -197,9 +205,10 @@ export class RallyWorld {
       if (i === 0) paint.moveTo(p.x, p.z);
       else paint.lineTo(p.x, p.z);
     });
+    // Feather the shoulder outwards while retaining the original 11.2-unit route.
     paint.strokeStyle = stage.edge;
-    paint.lineWidth = 11.8;
-    paint.stroke();
+    for(let width=15;width>=11.4;width-=.45){paint.globalAlpha=.09;paint.lineWidth=width;paint.stroke();}
+    paint.globalAlpha=1;
     paint.strokeStyle = stage.road;
     paint.lineWidth = 11.2;
     paint.stroke();
@@ -223,7 +232,7 @@ export class RallyWorld {
       new T.PlaneGeometry(170, 160),
       new T.MeshStandardMaterial({
         map: texture,
-        alphaTest: 0.5,
+        transparent:true,depthWrite:false,alphaTest:.015,
         roughness: weather === "rain" ? 0.35 : 1,
       }),
     );
@@ -231,6 +240,7 @@ export class RallyWorld {
     road.position.y = 0.04;
     road.receiveShadow = true;
     this.root.add(road);
+    this.surfaceEffects=new SurfaceEffects(this.selection,this.points,this.atmosphere.reduced);this.root.add(this.surfaceEffects.group);
     let seed = 42;
     const random = () => {
       seed = (seed * 16807) % 2147483647;
@@ -455,6 +465,7 @@ export class RallyWorld {
     } catch {
       this.best = null;
     }
+    this.mud=createMud(this.selection.stage==="alpine"?"#8b8b79":this.selection.stage==="desert"?"#a17c47":"#6b5035");this.vehicle.add(this.mud);
     this.callbacks.best(this.best);
     this.resetPosition();
     void this.prepareGhost();
@@ -493,6 +504,7 @@ export class RallyWorld {
       if(!matchingReplay(replay,this.selection,this.selected)){this.callbacks.ghost?.("Leader’s ghost unavailable");return;}
       this.ghostReplay=replay;
       this.ghostCar=this.vehicle.clone(true);
+      this.ghostCar.getObjectByName("car-mud")?.removeFromParent();
       this.ghostCar.traverse(obj=>{if(obj instanceof T.Mesh){obj.geometry=obj.geometry.clone();const material=(obj.material as T.MeshStandardMaterial).clone();material.transparent=true;material.opacity=.3;material.depthWrite=false;material.color.lerp(new T.Color("#b6f7ed"),.4);obj.material=material;obj.castShadow=false;obj.receiveShadow=false;}});
       const lights:T.Object3D[]=[];this.ghostCar.traverse(obj=>{if(obj instanceof T.Light)lights.push(obj);});lights.forEach(light=>light.removeFromParent());
       this.ghostCar.visible=false;this.root.add(this.ghostCar);this.callbacks.ghost?.(label);
@@ -523,7 +535,7 @@ export class RallyWorld {
     this.velocity.set(0,0,0);this.atmosphere.celebrate();this.setMode("finished");
   }
   setMode(mode: Mode) {
-    this.keys.clear();
+    this.keys.clear();this.touchSteer=0;this.touchHeld=false;this.touchActive=false;this.haptics.stop();
     this.mode = mode;
     this.audio?.setMode(mode);
     this.callbacks.mode(mode);
@@ -533,7 +545,7 @@ export class RallyWorld {
     this.cleanRun=false;
     if(!this.reasons.includes(reason)){this.reasons.push(reason);this.callbacks.practice?.([...this.reasons]);}
   }
-  clearFeedback(){this.checkpointEffects?.reset();this.splitReference=[];this.notifications.clear();this.callbacks.checkpoints?.([]);this.reasons=[];this.callbacks.practice?.([]);}
+  clearFeedback(){this.surfaceEffects?.reset();if(this.mud)(this.mud.material as T.MeshStandardMaterial).opacity=0;this.checkpointEffects?.reset();this.splitReference=[];this.notifications.clear();this.callbacks.checkpoints?.([]);this.reasons=[];this.callbacks.practice?.([]);}
   resetPosition() {
     if(this.mode === "race") this.markPractice('car-recovered');
     const idx = this.checkpoint ? this.checkpoints[this.checkpoint - 1] : 0;
@@ -546,7 +558,9 @@ export class RallyWorld {
     this.rpm = 950;
     this.limited = false;
   }
+  uiCue(kind:"select"|"start"|"restart"="select"){if(!this.muted)this.audio?.cue(kind);}
   start() {
+    this.uiCue(this.mode==="garage"?"start":"restart");
     this.setMode("countdown");
     this.clearFeedback();
     this.checkpoint = 0;
@@ -720,11 +734,14 @@ export class RallyWorld {
       }
       this.previousButtons = buttons;
     } else this.previousButtons = [];
+    if(!this.touchHeld)this.touchSteer*=Math.exp(-dt*13);
+    if(this.touchHeld||Math.abs(this.touchSteer)>.005)steer=this.touchSteer;
     if (this.keys.has("KeyA") || this.keys.has("ArrowLeft")) steer = -1;
     if (this.keys.has("KeyD") || this.keys.has("ArrowRight")) steer = 1;
     if (this.keys.has("KeyW") || this.keys.has("ArrowUp")) throttle = 1;
     if (this.keys.has("KeyS") || this.keys.has("ArrowDown")) brake = 1;
     hand = hand || this.keys.has("Space");
+    this.haptics.update(now,dt,this.controls.haptics,this.mode==="race",this.velocity.length(),steer,pad??undefined,this.touchActive);
     if (this.audio) {
       // Publish telemetry only; the audio mixer runs independently at 20 Hz.
       this.audio.crowdDistance=this.atmosphere.crowdDistance(this.vehicle.position);
@@ -854,6 +871,8 @@ export class RallyWorld {
       if(pose){this.ghostCar.position.set(pose.x,.08,pose.z);this.ghostCar.rotation.set(0,pose.angle,0);}
     }
     if(this.notifications.tick(dt,this.mode==="paused"))this.callbacks.checkpoints?.([...this.notifications.items]);
+    this.surfaceEffects.update(this.mode==="paused"?0:dt,this.vehicle.position,this.angle,this.velocity.length(),this.mode==="race");
+    if(this.mud)(this.mud.material as T.MeshStandardMaterial).opacity=this.surfaceEffects.mud*.9;
     this.atmosphere.update(this.mode==="paused"?0:dt,now/1000,this.vehicle.position,this.velocity.length(),this.mode==="race");
     this.checkpointEffects.update(this.mode==="paused"?0:dt);
     if(this.mode!=="paused")this.updateWeather(dt);
@@ -910,7 +929,7 @@ export class RallyWorld {
     this.camera.updateProjectionMatrix();
   }
   dispose() {
-    this.disposed = true;
+    this.disposed = true;this.haptics.stop();
     this.clearGhost();
     cancelAnimationFrame(this.frame);
     this.observer.disconnect();

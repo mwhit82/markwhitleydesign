@@ -33,7 +33,7 @@ const assets = [
     `recorded-car-${i}-idle`,
     `recorded-car-${i}-load`,
   ]).flat(),
-  "gravel", "crowd-bed", "crowd-cheer", "crowd-applause",
+  "gravel", "crowd-bed", "crowd-cheer", "crowd-applause", "ui-select", "ui-start", "ui-restart",
 ];
 
 export function crowdLevel(distance:number){return .012+.075*Math.max(0,Math.min(1,(35-distance)/25));}
@@ -49,7 +49,7 @@ export class RallyAudio {
   private crowdLoop:Layer|null=null;
   private cheers:Layer[]=[];
   private finishStarted=false;
-  private arrivalStarted=false;
+  private uiLayer:Layer|null=null;
   private finishUntil=0;
   private nextCheer=0;
   crowdDistance=Infinity;
@@ -83,7 +83,7 @@ export class RallyAudio {
           signal: this.abort.signal,
         });
         if (!response.ok) throw new Error("Audio asset unavailable");
-        return [name, await response.arrayBuffer()] as const;}catch(error){if(name.startsWith('crowd-'))return null;throw error;}
+        return [name, await response.arrayBuffer()] as const;}catch(error){if(name.startsWith('crowd-')||name.startsWith('ui-'))return null;throw error;}
       }),
     )
       .then((entries) => new Map(entries.filter((entry):entry is readonly [string,ArrayBuffer]=>entry!==null)))
@@ -98,7 +98,7 @@ export class RallyAudio {
     await Promise.all(
       [...encoded].map(async ([name, data]) => {
         if (this.buffers.has(name)) return;
-        try {const buffer = await context.decodeAudioData(data.slice(0));this.buffers.set(name, buffer);}catch(error){if(!name.startsWith("crowd-"))throw error;}
+        try {const buffer = await context.decodeAudioData(data.slice(0));this.buffers.set(name, buffer);}catch(error){if(!name.startsWith("crowd-")&&!name.startsWith("ui-"))throw error;}
       }),
     );
   }
@@ -211,11 +211,17 @@ export class RallyAudio {
     if(mode===this.mode)return;
     this.mode=mode;
     if(mode==='garage'||mode==='countdown'){
-      this.clearCheers();this.finishStarted=false;this.arrivalStarted=false;this.finishUntil=0;this.nextCheer=(this.context?.currentTime??0)+7;
+      this.clearCheers();this.finishStarted=false;this.finishUntil=0;this.nextCheer=(this.context?.currentTime??0)+7;
     }
-    if(mode==='celebrating'&&!this.finishStarted){this.finishStarted=true;this.finishUntil=(this.context?.currentTime??0)+9;this.cheer('crowd-cheer',.22);}
-    if(mode==='finished'&&!this.arrivalStarted){this.arrivalStarted=true;this.finishUntil=(this.context?.currentTime??0)+6;this.cheer('crowd-applause',.22);}
+    if((mode==='celebrating'||mode==='finished')&&!this.finishStarted){this.finishStarted=true;this.clearCheers();this.finishUntil=(this.context?.currentTime??0)+6;this.cheer('crowd-applause',.25);}
     if(mode==='paused')this.pause();
+  }
+  cue(kind:"select"|"start"|"restart"){
+    if(!this.context||(!this.playing&&this.mode!=="paused"))return;
+    if(this.mode==="paused")void this.context.resume().catch(()=>{});
+    if(this.uiLayer){this.uiLayer.source.stop();this.uiLayer.source.disconnect();this.uiLayer.gain.disconnect();}
+    const layer=this.crowdSource(`ui-${kind}`,kind==="select"?.15:.22);this.uiLayer=layer;
+    if(layer)layer.source.onended=()=>{layer.source.disconnect();layer.gain.disconnect();if(this.uiLayer===layer){this.uiLayer=null;if(this.mode==="paused")void this.context?.suspend().catch(()=>{});}};
   }
   private update() {
     if (!this.playing || !this.context || this.layers.length !== 3) return;
@@ -238,6 +244,7 @@ export class RallyAudio {
     if (this.interval !== null) window.clearInterval(this.interval);
     this.interval = null;
     this.ambience.pause();
+    if(this.context){for(const layer of [...this.layers,...this.cheers,...(this.crowdLoop?[this.crowdLoop]:[])]){layer.gain.gain.cancelScheduledValues(this.context.currentTime);layer.gain.gain.setValueAtTime(0,this.context.currentTime);}}
     if (this.context?.state === "running")
       void this.context.suspend().catch(() => {});
   }
@@ -251,6 +258,7 @@ export class RallyAudio {
       layer.gain.disconnect();
     }
     this.layers = [];this.clearCheers();
+    if(this.uiLayer){this.uiLayer.source.stop();this.uiLayer.source.disconnect();this.uiLayer.gain.disconnect();this.uiLayer=null;}
     if(this.crowdLoop){this.crowdLoop.source.stop();this.crowdLoop.source.disconnect();this.crowdLoop.gain.disconnect();this.crowdLoop=null;}
     void this.context?.close();
     this.ambience.removeAttribute("src");

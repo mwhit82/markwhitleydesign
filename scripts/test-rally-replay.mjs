@@ -21,7 +21,7 @@ const memory=new Map();
 globalThis.localStorage={getItem:k=>memory.get(k)||null,setItem:(k,v)=>memory.set(k,v)};
 function fixture(best=null,clean=true){
  const w=Object.create(RallyWorld.prototype);let finishes=0;
- Object.assign(w,{mode:'race',reasons:[],notifications:new CheckpointNotifications(),time:60,trace:[[0,0,0],[60,1,1]],replaySamples:[[0,0,0,0],[60,1,1,0]],cleanRun:clean,best,selected:0,selection:{stage:'forest',weather:'clear',reverse:false},vehicle:new T.Group(),velocity:new T.Vector3(),angle:0,arrivalFrom:new T.Vector3(),keys:new Set(),root:new T.Group(),ghostGeneration:0,ghostSource:'personal',disposed:false,ghostCar:null,ghostAbort:null,ghostReplay:null,callbacks:{mode(){},best(){},finish(){finishes++},ghost(s){w.status=s}},atmosphere:{layout:{center:new T.Vector3(2,0,2),angle:1},celebrate(){},reset(){}}});
+ Object.assign(w,{haptics:{stop(){}},mode:'race',reasons:[],notifications:new CheckpointNotifications(),time:60,trace:[[0,0,0],[60,1,1]],replaySamples:[[0,0,0,0],[60,1,1,0]],cleanRun:clean,best,selected:0,selection:{stage:'forest',weather:'clear',reverse:false},vehicle:new T.Group(),velocity:new T.Vector3(),angle:0,arrivalFrom:new T.Vector3(),keys:new Set(),root:new T.Group(),ghostGeneration:0,ghostSource:'personal',disposed:false,ghostCar:null,ghostAbort:null,ghostReplay:null,callbacks:{mode(){},best(){},finish(){finishes++},ghost(s){w.status=s}},atmosphere:{layout:{center:new T.Vector3(2,0,2),angle:1},celebrate(){},reset(){}}});
  w.finishCount=()=>finishes;return w;
 }
 test('completion freezes recording once; skip does not resubmit; clean PB replacement and legacy times',async()=>{

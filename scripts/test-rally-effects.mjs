@@ -40,3 +40,22 @@ test('checkpoint flags persist, bursts deduplicate and cap at 96; reset restores
  effect.reset();assert.equal(meshes[0].material,original);assert.equal(effect.states.size,0);
  const reduced=new CheckpointEffects(true);reduced.emit([{checkpoint:1,outcome:'accepted',time:1}]);assert.equal(reduced.cursor,0);
 });
+const {SurfaceEffects,TRACK_CAP,SPLASH_CAP,createMud}=await import(await load(resolve('components/rally/surface-effects.ts')));
+const {stagePoints}=await import(await load(resolve('components/rally/stages.ts')));
+test('rain-only puddles follow each route; mud, tracks and splash pools are bounded and pause/reset',()=>{
+ for(const stage of stages)for(const reverse of [true,false]){
+  const selection={stage:stage.id,weather:'rain',reverse},points=stagePoints(selection),effect=new SurfaceEffects(selection,points,false);
+  assert.equal(effect.puddles.length,5);assert.equal(new SurfaceEffects({...selection,weather:'clear'},points,false).puddles.length,0);
+  assert.ok(effect.puddles.every(p=>points.some(q=>Math.hypot(q.x-p.x,q.z-p.z)<2.2)));
+  for(let i=0;i<1800;i++)effect.update(.016,new T.Vector3(i*.05,0,0),0,12,true);
+  assert.equal(effect.tracks.count,TRACK_CAP);assert.equal(effect.splashes.count,SPLASH_CAP);assert.ok(effect.mud>0&&effect.mud<=1);assert.ok([...effect.tracks.instanceMatrix.array].every(Number.isFinite));
+  const before=[...effect.age],mud=effect.mud;effect.update(0,new T.Vector3(),0,12,true);assert.deepEqual([...effect.age],before);assert.equal(effect.mud,mud);
+  const p=effect.puddles[0];for(let i=0;i<50;i++)effect.update(.02,new T.Vector3(p.x,0,p.z),0,12,true);assert.ok(effect.life.some(n=>n>0));
+  effect.update(21,new T.Vector3(p.x,0,p.z),0,0,false);assert.ok([...effect.alpha.array].every(n=>n===0));
+  effect.reset();assert.equal(effect.mud,0);assert.ok(effect.life.every(n=>n===0));
+ }
+ assert.equal(createMud('#765432').count,64);
+});
+test('dense fog obscures far road while retaining immediate camera target at every time of day',()=>{
+ for(const timeOfDay of timesOfDay){const fog=lighting({stage:'forest',weather:'fog',reverse:false,timeOfDay});assert.ok(fog.near<=54&&fog.near>=40);assert.ok(fog.far<80);}
+});
