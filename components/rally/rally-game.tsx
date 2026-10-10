@@ -8,6 +8,8 @@ export function RallyGame() {
   const game = useRef<HTMLDivElement>(null);
   const hadNativeFullscreen = useRef(false);
   const [expanded, setExpanded] = useState(false);
+  const [installHelp, setInstallHelp] = useState(false);
+  const [standalone, setStandalone] = useState(false);
   const [audioBusy, setAudioBusy] = useState(false);
   const [notice, setNotice] = useState("");
   const api = useRef<import("./world").RallyWorld | null>(null);
@@ -35,6 +37,10 @@ export function RallyGame() {
           pad: setPad,
           select: setSelected,
           best: setBest,
+          audio: (isMuted) => {
+            setMuted(isMuted);
+            if (isMuted) setNotice("Audio stopped. Tap Sound to retry.");
+          },
         });
         setReady(true);
       })
@@ -48,6 +54,14 @@ export function RallyGame() {
       api.current?.dispose();
       api.current = null;
     };
+  }, []);
+  useEffect(() => {
+    const installed =
+      window.matchMedia("(display-mode: standalone)").matches ||
+      window.matchMedia("(display-mode: fullscreen)").matches ||
+      Boolean((navigator as Navigator & { standalone?: boolean }).standalone);
+    setStandalone(installed);
+    if (installed) setExpanded(true);
   }, []);
   useEffect(() => {
     const changed = () => {
@@ -104,7 +118,8 @@ export function RallyGame() {
         /* Keep the expanded layout. */
       }
     }
-    setNotice("Expanded game view. Your browser’s bars may stay visible.");
+    api.current?.blur();
+    setInstallHelp(true);
   };
   const toggleSound = async () => {
     if (!api.current) return;
@@ -116,7 +131,7 @@ export function RallyGame() {
       setNotice(
         next
           ? "Sound muted."
-          : "Engine sound on. Adjust your device volume to suit.",
+          : "Audio playback started. Adjust your phone’s media volume.",
       );
     } catch {
       setMuted(true);
@@ -147,7 +162,7 @@ export function RallyGame() {
     <div className={styles.page}>
       <div className={styles.heading}>
         <div>
-          <p className={styles.eyebrow}>MARK WHITLEY / POCKET RALLY V1.1</p>
+          <p className={styles.eyebrow}>MARK WHITLEY / POCKET RALLY V1.2</p>
           <h1>
             POCKET<span>RALLY.</span>
           </h1>
@@ -179,10 +194,46 @@ export function RallyGame() {
               {audioBusy ? "Starting sound…" : muted ? "Sound off" : "Sound on"}
             </button>
             <button aria-pressed={expanded} onClick={toggleFullscreen}>
-              {expanded ? "Exit fullscreen" : "Fullscreen"}
+              {expanded ? "Exit game view" : "Fullscreen"}
             </button>
           </div>
         </div>
+        {installHelp && (
+          <div
+            className={styles.installHelp}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="install-title"
+          >
+            <h2 id="install-title">Play without browser bars</h2>
+            <p>
+              On iPhone or iPad, launch Pocket Rally as a Home Screen web app.
+            </p>
+            <ol>
+              <li>
+                In Chrome or Safari, tap <b>Share</b>.
+              </li>
+              <li>
+                Choose <b>Add to Home Screen</b>. Keep <b>Open as Web App</b> on
+                if shown, then tap <b>Add</b>.
+              </li>
+              <li>
+                Open the new <b>Pocket Rally</b> icon and turn your phone
+                sideways.
+              </li>
+            </ol>
+            <p className={styles.hint}>
+              Needs an internet connection. iOS may still show its home
+              indicator.
+            </p>
+            <button
+              className={styles.start}
+              onClick={() => setInstallHelp(false)}
+            >
+              CONTINUE IN BROWSER →
+            </button>
+          </div>
+        )}
         {notice && (
           <div className={styles.notice} role="status">
             {notice}
@@ -333,6 +384,16 @@ export function RallyGame() {
       <div className={styles.below}>
         <div>
           <span className={styles.tag}>HOW TO DRIVE</span>
+          {!standalone && (
+            <p>
+              <button
+                className={styles.installLink}
+                onClick={() => { setExpanded(true); api.current?.blur(); setInstallHelp(true); }}
+              >
+                Play as a Home Screen app ↗
+              </button>
+            </p>
+          )}
           <p>
             <b>Keyboard</b> · WASD / arrows to drive · Space to slide · R to
             recover · Esc to pause

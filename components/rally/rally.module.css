@@ -589,3 +589,66 @@
     max-width: 96px;
   }
 }
+
+.installHelp {
+  position: absolute;
+  z-index: 60;
+  inset: 0;
+  background: #233c32fa;
+  color: #fff2d8;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 14px;
+  padding: max(24px, env(safe-area-inset-top))
+    max(24px, env(safe-area-inset-right)) max(24px, env(safe-area-inset-bottom))
+    max(24px, env(safe-area-inset-left));
+  overflow: auto;
+}
+.installHelp h2 {
+  font-size: clamp(23px, 4vw, 36px);
+  font-weight: 850;
+  text-align: center;
+}
+.installHelp p,
+.installHelp ol {
+  max-width: 430px;
+  font-size: 14px;
+  line-height: 1.6;
+}
+.installHelp ol {
+  list-style: decimal;
+  padding-left: 24px;
+}
+.installHelp li {
+  margin: 8px 0;
+}
+.installHelp .start {
+  max-width: 360px;
+  flex-shrink: 0;
+}
+.installLink {
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  padding: 8px 0;
+}
+@media (orientation: landscape) and (max-height: 500px) {
+  .installHelp {
+    gap: 6px;
+    justify-content: flex-start;
+  }
+  .installHelp h2 {
+    font-size: 23px;
+  }
+  .installHelp p,
+  .installHelp ol {
+    font-size: 12px;
+  }
+  .installHelp li {
+    margin: 3px 0;
+  }
+  .installHelp .start {
+    margin-top: 4px;
+  }
+}

@@ -12,6 +12,7 @@ type Callbacks = {
   pad: (s: string) => void;
   select: (i: number) => void;
   best: (n: number | null) => void;
+  audio?: (muted: boolean) => void;
 };
 export class RallyWorld {
   obstacles: { x: number; z: number; radius: number }[] = [];
@@ -37,9 +38,7 @@ export class RallyWorld {
   report = 0;
   best: number | null = null;
   observer: ResizeObserver;
-  audio: AudioContext | null = null;
-  oscillator: OscillatorNode | null = null;
-  gain: GainNode | null = null;
+  audio: HTMLAudioElement | null = null;
   muted = true;
   padConnected = false;
   disposed = false;
@@ -401,39 +400,74 @@ export class RallyWorld {
     this.resetPosition();
   }
   pause() {
-    if (this.mode === "paused") this.setMode("race");
-    else if (this.mode === "race" || this.mode === "countdown")
+    if (this.mode === "paused") {
+      this.setMode("race");
+      void this.ensureAudio().catch(() => {
+        this.muted = true;
+        this.callbacks.audio?.(true);
+      });
+    } else if (this.mode === "race" || this.mode === "countdown")
       this.setMode("paused");
   }
   async sound(muted: boolean) {
     this.muted = muted;
     if (muted) {
-      if (this.gain && this.audio)
-        this.gain.gain.setTargetAtTime(0, this.audio.currentTime, 0.025);
+      this.audio?.pause();
+      if (this.audio) this.audio.muted = true;
       return;
     }
     try {
       await this.ensureAudio();
     } catch (error) {
+      this.audio?.pause();
       this.muted = true;
+      this.callbacks.audio?.(true);
       throw error;
     }
   }
   async ensureAudio() {
-    if (this.muted) return;
-    if (!this.audio) {
-      this.audio = new AudioContext();
-      this.oscillator = this.audio.createOscillator();
-      this.gain = this.audio.createGain();
-      this.oscillator.type = "sawtooth";
-      this.gain.gain.value = 0;
-      this.oscillator.connect(this.gain);
-      this.gain.connect(this.audio.destination);
-      this.oscillator.start();
+    if (this.muted || this.disposed) return;
+    // Media playback avoids the ambient Web Audio channel's iOS silent-switch behaviour.
+    const session = (
+      navigator as Navigator & { audioSession?: { type: string } }
+    ).audioSession;
+    if (session) {
+      try {
+        session.type = "playback";
+      } catch {
+        /* Standard media playback still works without this API. */
+      }
     }
-    // Called directly from the sound button so mobile browsers can unlock audio.
-    if (this.audio.state !== "running") await this.audio.resume();
-    if (this.audio.state !== "running") throw new Error("Audio is not ready");
+    if (!this.audio) {
+      this.audio = new Audio("/rally/engine.wav");
+      this.audio.loop = true;
+      this.audio.preload = "auto";
+      this.audio.preservesPitch = false;
+      this.audio.addEventListener("error", () => {
+        this.muted = true;
+        if (!this.disposed) this.callbacks.audio?.(true);
+      });
+    }
+    this.audio.muted = false;
+    if (!this.audio.paused) return;
+    // play() runs synchronously within the user's tap; only its result is awaited.
+    const playback = this.audio.play();
+    await new Promise<void>((resolve, reject) => {
+      const timer = window.setTimeout(
+        () => reject(new Error("Audio playback timed out")),
+        6000,
+      );
+      playback.then(
+        () => {
+          window.clearTimeout(timer);
+          resolve();
+        },
+        (error) => {
+          window.clearTimeout(timer);
+          reject(error);
+        },
+      );
+    });
   }
   keydown = (event: KeyboardEvent) => {
     if (
@@ -461,7 +495,14 @@ export class RallyWorld {
     if (this.mode === "race" || this.mode === "countdown") this.pause();
   };
   visibility = () => {
-    if (document.hidden) this.blur();
+    if (document.hidden) {
+      this.audio?.pause();
+      this.blur();
+    } else if (this.mode === "garage")
+      void this.ensureAudio().catch(() => {
+        this.muted = true;
+        this.callbacks.audio?.(true);
+      });
   };
   resize() {
     const w = this.host.clientWidth,
@@ -633,23 +674,16 @@ export class RallyWorld {
     );
     this.camera.lookAt(target);
     this.resizeCamera();
-    if (this.gain && this.audio && this.oscillator) {
-      this.gain.gain.setTargetAtTime(
-        !this.muted && !document.hidden
-          ? this.mode === "race"
-            ? 0.065
-            : this.mode === "garage" || this.mode === "countdown"
-              ? 0.035
-              : 0
-          : 0,
-        this.audio.currentTime,
-        0.1,
-      );
-      this.oscillator.frequency.setTargetAtTime(
-        this.mode === "race" ? 65 + this.velocity.length() * 6 : 65,
-        this.audio.currentTime,
-        0.1,
-      );
+    if (this.audio) {
+      this.audio.muted =
+        this.muted ||
+        document.hidden ||
+        this.mode === "paused" ||
+        this.mode === "finished";
+      const pitch =
+        this.mode === "race" ? 0.8 + this.velocity.length() / 18 : 0.8;
+      if (Math.abs(this.audio.playbackRate - pitch) > 0.03)
+        this.audio.playbackRate = pitch;
     }
     if (now - this.report > 70) {
       this.report = now;
@@ -682,6 +716,10 @@ export class RallyWorld {
     this.release(this.root);
     this.renderer.dispose();
     this.renderer.domElement.remove();
-    void this.audio?.close();
+    this.audio?.pause();
+    if (this.audio) {
+      this.audio.removeAttribute("src");
+      this.audio.load();
+    }
   }
 }
