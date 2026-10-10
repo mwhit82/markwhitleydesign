@@ -1,6 +1,7 @@
 import * as T from "three";
 import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
 import { cars, type Mode } from "./data";
+import { RallyAudio } from "./audio";
 type Callbacks = {
   stats: (s: {
     time: number;
@@ -38,7 +39,7 @@ export class RallyWorld {
   report = 0;
   best: number | null = null;
   observer: ResizeObserver;
-  audio: HTMLAudioElement | null = null;
+  audio: RallyAudio | null = null;
   muted = true;
   padConnected = false;
   disposed = false;
@@ -136,46 +137,52 @@ export class RallyWorld {
   }
   buildStage() {
     this.box(170, 3, 160, "#87966d", 0, -1.8, 0);
-    const positions: number[] = [];
-    const colors: number[] = [];
-    const col = new T.Color();
-    for (let i = 0; i < this.points.length; i++) {
-      const p = this.points[i],
-        prev = this.points[Math.max(0, i - 1)],
-        next = this.points[Math.min(650, i + 1)];
-      const normal = new T.Vector3(
-        next.z - prev.z,
-        0,
-        prev.x - next.x,
-      ).normalize();
-      for (const side of [-1, 1]) {
-        positions.push(
-          p.x + normal.x * 5.6 * side,
-          0.04,
-          p.z + normal.z * 5.6 * side,
-        );
-        col.set(i % 11 < 5 ? "#b49b79" : "#b9a17e");
-        colors.push(col.r, col.g, col.b);
-      }
+    // A single stamped surface cannot fold over itself at tight bends, unlike the old ribbon triangles.
+    const canvas = document.createElement("canvas");
+    canvas.width = canvas.height = 2048;
+    const paint = canvas.getContext("2d");
+    if (!paint) throw new Error("Track texture could not be created");
+    paint.scale(2048 / 170, 2048 / 160);
+    paint.translate(85, 80);
+    paint.lineJoin = "round";
+    paint.lineCap = "round";
+    paint.beginPath();
+    this.points.forEach((p, i) => {
+      if (i === 0) paint.moveTo(p.x, p.z);
+      else paint.lineTo(p.x, p.z);
+    });
+    paint.strokeStyle = "#ae9472";
+    paint.lineWidth = 11.8;
+    paint.stroke();
+    paint.strokeStyle = "#baa17e";
+    paint.lineWidth = 11.2;
+    paint.stroke();
+    paint.globalCompositeOperation = "source-atop";
+    paint.fillStyle = "#69583b15";
+    let grain = 37;
+    for (let i = 0; i < 14000; i++) {
+      grain = (grain * 16807) % 2147483647;
+      const x = (grain / 2147483647 - 0.5) * 170;
+      grain = (grain * 16807) % 2147483647;
+      const z = (grain / 2147483647 - 0.5) * 160;
+      paint.fillRect(x, z, 0.13, 0.1);
     }
-    const indices: number[] = [];
-    for (let i = 0; i < 650; i++) {
-      const n = i * 2;
-      indices.push(n, n + 2, n + 1, n + 1, n + 2, n + 3);
-    }
-    const geo = new T.BufferGeometry();
-    geo.setAttribute("position", new T.Float32BufferAttribute(positions, 3));
-    geo.setAttribute("color", new T.Float32BufferAttribute(colors, 3));
-    geo.setIndex(indices);
-    geo.computeVertexNormals();
+    const texture = new T.CanvasTexture(canvas);
+    texture.colorSpace = T.SRGBColorSpace;
+    texture.anisotropy = Math.min(
+      4,
+      this.renderer.capabilities.getMaxAnisotropy(),
+    );
     const road = new T.Mesh(
-      geo,
+      new T.PlaneGeometry(170, 160),
       new T.MeshStandardMaterial({
-        vertexColors: true,
+        map: texture,
+        alphaTest: 0.5,
         roughness: 1,
-        side: T.DoubleSide,
       }),
     );
+    road.rotation.x = -Math.PI / 2;
+    road.position.y = 0.04;
     road.receiveShadow = true;
     this.root.add(road);
     let seed = 42;
@@ -294,12 +301,16 @@ export class RallyWorld {
         const materials = Array.isArray(obj.material)
           ? obj.material
           : [obj.material];
-        materials.forEach((m) => m.dispose());
+        materials.forEach((m) => {
+          if (m instanceof T.MeshStandardMaterial) m.map?.dispose();
+          m.dispose();
+        });
       }
     });
   }
   choose(index: number) {
     this.selected = (index + cars.length) % cars.length;
+    this.audio?.setCar(this.selected);
     this.callbacks.select(this.selected);
     this.root.remove(this.vehicle);
     this.release(this.vehicle);
@@ -374,8 +385,7 @@ export class RallyWorld {
   setMode(mode: Mode) {
     this.keys.clear();
     this.mode = mode;
-    // Audio transport changes only on game events, never on animation frames.
-    if (mode === "paused" || mode === "finished") this.audio?.pause();
+    this.audio?.setMode(mode);
     this.callbacks.mode(mode);
   }
   resetPosition() {
@@ -420,7 +430,6 @@ export class RallyWorld {
     this.muted = muted;
     if (muted) {
       this.audio?.pause();
-      if (this.audio) this.audio.muted = true;
       return;
     }
     try {
@@ -434,18 +443,12 @@ export class RallyWorld {
   }
   prepareAudio() {
     if (this.audio) return;
-    if (!this.audio) {
-      this.audio = new Audio("/rally/engine.wav");
-      this.audio.loop = true;
-      this.audio.preload = "auto";
-      // Keep the native media decoder at its default rate for smooth mobile playback.
-      this.audio.addEventListener("error", () => {
-        this.muted = true;
-        if (!this.disposed) this.callbacks.audio?.(true);
-      });
-    }
-    // Fetch ahead of the first sound tap without starting playback.
-    this.audio.load();
+    this.audio = new RallyAudio(() => {
+      this.muted = true;
+      if (!this.disposed) this.callbacks.audio?.(true);
+    });
+    this.audio.setCar(this.selected);
+    this.audio.setMode(this.mode);
   }
   async ensureAudio() {
     if (
@@ -456,39 +459,8 @@ export class RallyWorld {
       this.mode === "finished"
     )
       return;
-    // Media playback avoids the ambient Web Audio channel's iOS silent-switch behaviour.
-    const session = (
-      navigator as Navigator & { audioSession?: { type: string } }
-    ).audioSession;
-    if (session) {
-      try {
-        session.type = "playback";
-      } catch {
-        /* Standard media playback still works without this API. */
-      }
-    }
     this.prepareAudio();
-    if (!this.audio) return;
-    this.audio.muted = false;
-    if (!this.audio.paused) return;
-    // play() runs synchronously within the user's tap; only its result is awaited.
-    const playback = this.audio.play();
-    await new Promise<void>((resolve, reject) => {
-      const timer = window.setTimeout(
-        () => reject(new Error("Audio playback timed out")),
-        6000,
-      );
-      playback.then(
-        () => {
-          window.clearTimeout(timer);
-          resolve();
-        },
-        (error) => {
-          window.clearTimeout(timer);
-          reject(error);
-        },
-      );
-    });
+    await this.audio?.enable();
   }
   keydown = (event: KeyboardEvent) => {
     if (
@@ -578,6 +550,14 @@ export class RallyWorld {
     if (this.keys.has("KeyW") || this.keys.has("ArrowUp")) throttle = 1;
     if (this.keys.has("KeyS") || this.keys.has("ArrowDown")) brake = 1;
     hand = hand || this.keys.has("Space");
+    if (this.audio) {
+      // Publish telemetry only; the audio mixer runs independently at 20 Hz.
+      this.audio.drive.speed = this.velocity.length();
+      this.audio.drive.throttle = throttle;
+      this.audio.drive.brake = brake;
+      this.audio.drive.sliding =
+        hand || (Math.abs(steer) > 0.6 && this.velocity.length() > 8);
+    }
     if (this.mode === "countdown") {
       this.countdown -= dt;
       if (this.countdown <= 0) this.setMode("race");
@@ -726,10 +706,6 @@ export class RallyWorld {
     this.release(this.root);
     this.renderer.dispose();
     this.renderer.domElement.remove();
-    this.audio?.pause();
-    if (this.audio) {
-      this.audio.removeAttribute("src");
-      this.audio.load();
-    }
+    this.audio?.dispose();
   }
 }
