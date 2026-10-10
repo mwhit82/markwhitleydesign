@@ -12,7 +12,7 @@ const compiled = ts.transpileModule(source, {
     module: ts.ModuleKind.ESNext,
   },
 }).outputText;
-const { RallyAudio, soundMix } = await import(
+const { RallyAudio, soundMix, crowdLevel } = await import(
   `data:text/javascript;base64,${Buffer.from(compiled).toString("base64")}`
 );
 
@@ -158,8 +158,8 @@ test("bounded audio graph: no native media rate mutations, cached decoding, paus
   try {
     assert.equal(mediaPlays, 0, "preloading must not autoplay");
     await audio.enable();
-    assert.equal(decodes, 9);
-    assert.equal(sources, 3);
+    assert.equal(decodes, 12);
+    assert.equal(sources, 4);
     assert.deepEqual(periods, [50]);
     const previous = automation;
     for (let i = 0; i < 600; i++) {
@@ -174,22 +174,31 @@ test("bounded audio graph: no native media rate mutations, cached decoding, paus
     [...timers.values()][0]();
     assert.equal(
       automation - previous,
-      5,
-      "one fixed-rate update schedules only five parameters",
+      6,
+      "one fixed-rate update schedules six parameters",
     );
     audio.setCar(2);
-    assert.equal(decodes, 9);
-    assert.equal(sources, 6);
+    assert.equal(decodes, 12);
+    assert.equal(sources, 7);
     audio.setMode("paused");
     assert.equal(timers.size, 0);
     assert.ok(mediaPauses > 0);
     audio.setMode("race");
     await audio.enable();
-    assert.equal(decodes, 9);
+    assert.equal(decodes, 12);
     assert.equal(timers.size, 1);
+    audio.setMode('celebrating');const finishSources=sources;audio.setMode('celebrating');assert.equal(sources,finishSources);
+    audio.setMode('finished');assert.equal(sources,finishSources+1);audio.setMode('finished');assert.equal(sources,finishSources+1);
+    assert.ok(audio.cheers.length<=2);audio.setMode('countdown');assert.equal(audio.cheers.length,0);
+    audio.setMode('race');audio.crowdDistance=10;
+    for(let i=1;i<8;i++){audio.context.currentTime=i*8;[...timers.values()][0]();assert.ok(audio.cheers.length<=2);}
+    audio.setMode('garage');assert.equal(audio.cheers.length,0);
     audio.dispose();
     assert.equal(timers.size, 0);
     assert.equal(closed, 1);
+    globalThis.fetch=async url=>({ok:!String(url).includes('crowd-'),arrayBuffer:async()=>new ArrayBuffer(8)});
+    const fallback=new RallyAudio(()=>assert.fail('optional crowd assets must not stop engine audio'));
+    await fallback.enable();assert.equal(fallback.layers.length,3);assert.equal(fallback.crowdLoop,null);fallback.dispose();
   } finally {
     if (!closed) audio.dispose();
     for (const [key, descriptor] of saved) {
@@ -239,4 +248,16 @@ test('idle fades away at speed and the unloaded engine stays quiet', () => {
   assert.ok(coast.load < power.load / 10);
   assert.equal(garage.load, 0);
   assert.ok(garage.idle <= .07);
+});
+
+test('crowd falloff stays subtle far away and rises near spectators',()=>{
+ assert.equal(crowdLevel(100),crowdLevel(35));assert.ok(crowdLevel(10)>crowdLevel(25));
+ assert.equal(crowdLevel(0),crowdLevel(10));assert.ok(crowdLevel(10)<.1);
+ assert.equal(soundMix({speed:0,throttle:0,brake:0,sliding:false},'finished',0).idle,0);
+});
+test('crowd assets are bounded mono PCM recordings',async()=>{
+ for(const name of ['crowd-bed','crowd-cheer','crowd-applause']){
+  const data=await readFile(new URL(`../public/rally/${name}.wav`,import.meta.url));
+  assert.equal(data.toString('ascii',0,4),'RIFF');assert.equal(data.readUInt16LE(22),1);assert.equal(data.readUInt32LE(24),22050);assert.ok(data.length<550000);
+ }
 });

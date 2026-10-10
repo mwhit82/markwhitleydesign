@@ -1,4 +1,4 @@
-import { boardKey, validSelection, type StageSelection } from './stages';
+import { boardKey, validSelection, stagePoints, checkpointIndices, type StageSelection } from './stages';
 export type GhostSource = 'off' | 'personal' | 'leader';
 export type Replay = { version:1; car:number; selection:StageSelection; time:number; samples:number[][] };
 export function replayKey(selection:StageSelection,car:number) {return `rally-replay:${boardKey(selection)}:${car}`;}
@@ -20,4 +20,21 @@ export function replayPose(r:Replay,time:number) {
 }
 export function matchingReplay(r:unknown,selection:StageSelection,car:number,time?:number):r is Replay {
  return validReplay(r)&&r.car===car&&boardKey(r.selection)===boardKey(selection)&&(time===undefined||Math.abs(r.time-time)<.001);
+}
+
+// Approximate entry times into the same seven-unit checkpoint circles, from 4 Hz samples.
+export function checkpointSplits(replay:Replay):(number|undefined)[]{
+ const points=stagePoints(replay.selection),times:(number|undefined)[]=Array(18).fill(undefined);let cursor=0;
+ for(let i=1;i<replay.samples.length&&cursor<18;i++){
+  const a=replay.samples[i-1],b=replay.samples[i],dx=b[1]-a[1],dz=b[2]-a[2],length=dx*dx+dz*dz;
+  while(cursor<18){
+   const p=points[checkpointIndices[cursor]],x=a[1]-p.x,z=a[2]-p.z,c=x*x+z*z-49;
+   const along=2*(x*dx+z*dz),disc=along*along-4*length*c;
+   const u=c<=0?0:length>0&&disc>=0?(-along-Math.sqrt(disc))/(2*length):-1;
+   if(u<0||u>1)break;
+   if(cursor===17){const previous=points[649];if(dx*(p.x-previous.x)+dz*(p.z-previous.z)<=0)break;}
+   times[cursor++]=a[0]+(b[0]-a[0])*u;
+  }
+ }
+ return times;
 }

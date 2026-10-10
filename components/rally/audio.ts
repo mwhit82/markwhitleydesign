@@ -17,7 +17,7 @@ export function soundMix(drive: DriveSound, mode: Mode, car: number) {
     rate:
       personality *
       Math.min(2.2, drive.rpm !== undefined && mode === "race" ? 0.72 + (drive.rpm - 950) / 4400 : 0.72 + speed * 0.043 + throttle * 0.42 - brake * 0.1),
-    idle: 0.07 * (1 - Math.min(speed / 9, 1)) * (1 - throttle * 0.85),
+    idle: (mode==="celebrating"||mode==="finished"?0:0.07) * (1 - Math.min(speed / 9, 1)) * (1 - throttle * 0.85),
     load: mode === "race" ? throttle * (drive.limited ? 0.06 : 0.48) + Math.min(speed / 24, 1) * 0.018 : 0,
     gravel:
       mode === "race"
@@ -33,9 +33,10 @@ const assets = [
     `recorded-car-${i}-idle`,
     `recorded-car-${i}-load`,
   ]).flat(),
-  "gravel",
+  "gravel", "crowd-bed", "crowd-cheer", "crowd-applause",
 ];
 
+export function crowdLevel(distance:number){return .012+.075*Math.max(0,Math.min(1,(35-distance)/25));}
 /** Three small decoded loops run on the audio thread. No media-rate changes, per-frame work, or live synthesis. */
 export class RallyAudio {
   private ambience = new Audio("/rally/forest-birds.wav");
@@ -45,6 +46,13 @@ export class RallyAudio {
   private preload: Promise<Map<string, ArrayBuffer> | null>;
   private decoding: Promise<void> | null = null;
   private layers: Layer[] = [];
+  private crowdLoop:Layer|null=null;
+  private cheers:Layer[]=[];
+  private finishStarted=false;
+  private arrivalStarted=false;
+  private finishUntil=0;
+  private nextCheer=0;
+  crowdDistance=Infinity;
   private interval: number | null = null;
   private abort = new AbortController();
   private generation = 0;
@@ -71,14 +79,14 @@ export class RallyAudio {
   private loadAssets() {
     return Promise.all(
       assets.map(async (name) => {
-        const response = await fetch(`/rally/${name}.wav`, {
+        try {const response = await fetch(`/rally/${name}.wav`, {
           signal: this.abort.signal,
         });
         if (!response.ok) throw new Error("Audio asset unavailable");
-        return [name, await response.arrayBuffer()] as const;
+        return [name, await response.arrayBuffer()] as const;}catch(error){if(name.startsWith('crowd-'))return null;throw error;}
       }),
     )
-      .then((entries) => new Map(entries))
+      .then((entries) => new Map(entries.filter((entry):entry is readonly [string,ArrayBuffer]=>entry!==null)))
       .catch(() => null);
   }
 
@@ -90,8 +98,7 @@ export class RallyAudio {
     await Promise.all(
       [...encoded].map(async ([name, data]) => {
         if (this.buffers.has(name)) return;
-        const buffer = await context.decodeAudioData(data.slice(0));
-        this.buffers.set(name, buffer);
+        try {const buffer = await context.decodeAudioData(data.slice(0));this.buffers.set(name, buffer);}catch(error){if(!name.startsWith("crowd-"))throw error;}
       }),
     );
   }
@@ -133,6 +140,7 @@ export class RallyAudio {
       if (generation !== this.generation || this.disposed) return;
       this.installLayers();
       this.playing = true;
+      if(!this.crowdLoop)this.crowdLoop=this.crowdSource("crowd-bed",0,true);
       this.update();
       this.interval = window.setInterval(() => this.update(), 50);
     } catch (error) {
@@ -188,9 +196,26 @@ export class RallyAudio {
     this.car = car;
     if (this.playing) this.installLayers();
   }
+  private crowdSource(name:string,volume:number,loop=false):Layer|null{
+    if(!this.context||!this.master||!this.buffers.has(name))return null;
+    const source=this.context.createBufferSource(),gain=this.context.createGain();source.buffer=this.buffers.get(name)!;source.loop=loop;gain.gain.value=volume;source.connect(gain);gain.connect(this.master);source.start();return {source,gain};
+  }
+  private cheer(name:string,volume:number){
+    if(!this.playing)return;
+    if(this.cheers.length>=2){const oldest=this.cheers.shift()!;oldest.source.stop();oldest.source.disconnect();oldest.gain.disconnect();}
+    const layer=this.crowdSource(name,volume);if(!layer)return;this.cheers.push(layer);
+    layer.source.onended=()=>{layer.source.disconnect();layer.gain.disconnect();this.cheers=this.cheers.filter(item=>item!==layer);};
+  }
+  private clearCheers(){for(const layer of this.cheers){layer.source.stop();layer.source.disconnect();layer.gain.disconnect();}this.cheers=[];}
   setMode(mode: Mode) {
-    this.mode = mode;
-    if (mode === "paused" || mode === "finished" || mode === "celebrating") this.pause();
+    if(mode===this.mode)return;
+    this.mode=mode;
+    if(mode==='garage'||mode==='countdown'){
+      this.clearCheers();this.finishStarted=false;this.arrivalStarted=false;this.finishUntil=0;this.nextCheer=(this.context?.currentTime??0)+7;
+    }
+    if(mode==='celebrating'&&!this.finishStarted){this.finishStarted=true;this.finishUntil=(this.context?.currentTime??0)+9;this.cheer('crowd-cheer',.22);}
+    if(mode==='finished'&&!this.arrivalStarted){this.arrivalStarted=true;this.finishUntil=(this.context?.currentTime??0)+6;this.cheer('crowd-applause',.22);}
+    if(mode==='paused')this.pause();
   }
   private update() {
     if (!this.playing || !this.context || this.layers.length !== 3) return;
@@ -201,6 +226,11 @@ export class RallyAudio {
     this.layers[0].gain.gain.setTargetAtTime(mix.idle, time, 0.08);
     this.layers[1].gain.gain.setTargetAtTime(mix.load, time, 0.07);
     this.layers[2].gain.gain.setTargetAtTime(mix.gravel, time, 0.1);
+    const celebration=this.mode==='celebrating'||this.mode==='finished';
+    const crowd=this.mode==='race'?crowdLevel(this.crowdDistance):celebration?.04*Math.max(0,Math.min(1,(this.finishUntil-time)/3)):0;
+    this.crowdLoop?.gain.gain.setTargetAtTime(crowd,time,.3);
+    if(this.mode==='race'&&this.crowdDistance<25&&time>=this.nextCheer){this.nextCheer=time+7;this.cheer('crowd-cheer',.10);}
+    if(celebration)for(const layer of this.cheers)layer.gain.gain.setTargetAtTime(.22*Math.max(0,Math.min(1,(this.finishUntil-time)/2)),time,.3);
   }
   pause() {
     this.generation++;
@@ -220,7 +250,8 @@ export class RallyAudio {
       layer.source.disconnect();
       layer.gain.disconnect();
     }
-    this.layers = [];
+    this.layers = [];this.clearCheers();
+    if(this.crowdLoop){this.crowdLoop.source.stop();this.crowdLoop.source.disconnect();this.crowdLoop.gain.disconnect();this.crowdLoop=null;}
     void this.context?.close();
     this.ambience.removeAttribute("src");
     this.ambience.load();

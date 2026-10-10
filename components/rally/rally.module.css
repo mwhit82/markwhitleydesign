@@ -178,3 +178,21 @@
 @media (prefers-reduced-motion:reduce) {
  .game button,.revs > div,.progress > div {transition:none;}.checkpointToast {animation:none;}
 }
+
+/* Weather remains below instruments and never receives input. */
+.screenWeather {position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:1;}
+.timer,.speed {z-index:2;}
+.screenWeather i {position:absolute;top:-10%;display:block;will-change:transform,opacity;animation-timing-function:linear;animation-iteration-count:infinite;}
+.screenRain i {width:7px;height:32px;border-radius:65% 35% 55% 45%;border:1px solid #ffffff35;background:linear-gradient(90deg,#bcd9ee05,#e9f7ff30,#ffffff05);animation-name:lensRain;}
+.screenSnow i {width:7px;height:7px;background:#fff;border-radius:50%;animation-name:lensSnow;}
+@keyframes lensRain {0%{transform:translate(0,-20px);opacity:0;}15%{opacity:.5;}85%{opacity:.35;}100%{transform:translate(-16px,100vh);opacity:0;}}
+@keyframes lensSnow {0%{transform:translate(0,-20px) scale(.6);opacity:0;}15%{opacity:.6;}85%{opacity:.5;}100%{transform:translate(45px,100vh) scale(1.4);opacity:0;}}
+.screenWeather[data-paused=true] i {animation-play-state:paused;}
+.ahead {color:#246d4b!important;}.behind {color:#98532a!important;}
+.pauseSettings {grid-template-columns:repeat(4,1fr);}
+@media (max-height:540px) and (orientation:landscape){.stageChoices {grid-template-columns:repeat(3,1fr);}.stageChoices button{min-height:45px;}.garage{padding-top:10px;padding-bottom:10px;}.garage .carChoice{margin-top:8px;}.garage .start{margin-top:8px;min-height:44px;}.garage .garageLinks{margin-top:6px;}}
+@media (prefers-reduced-motion:reduce){.screenWeather{display:none;}}
+.garage,.garageCopy {z-index:2;}
+@media (max-height:440px) and (orientation:landscape){.garage .menuEyebrow{display:none;}.garage .stageChoices{margin-top:8px!important;}.garage .ghostStatus{margin-top:4px;}.garage .garageLinks{margin-top:0;}.garage .start{margin-top:4px;}}
+
+.game:not([data-time=midday]) .garageCopy {color:#f4ead4;text-shadow:0 2px 4px #13251c70;}

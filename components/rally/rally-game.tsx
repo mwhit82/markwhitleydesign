@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { cars, formatTime, type Mode } from "./data";
 import styles from "./rally.module.css";
-import { stages, initialStage, stageDefinition, weatherNames, type StageSelection, type Weather } from "./stages";
+import { stages, initialStage, stageDefinition, weatherNames, timesOfDay, timeNames, timeOfDay, type TimeOfDay, type StageSelection, type Weather } from "./stages";
 import { Leaderboard, type RaceResult } from "./leaderboard";
 import { HudIcon } from "./ui";
 import { reasonText, type CheckpointNotice, type RunReason } from "./checkpoints";
@@ -30,9 +30,12 @@ export function RallyGame() {
   const [ready, setReady] = useState(false);
   const [error, setError] = useState("");
   const [muted, setMuted] = useState(true);
+  const [screenWeather,setScreenWeather]=useState(true);
+  useEffect(()=>{try{setScreenWeather(localStorage.getItem("rally-screen-weather")!=="off");}catch{}},[]);
+  const toggleScreenWeather=()=>{setScreenWeather(on=>{try{localStorage.setItem("rally-screen-weather",on?"off":"on");}catch{}return !on;});};
   const [checkpointNotices,setCheckpointNotices]=useState<CheckpointNotice[]>([]);
   const [practice,setPractice]=useState<RunReason[]>([]);
-  const [optionPanel,setOptionPanel]=useState<'stage'|'weather'|'direction'|'ghost'|null>(null);
+  const [optionPanel,setOptionPanel]=useState<'stage'|'weather'|'direction'|'ghost'|'time'|null>(null);
   const optionOpener=useRef<HTMLButtonElement|null>(null);
   const menuAction=useRef<(action:'next'|'previous'|'activate'|'back')=>void>(()=>{});
   const [stats, setStats] = useState({
@@ -91,7 +94,7 @@ export function RallyGame() {
             if (isMuted) setNotice("Audio stopped. Tap Sound to retry.");
           },
         });
-        setGhostSource(api.current.ghostSource);
+        setGhostSource(api.current.ghostSource);setSelection({...api.current.selection});
         setReady(true);
       })
       .catch(() =>
@@ -209,17 +212,19 @@ export function RallyGame() {
   const stage = stageDefinition(selection);
   const changeStage = (next: StageSelection) => {
     setSelection(next);setResult(null);api.current?.configure(next);
+    try{localStorage.setItem("rally-time-of-day",timeOfDay(next));}catch{}
   };
   const mainMenu=()=>{setLeaderboard(false);setOptionPanel(null);setResult(null);run.current=Promise.resolve(null);api.current?.garage();};
   const openOptions=(panel:NonNullable<typeof optionPanel>,button:HTMLButtonElement)=>{optionOpener.current=button;setOptionPanel(panel);};
   const closeOptions=()=>{setOptionPanel(null);requestAnimationFrame(()=>optionOpener.current?.focus());};
-  const optionTitle=optionPanel==='stage'?'Choose stage':optionPanel==='weather'?'Choose weather':optionPanel==='direction'?'Route direction':'Ghost rival';
-  const options=optionPanel==='stage'?stages.map(s=>({value:s.id,label:s.name,detail:s.surface,selected:selection.stage===s.id})):
+  const optionTitle=optionPanel==='time'?'Time of day':optionPanel==='stage'?'Choose stage':optionPanel==='weather'?'Choose weather':optionPanel==='direction'?'Route direction':'Ghost rival';
+  const options=optionPanel==='time'?timesOfDay.map(t=>({value:t,label:timeNames[t],detail:t==='night'?'Moonlight and headlights':t==='midday'?'Bright skies':t==='sunrise'?'First light':'Golden hour',selected:timeOfDay(selection)===t})):optionPanel==='stage'?stages.map(s=>({value:s.id,label:s.name,detail:s.surface,selected:selection.stage===s.id})):
     optionPanel==='weather'?stage.conditions.map(w=>({value:w,label:weatherNames[w],detail:w==='clear'?'Open skies':w==='fog'||w==='haze'?'Reduced visibility':'Changing conditions',selected:selection.weather===w})):
     optionPanel==='direction'?[{value:'forward',label:'Forward',detail:'Original route',selected:!selection.reverse},{value:'reverse',label:'Reverse',detail:'Same stage, other direction',selected:selection.reverse}]:
     [{value:'off',label:'Off',detail:'Just you and the stage',selected:ghostSource==='off'},{value:'personal',label:'My best',detail:'Your fastest clean run on this device',selected:ghostSource==='personal'},{value:'leader',label:'Leaderboard best',detail:'Fastest submitted run · same car and conditions',selected:ghostSource==='leader'}];
   const selectOption=(value:string)=>{
-    if(optionPanel==='stage')changeStage({stage:value as StageSelection['stage'],weather:'clear',reverse:selection.reverse});
+    if(optionPanel==='stage')changeStage({...selection,stage:value as StageSelection['stage'],weather:'clear'});
+    if(optionPanel==='time')changeStage({...selection,timeOfDay:value as TimeOfDay});
     if(optionPanel==='weather')changeStage({...selection,weather:value as Weather});
     if(optionPanel==='direction')changeStage({...selection,reverse:value==='reverse'});
     if(optionPanel==='ghost'){setGhostSource(value as GhostSource);setGhostShown(true);api.current?.setGhost(value as GhostSource);}
@@ -251,18 +256,19 @@ export function RallyGame() {
     <div className={styles.page}>
       <div className={styles.heading}>
         <div>
-          <p className={styles.eyebrow}>MARK WHITLEY / POCKET RALLY V2.2.1</p>
+          <p className={styles.eyebrow}>MARK WHITLEY / POCKET RALLY V2.3</p>
           <h1>
             POCKET<span>RALLY.</span>
           </h1>
         </div>
         <div className={styles.stageInfo}>
           <b>{stage.name.toUpperCase()}</b>
-          <span>{stage.surface} · {weatherNames[selection.weather]} · {selection.reverse?"Reverse":"Forward"}</span>
+          <span>{stage.surface} · {weatherNames[selection.weather]} · {timeNames[timeOfDay(selection)]} · {selection.reverse?"Reverse":"Forward"}</span>
         </div>
       </div>
       <div
         ref={game}
+        data-time={timeOfDay(selection)}
         className={`${styles.game} ${expanded ? styles.expanded : ""}`}
         onContextMenu={(event) => event.preventDefault()}
         onKeyDown={event=>{
@@ -281,6 +287,9 @@ export function RallyGame() {
           className={styles.canvas}
           aria-label="Isometric clay rally driving stage"
         />
+        {screenWeather&&(selection.weather==='rain'||selection.weather==='snow') && <div aria-hidden="true" className={`${styles.screenWeather} ${selection.weather==='rain'?styles.screenRain:styles.screenSnow}`} data-paused={mode==='paused'}>
+          {Array.from({length:selection.weather==='rain'?8:12},(_,i)=><i key={i} style={{left:`${i%2===0?2+(i*7)%19:78+(i*7)%19}%`,animationDelay:`${-i*1.3}s`,animationDuration:`${selection.weather==='rain'?5+i%3:8+i%4}s`}}/>)}
+        </div>}
         <div className={styles.topbar} aria-label="Game controls">
           {(mode==='race'||mode==='countdown') && <button aria-label="Pause" title="Pause" onClick={()=>api.current?.pause()}><HudIcon name="pause"/></button>}
           <button disabled={!ready||audioBusy} aria-label={muted?'Enable sound':'Mute sound'} title={muted?'Enable sound':'Mute sound'} aria-pressed={!muted} onClick={toggleSound}><HudIcon name={muted?'muted':'sound'}/></button>
@@ -349,7 +358,7 @@ export function RallyGame() {
                 Big sideways.
               </h2>
               <p>
-                Four worlds. Twenty-four ways to race.
+                Four worlds. Ninety-six ways to race.
                 <br />Find your place on the leaderboard.
               </p>
             </div>
@@ -379,8 +388,10 @@ export function RallyGame() {
               <div className={styles.stageChoices}>
                 <button onClick={e=>openOptions('stage',e.currentTarget)}><small>STAGE</small><strong>{stage.name}</strong><span>{stage.surface} ↗</span></button>
                 <button onClick={e=>openOptions('weather',e.currentTarget)}><small>WEATHER</small><strong>{weatherNames[selection.weather]}</strong><span>↗</span></button>
+                <button onClick={e=>openOptions('time',e.currentTarget)}><small>TIME OF DAY</small><strong>{timeNames[timeOfDay(selection)]}</strong><span>↗</span></button>
                 <button onClick={e=>openOptions('direction',e.currentTarget)}><small>ROUTE</small><strong>{selection.reverse?'Reverse':'Forward'}</strong><span>↗</span></button>
                 <button onClick={e=>openOptions('ghost',e.currentTarget)}><small>GHOST</small><strong>{ghostSource==='off'?'Off':ghostSource==='personal'?'My best':'Leaderboard'}</strong><span>↗</span></button>
+                <button aria-pressed={screenWeather} onClick={toggleScreenWeather}><small>SCREEN WEATHER</small><strong>{screenWeather?"On":"Off"}</strong></button>
               </div>
               <small className={styles.ghostStatus} role="status">{ghostStatus}</small>
               <div className={styles.garageLinks}><button className={styles.boardButton} onClick={()=>setLeaderboard(true)}>Leaderboard ↗</button><Link href="/playground">Back to Playground ↗</Link></div>
@@ -448,13 +459,14 @@ export function RallyGame() {
             <div className={styles.pauseCard}>
               <span className={styles.tag}>SERVICE BREAK</span>
               <h2>PAUSED<span>.</span></h2>
-              <p>{stage.name} / {formatTime(stats.time)}</p>
+              <p>{stage.name} · {timeNames[timeOfDay(selection)]} / {formatTime(stats.time)}</p>
               <button className={styles.start} data-menu-default="true" onClick={()=>api.current?.pause()}>RESUME <span>→</span></button>
               <button className={styles.menuButton} onClick={()=>api.current?.start()}>Restart stage <span>↻</span></button>
               <button className={styles.menuButton} onClick={mainMenu}>Main menu <small>Ends this run</small></button>
               <div className={styles.pauseSettings}>
                 <button disabled={audioBusy} aria-pressed={!muted} onClick={toggleSound}><HudIcon name={muted?'muted':'sound'}/>{muted?'Sound off':'Sound on'}</button>
                 <button disabled={ghostSource==='off'} aria-pressed={ghostShown&&ghostSource!=='off'} onClick={()=>api.current?.toggleGhost()}><HudIcon name="ghost"/>Ghost {ghostShown&&ghostSource!=='off'?'on':'off'}</button>
+                <button aria-pressed={screenWeather} onClick={toggleScreenWeather}>Screen weather {screenWeather?"on":"off"}</button>
                 <button onClick={toggleFullscreen}><HudIcon name={expanded?'contract':'expand'}/>{expanded?'Exit view':'Fullscreen'}</button>
               </div>
             </div>
@@ -466,7 +478,7 @@ export function RallyGame() {
               {result?.eligible ? 'STAGE COMPLETE' : 'PRACTICE FINISH'}
             </span>
             <h2>{formatTime(result?.time ?? stats.time)}</h2>
-            <p>{car.name} · {stage.name} · {weatherNames[selection.weather]} · {selection.reverse?"Reverse":"Forward"}</p>
+            <p>{car.name} · {stage.name} · {weatherNames[selection.weather]} · {timeNames[timeOfDay(selection)]} · {selection.reverse?"Reverse":"Forward"}</p>
             {result && !result.eligible && <p className={styles.practiceReason}>{result.reasons.map(r=>reasonText[r]).join(" · ")} — time shown, not ranked.</p>}
             <p>Personal best: {best ? formatTime(best) : "—"}</p>
             <button onClick={()=>setLeaderboard(true)}>{result?.eligible?"Submit time & leaderboard ↗":"View leaderboard ↗"}</button>
@@ -482,7 +494,7 @@ export function RallyGame() {
         {(mode==='race'||mode==='paused'||mode==='celebrating') && <div className={styles.checkpointStack} data-paused={mode==='paused'} aria-live="polite" aria-atomic="false">
           {checkpointNotices.map(n=><div key={n.id} className={`${styles.checkpointToast} ${n.outcome==='missed'?styles.missedToast:''}`} style={{animationDuration:`${n.duration}s`}}>
             <span className={styles.checkpointSymbol}>{n.outcome==='missed'?'!':'✓'}</span>
-            <div><strong>{n.outcome==='missed'?'MISSED CHECKPOINT':'CHECKPOINT'} {String(n.checkpoints[0]).padStart(2,'0')}{n.checkpoints.length>1?`–${String(n.checkpoints.at(-1)).padStart(2,'0')}`:n.outcome==='accepted'?'/18':''}</strong><small>{n.outcome==='missed'?'Practice run':formatTime(n.time)}</small></div>
+            <div><strong>{n.outcome==='missed'?'MISSED CHECKPOINT':'CHECKPOINT'} {String(n.checkpoints[0]).padStart(2,'0')}{n.checkpoints.length>1?`–${String(n.checkpoints.at(-1)).padStart(2,'0')}`:n.outcome==='accepted'?'/18':''}</strong><small>{n.outcome==='missed'?'Practice run':formatTime(n.time)}</small>{n.delta!==undefined&&<small className={n.delta<=0?styles.ahead:styles.behind}>≈ {n.delta<=0?'−':'+'}{Math.abs(n.delta).toFixed(2)} {n.delta<=0?'ahead':'behind'}</small>}</div>
           </div>)}
         </div>}
         {optionPanel && <div className={styles.optionScrim}><div className={styles.optionPanel} role="dialog" aria-modal="true" aria-label={optionTitle} data-rally-menu="true">

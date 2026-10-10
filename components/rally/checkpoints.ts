@@ -4,8 +4,8 @@ export type Eligibility = {eligible:boolean; reasons:RunReason[]};
 export const reasonText:Record<RunReason,string> = {
  'missed-checkpoint':'Missed checkpoint', 'car-recovered':'Car recovered', 'time-limit':'Over the ten-minute ranked limit',
 };
-export type CheckpointEvent = {checkpoint:number; outcome:'accepted'|'missed'; time:number};
-export type CheckpointNotice = {id:number; checkpoints:number[]; outcome:CheckpointEvent['outcome']; time:number; duration:number; remaining:number};
+export type CheckpointEvent = {checkpoint:number; outcome:'accepted'|'missed'; time:number; delta?:number};
+export type CheckpointNotice = {id:number; checkpoints:number[]; outcome:CheckpointEvent['outcome']; time:number; delta?:number; duration:number; remaining:number};
 export function segmentDistance(a:Point,b:Point,p:Point){
  const dx=b.x-a.x,dz=b.z-a.z,length=dx*dx+dz*dz;
  const t=length?Math.max(0,Math.min(1,((p.x-a.x)*dx+(p.z-a.z)*dz)/length)):0;
@@ -50,7 +50,7 @@ export class CheckpointNotifications {
   const accepted=events.filter(e=>e.outcome==='accepted').at(-1);
   const incoming:CheckpointNotice[]=[];
   if(missed.length)incoming.push({id:++this.nextId,checkpoints:missed.map(e=>e.checkpoint),outcome:'missed',time:missed[0].time,duration:4,remaining:4});
-  if(accepted)incoming.push({id:++this.nextId,checkpoints:[accepted.checkpoint],outcome:'accepted',time:accepted.time,duration:2,remaining:2});
+  if(accepted)incoming.push({id:++this.nextId,checkpoints:[accepted.checkpoint],outcome:'accepted',time:accepted.time,delta:accepted.delta,duration:2,remaining:2});
   const all=[...this.items,...incoming];
   this.items=[...all.filter(n=>n.outcome==='missed').slice(-2),...all.filter(n=>n.outcome==='accepted').slice(-2).reverse()].slice(0,2);
  }

@@ -7,16 +7,20 @@ export const stages = [
 ] as const;
 export type StageId = typeof stages[number]['id'];
 export type Weather = 'clear'|'rain'|'fog'|'snow'|'wind'|'haze';
-export type StageSelection = { stage: StageId; weather: Weather; reverse: boolean };
+export const timesOfDay = ['sunrise','midday','sunset','night'] as const;
+export type TimeOfDay = typeof timesOfDay[number];
+export const timeNames:Record<TimeOfDay,string>={sunrise:'Sunrise',midday:'Midday',sunset:'Sunset',night:'Night'};
+export type StageSelection = { stage: StageId; weather: Weather; reverse: boolean; timeOfDay?:TimeOfDay };
+export function timeOfDay(s:StageSelection):TimeOfDay{return s.timeOfDay??'midday';}
 export const initialStage: StageSelection = {stage:'forest',weather:'clear',reverse:false};
 export const weatherNames: Record<Weather,string> = {clear:'Clear',rain:'Rain',fog:'Fog',snow:'Snowfall',wind:'Wind',haze:'Dust haze'};
 export function stageDefinition(selection: StageSelection) { return stages.find(s=>s.id===selection.stage)!; }
 export function validSelection(value: unknown): value is StageSelection {
   if(!value || typeof value !== 'object') return false;
   const s=value as StageSelection;
-  return typeof s.reverse==='boolean' && stages.some(stage=>stage.id===s.stage && (stage.conditions as readonly string[]).includes(s.weather));
+  return (s.timeOfDay===undefined || timesOfDay.includes(s.timeOfDay)) && typeof s.reverse==='boolean' && stages.some(stage=>stage.id===s.stage && (stage.conditions as readonly string[]).includes(s.weather));
 }
-export function boardKey(s: StageSelection) { return `v2:${s.stage}:${s.weather}:${s.reverse?'reverse':'forward'}`; }
+export function boardKey(s: StageSelection) { const key=`v2:${s.stage}:${s.weather}:${s.reverse?'reverse':'forward'}`;return timeOfDay(s)==='midday'?key:`${key}:${timeOfDay(s)}`; }
 export function stagePoints(selection: StageSelection) {
   const points = new CatmullRomCurve3(stageDefinition(selection).points.map(([x,z])=>new Vector3(x,0,z)),false,'catmullrom',.4).getSpacedPoints(650);
   return selection.reverse ? points.reverse() : points;

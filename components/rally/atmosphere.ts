@@ -106,6 +106,7 @@ export class Atmosphere {
   for(let i=0;i<100;i++)this.confetti.setColorAt(i,new T.Color(colors[i%6]));
   this.confetti.visible=false;this.group.add(this.floor,this.confetti);
  }
+ crowdDistance(car:T.Vector3){let distance=Infinity;for(const p of this.spectators)distance=Math.min(distance,Math.hypot(car.x-p.x,car.z-p.z));return distance;}
  reserved(x:number,z:number) {
   const p=new T.Vector3(x,0,z);
   return p.distanceTo(this.layout.center)<15 || this.reservedPath.some(q=>p.distanceTo(q)<10);

@@ -167,3 +167,41 @@ non-colliding decorations. Photographers stay roadside. Reduced motion keeps
 supporters off the road; pause freezes movement and restarting resets them.
 The existing instanced crowd meshes are reused without additional crowd draw
 calls. Regression coverage includes fast approaches, reset and reduced motion.
+
+
+### Checkpoints, weather, light and crowd audio (V2.3)
+
+Accepted checkpoint flags retain a green check; missed flags retain an amber
+warning. A shared pool limits checkpoint confetti to 96 pieces. HUD split times
+compare against the selected ghost (personal best when ghosts are off), with
+reference entry times interpolated from 4 Hz samples. These approximate splits
+do not change official finish timing. Missing recordings show elapsed time only.
+
+Stage selections now accept optional `timeOfDay`: sunrise, midday, sunset, night.
+Missing values resolve to midday. Midday keeps the existing board/replay/local-PB
+keys; other times append the lighting preset to those keys. GET leaderboard and
+ghost requests accept `timeOfDay`; start metadata and replay selection carry it.
+There are 96 configurations, without a record migration or leaderboard reset.
+
+Camera-centred precipitation uses one draw call: 400 line-segment raindrops or
+180 snowflakes, halved for reduced motion. Screen weather is remembered and
+switchable; reduced motion hides it. It is non-interactive and sits behind the
+HUD. Two shadow-free headlights follow the car at dusk, dawn and night; ghosts
+have no light sources. The existing sun remains the sole shadow-casting light.
+
+Crowd audio uses three CC0 recordings credited in public/rally/audio-credits.txt.
+One quiet crowd loop responds to spectator distance; at most two cheer samples
+can overlap. Finish cheer and arrival applause each trigger once, including
+practice finishes. Restart/menu clear them and pause suspends playback. Optional
+crowd download/decode failures preserve engine playback. Samples decode once;
+volume updates remain on the existing 20 Hz audio timer, not the render loop.
+
+Verification covers 96 valid boards/traces/lighting presets, legacy midday
+records and ghost isolation, splits, flag reset/deduplication, particle limits,
+weather buffer reuse, crowd source limits and missing crowd downloads. Browser
+checks covered night rain, night snow, sunset fog and desert sunrise, including
+844x390, 393x852 and 1024x768 layouts. In the same Alpine night view, snowfall
+measured 653 calls/89,292 triangles/180 points versus 652/89,292/0 when hidden:
+one draw call, matching the previous weather layer's draw-call count. Rain uses
+400 lines instead of the old 180 points; headlights add shader lighting work but
+no shadow passes. These are desktop measurements, not physical iPhone FPS tests.

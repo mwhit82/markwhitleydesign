@@ -6,17 +6,17 @@ const compile=s=>ts.transpileModule(s,{compilerOptions:{module:ts.ModuleKind.ESN
 const uri=s=>`data:text/javascript;base64,${Buffer.from(s).toString('base64')}`;
 const stageCode=compile(await readFile(new URL('../components/rally/stages.ts',import.meta.url),'utf8')).replace("from 'three'",`from '${import.meta.resolve('three')}'`);
 const stageUri=uri(stageCode);
-const {stages,stagePoints,boardKey,validSelection,surfaceGrip}=await import(stageUri);
+const {stages,stagePoints,boardKey,validSelection,surfaceGrip,timesOfDay}=await import(stageUri);
 const replayCode=compile(await readFile(new URL('../components/rally/replay.ts',import.meta.url),'utf8')).replace("'./stages'",JSON.stringify(stageUri));
 const replayUri=uri(replayCode);
-const {validReplay,replayPose,matchingReplay}=await import(replayUri);
+const {validReplay,replayPose,matchingReplay,checkpointSplits}=await import(replayUri);
 const checkpointUri=uri(compile(await readFile(new URL('../components/rally/checkpoints.ts',import.meta.url),'utf8')));
 const validation=compile(await readFile(new URL('../lib/rally/validation.ts',import.meta.url),'utf8')).replace("'../../components/rally/stages'",JSON.stringify(stageUri)).replace('"../../components/rally/replay"',JSON.stringify(replayUri)).replace("'../../components/rally/checkpoints'",JSON.stringify(checkpointUri));
 const {validateRun,validName,replayAgrees}=await import(uri(validation));
-test('24 unique configurations, reversed endpoints, bounded roads and valid completion traces',()=>{
+test('96 unique configurations, reversed endpoints, bounded roads and valid completion traces',()=>{
  const keys=new Set();
- for(const stage of stages) for(const weather of stage.conditions) for(const reverse of [false,true]) {
-  const selection={stage:stage.id,weather,reverse};
+ for(const stage of stages) for(const weather of stage.conditions) for(const reverse of [false,true]) for(const timeOfDay of timesOfDay) {
+  const selection={stage:stage.id,weather,reverse,timeOfDay};
   assert.ok(validSelection(selection));keys.add(boardKey(selection));
   const points=stagePoints(selection),opposite=stagePoints({...selection,reverse:!reverse});
   assert.ok(points[0].distanceTo(opposite.at(-1))<.001);
@@ -27,7 +27,7 @@ test('24 unique configurations, reversed endpoints, bounded roads and valid comp
   assert.equal(validateRun(selection,time,trace.slice(50),time+3),false);
   assert.equal(validateRun(selection,time,trace,time-4),false);
  }
- assert.equal(keys.size,24);
+ assert.equal(keys.size,96);
 });
 test('reject invalid conditions and names; wet roads reduce grip',()=>{
  assert.equal(validSelection({stage:'desert',weather:'snow',reverse:false}),false);
@@ -85,4 +85,22 @@ test('fans venture out only with a clear road and retreat before a fast approach
  a.reset();assert.ok(a.spectators.every(p=>p.progress===0));
  a.reduced=true;a.update(2,4,new (a.layout.center.constructor)(500,0,500),0,true);
  assert.ok(a.spectators.every(p=>p.progress===0));
+});
+
+test('legacy records stay midday; lighting records and ghosts never cross boards',()=>{
+ const selection={stage:'forest',weather:'clear',reverse:false};
+ assert.equal(boardKey(selection),boardKey({...selection,timeOfDay:'midday'}));
+ assert.notEqual(boardKey(selection),boardKey({...selection,timeOfDay:'night'}));
+ assert.equal(validSelection({...selection,timeOfDay:'noon'}),false);
+ const replay={version:1,car:0,selection,time:1,samples:[[0,0,0,0],[1,0,0,0]]};
+ assert.equal(matchingReplay(replay,{...selection,timeOfDay:'midday'},0),true);
+ assert.equal(matchingReplay(replay,{...selection,timeOfDay:'night'},0),false);
+});
+test('reference splits interpolate checkpoint entry once and survive legacy recordings',()=>{
+ const selection={stage:'forest',weather:'clear',reverse:false},points=stagePoints(selection);
+ const samples=points.map((p,i)=>[i*.1,p.x,p.z,0]);
+ const splits=checkpointSplits({version:1,car:0,selection,time:65,samples});
+ assert.equal(splits.length,18);assert.ok(splits.every(Number.isFinite));
+ for(let i=1;i<18;i++)assert.ok(splits[i]>splits[i-1]);
+ assert.ok(splits[0]>0&&splits.at(-1)<=65);
 });

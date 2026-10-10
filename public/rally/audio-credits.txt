@@ -28,3 +28,17 @@ https://creativecommons.org/publicdomain/zero/1.0/
 Downloaded 10 October 2026. Trimmed, converted to mono 22050 Hz,
 loop-crossfaded and reduced in level. Rebuild on macOS with
 python3 scripts/prepare-rally-forest.py.
+
+Crowd recordings (all CC0 1.0 Universal):
+- Crowd Shouting/Speaking Ambience by StarNinjas
+  https://opengameart.org/content/crowd-shoutingspeaking-ambience
+  https://opengameart.org/users/starninjas
+- Cheers by Nocturnal_Vanguard / AuraVoice
+  https://opengameart.org/content/cheers-0
+- Applause in a large hall or church by eXpl0it3r
+  https://opengameart.org/content/applause-in-a-large-hall-or-church
+Licence: https://creativecommons.org/publicdomain/zero/1.0/
+Downloaded 10 October 2026. Trimmed, level-normalised, converted to mono
+22050 Hz; the background crowd is softened and loop-crossfaded.
+Sources retained in scripts/audio-source. Rebuild with
+python3 scripts/prepare-rally-crowd.py (numpy and soundfile).

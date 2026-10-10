@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from 'react';
 import { cars, formatTime } from './data';
-import { boardKey, stageDefinition, weatherNames, type StageSelection } from './stages';
+import { boardKey, stageDefinition, weatherNames, timeOfDay, timeNames, type StageSelection } from './stages';
 import styles from './rally.module.css';
 import {reasonText, type Eligibility} from "./checkpoints";
 import type { Replay } from "./replay";
@@ -21,7 +21,7 @@ export function Leaderboard({selection,result,onClose}:{selection:StageSelection
   const [revision,setRevision]=useState(0);
   const key=boardKey(selection);
   useEffect(()=>{try {setName(localStorage.getItem('rally-name')||'');} catch {}},[]);
-  const query=new URLSearchParams({stage:selection.stage,weather:selection.weather,reverse:String(selection.reverse),...(filter?{car:filter}:{})}).toString();
+  const query=new URLSearchParams({stage:selection.stage,weather:selection.weather,reverse:String(selection.reverse),timeOfDay:timeOfDay(selection),...(filter?{car:filter}:{})}).toString();
   useEffect(()=>{
     const abort=new AbortController();
     setLoading(true); setError(''); setEntries([]); setMe(null); setMore(false);
@@ -53,7 +53,7 @@ export function Leaderboard({selection,result,onClose}:{selection:StageSelection
   };
   const row=(entry:Entry)=><><b>#{entry.rank}</b><span>{entry.name}{entry.mine?' · You':''}<small>{cars[entry.car]?.name || 'Rally car'}</small></span><strong>{formatTime(entry.time)}</strong></>;
   return <div className={styles.leaderboard} data-rally-menu="true" role="dialog" aria-modal="true" aria-label="Stage leaderboard" onKeyDown={e=>{if(e.key==='Escape'){e.stopPropagation();onClose();}}}>
-    <header><div><span className={styles.tag}>STAGE LEADERBOARD</span><h2>{stageDefinition(selection).name}</h2><p>{weatherNames[selection.weather]} · {selection.reverse?'Reverse':'Forward'}</p></div><button autoFocus onClick={onClose} aria-label="Close leaderboard">Close ×</button></header>
+    <header><div><span className={styles.tag}>STAGE LEADERBOARD</span><h2>{stageDefinition(selection).name}</h2><p>{weatherNames[selection.weather]} · {timeNames[timeOfDay(selection)]} · {selection.reverse?'Reverse':'Forward'}</p></div><button autoFocus onClick={onClose} aria-label="Close leaderboard">Close ×</button></header>
     {result && !submitted && (result.eligible && result.trace.length ? <form onSubmit={submit}><label>Driver name<input value={name} onChange={e=>setName(e.target.value)} minLength={2} maxLength={20} required placeholder="Your name" autoComplete="nickname" /></label><button disabled={busy||loading||Boolean(error)} type="submit">{busy?'Submitting…':`Submit ${formatTime(result.time)}`}</button><small>Public name · best time per driver on this browser. Clearing cookies or switching devices creates a new driver.</small></form>:<p>{result.reasons.map(r=>reasonText[r]).join(" · ")}. Practice time: {formatTime(result.time)}. Complete a clean run to rank.</p>)}
     {message&&<p role="status">{message}</p>}
     <label className={styles.boardFilter}>Show<select value={filter} onChange={e=>setFilter(e.target.value)} disabled={loading}><option value="">All cars</option>{cars.map((c,i)=><option value={i} key={c.name}>{c.name}</option>)}</select></label>
