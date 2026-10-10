@@ -1,4 +1,4 @@
-"""Generate original, deterministic rally sound layers; no external recordings."""
+"""Prepare recorded CC0 engine layers and original ambience; see public/rally/audio-credits.txt."""
 import math, random, struct, wave
 from pathlib import Path
 RATE = 22050
@@ -13,20 +13,41 @@ def save(name, data, peak=None):
     with wave.open(str(OUT / name), 'wb') as f:
         f.setparams((1, 2, RATE, 0, 'NONE', 'not compressed'))
         f.writeframes(b''.join(struct.pack('<h', int(max(-.95, min(.95, v)) * 32767)) for v in data))
-for car, frequency in enumerate([22, 26, 24, 28]):
-    offsets = [0, .20, .5, .70] if car == 0 else [0, .25, .5, .75]
+# CC0 recording by domasx2, derived from a public-domain car recording.
+# Offline processing only: periodic resampling, DC removal, EQ and saturation.
+source = Path(__file__).resolve().parent / 'audio-source' / 'car-engine-cc0.wav'
+with wave.open(str(source), 'rb') as recording:
+    assert recording.getsampwidth() == 2
+    channels = recording.getnchannels()
+    source_rate = recording.getframerate()
+    raw = struct.unpack('<' + 'h' * (recording.getnframes() * channels), recording.readframes(recording.getnframes()))
+    original = [sum(raw[i:i+channels]) / channels / 32768 for i in range(0, len(raw), channels)]
+mean = sum(original) / len(original)
+original = [x - mean for x in original]
+peak = max(abs(x) for x in original)
+original = [x / peak for x in original]
+# Equal-power overlap softens the original recording's loop boundary.
+fade = min(int(source_rate * .025), len(original) // 8)
+body = original[fade:-fade]
+join = [original[-fade+i] * (1-i/fade) + original[i] * (i/fade) for i in range(fade)]
+original = body + join
+for car, pitch in enumerate([.88, 1.04, .98, 1.12]):
+    length = round(len(original) * RATE / source_rate / pitch)
+    sampled = []
+    for i in range(length):
+        pos = i * len(original) / length
+        lo = int(pos)
+        sampled.append(original[lo] * (1-(pos-lo)) + original[(lo+1) % len(original)] * (pos-lo))
     for loaded in [False, True]:
+        low = 0
         data = []
-        filtered = 0
-        for i in range(RATE * 2):
-            t = i / RATE
-            phase = (t * frequency) % 1
-            exhaust = sum((1 if j % 2 == 0 else .72 + .06 * car) * math.exp(-((phase - offset) % 1) * (42 if loaded else 65)) for j, offset in enumerate(offsets))
-            texture = sum(math.sin(2 * math.pi * h * t + h * .13) for h in [743 + car * 13, 1093, 1777, 2311]) / 4
-            raw = exhaust * (1 + (.20 if loaded else .08) * texture) + .045 * math.sin(2 * math.pi * frequency * 2 * t)
-            filtered += (.36 if loaded else .16) * (raw - filtered)
-            data.append(math.tanh(filtered * (2.8 if loaded else 1.8)))
-        save(f'car-{car}-{"load" if loaded else "idle"}.wav', data[RATE:], .68 if loaded else .48)
+        for i in range(length * 3):
+            value = sampled[i % length]
+            low += (.2 if loaded else .09) * (value-low)
+            shaped = low + (value-low) * ([.85, 1.2, .65, 1.05][car] if loaded else .14)
+            value = math.tanh(shaped * (1.8 if loaded else .9))
+            if i >= length * 2: data.append(value)
+        save(f'recorded-car-{car}-{"load" if loaded else "idle"}.wav', data, .68 if loaded else .48)
 rng = random.Random(82)
 noise = []; low = 0
 for i in range(RATE):

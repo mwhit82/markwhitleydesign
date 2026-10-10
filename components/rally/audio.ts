@@ -30,8 +30,8 @@ export function soundMix(drive: DriveSound, mode: Mode, car: number) {
 type Layer = { source: AudioBufferSourceNode; gain: GainNode };
 const assets = [
   ...Array.from({ length: 4 }, (_, i) => [
-    `car-${i}-idle`,
-    `car-${i}-load`,
+    `recorded-car-${i}-idle`,
+    `recorded-car-${i}-load`,
   ]).flat(),
   "gravel",
 ];
@@ -160,8 +160,8 @@ export class RallyAudio {
       };
     }
     this.layers = [
-      `car-${this.car}-idle`,
-      `car-${this.car}-load`,
+      `recorded-car-${this.car}-idle`,
+      `recorded-car-${this.car}-load`,
       "gravel",
     ].map((name) => {
       const source = context.createBufferSource();

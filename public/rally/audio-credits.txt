@@ -1,0 +1,21 @@
+Pocket Rally engine audio
+
+Source: racing car engine sound loops
+Author: domasx2
+https://opengameart.org/content/racing-car-engine-sound-loops
+Downloaded: 10 October 2026
+Source file: loop_0.wav
+Licence: CC0 1.0 Universal
+https://creativecommons.org/publicdomain/zero/1.0/
+
+The author identifies the source as a public-domain car recording and
+confirms the loops were remade from that source in the page comments.
+
+Pocket Rally modifications: mono resampling, loop-boundary crossfade,
+DC removal, tonal EQ, saturation, pitch and level adjustment. Eight
+idle/load variants are derived from one recording. These are stylised
+car voices, not recordings of the named Subaru, Ford, Toyota or Lancia.
+
+The source recording is preserved in scripts/audio-source/car-engine-cc0.wav.
+Rebuild with python3 scripts/generate-rally-audio.py.
+Forest and gravel layers are original procedural sounds.

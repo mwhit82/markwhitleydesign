@@ -198,3 +198,34 @@ test("bounded audio graph: no native media rate mutations, cached decoding, paus
     }
   }
 });
+
+test('recorded engine mix follows actual RPM and cuts load at the limiter', () => {
+  const drive = {speed: 20, throttle: 1, brake: 0, sliding: false, rpm: 3000};
+  const low = soundMix(drive, 'race', 0);
+  const high = soundMix({...drive, rpm: 7000}, 'race', 0);
+  const cut = soundMix({...drive, rpm: 7000, limited: true}, 'race', 0);
+  assert.ok(high.rate > low.rate);
+  assert.ok(cut.load < high.load);
+  assert.equal(cut.rate, high.rate);
+});
+
+test('all recorded layers are compact valid PCM WAV assets', async () => {
+  for(let car=0;car<4;car++) {
+    for(const layer of ['idle','load']) {
+      const data = await readFile(new URL(`../public/rally/recorded-car-${car}-${layer}.wav`, import.meta.url));
+      assert.equal(data.toString('ascii',0,4), 'RIFF');
+      assert.equal(data.toString('ascii',8,12), 'WAVE');
+      assert.equal(data.readUInt16LE(20),1);
+      assert.equal(data.readUInt16LE(22),1);
+      assert.equal(data.readUInt32LE(24),22050);
+      assert.ok(data.length < 50000);
+      let peak=0, energy=0;
+      for(let i=44;i<data.length;i+=2) {
+        const sample=data.readInt16LE(i);
+        peak=Math.max(peak,Math.abs(sample)); energy+=sample*sample;
+      }
+      assert.ok(peak<32767 && energy>0);
+      assert.ok(Math.abs(data.readInt16LE(44)-data.readInt16LE(data.length-2))<500);
+    }
+  }
+});

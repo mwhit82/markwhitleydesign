@@ -164,7 +164,7 @@ export function RallyGame() {
     <div className={styles.page}>
       <div className={styles.heading}>
         <div>
-          <p className={styles.eyebrow}>MARK WHITLEY / POCKET RALLY V1.4</p>
+          <p className={styles.eyebrow}>MARK WHITLEY / POCKET RALLY V1.5</p>
           <h1>
             POCKET<span>RALLY.</span>
           </h1>
@@ -391,6 +391,7 @@ export function RallyGame() {
       <div className={styles.below}>
         <div>
           <span className={styles.tag}>HOW TO DRIVE</span>
+          <p><a href="/rally/audio-credits.txt" target="_blank" rel="noreferrer">Engine audio credits ↗</a></p>
           {!standalone && (
             <p>
               <button
