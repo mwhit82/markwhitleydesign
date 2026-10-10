@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { BadgeList } from "@/components/badge-list";
 import { SectionHeading } from "@/components/section-heading";
 import { experiments } from "@/data/experiments";
@@ -14,6 +15,19 @@ export default function PlaygroundPage() {
         title="A home for experiments, speculative concepts, and AI-native design ideas."
         description="This section is intentionally lighter and faster than a formal case study. It is where new interaction patterns can be tested before they become product decisions."
       />
+      <Link
+        href="/playground/rally"
+        className="block rounded-2xl bg-[#d95131] p-8 text-[#fff3de]"
+      >
+        <p className="text-xs uppercase tracking-widest">
+          Playable experiment 01
+        </p>
+        <h2 className="mt-3 text-4xl font-black italic">POCKET RALLY ↗</h2>
+        <p className="mt-3">
+          Four clay rally cars. One forest stage. Keyboard or controller. Chase
+          your best time.
+        </p>
+      </Link>
       <div className="grid gap-6 lg:grid-cols-2">
         {experiments.map((experiment) => (
           <article

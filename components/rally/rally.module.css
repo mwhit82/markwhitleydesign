@@ -1,0 +1,336 @@
+.page {
+  color: #eee9d9;
+  padding: 20px 0 32px;
+}
+.heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: end;
+  margin-bottom: 22px;
+  color: var(--foreground);
+}
+.eyebrow {
+  font-size: 10px;
+  letter-spacing: 2px;
+  font-weight: 700;
+}
+.heading h1 {
+  font-size: clamp(38px, 6vw, 76px);
+  line-height: 1;
+  letter-spacing: -5px;
+  font-weight: 950;
+  margin-top: 12px;
+  font-style: italic;
+}
+.heading h1 span {
+  color: #dc5a37;
+}
+.stageInfo {
+  display: grid;
+  text-align: right;
+  gap: 6px;
+  font-size: 12px;
+  letter-spacing: 2px;
+}
+.stageInfo span {
+  font-size: 10px;
+  opacity: 0.6;
+}
+.game {
+  position: relative;
+  height: min(740px, 78vh);
+  min-height: 560px;
+  background: #c6bf9f;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 24px 60px #0003;
+}
+.game:fullscreen {
+  height: 100vh;
+  border-radius: 0;
+}
+.canvas {
+  position: absolute;
+  inset: 0;
+}
+.canvas canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.topbar {
+  position: absolute;
+  left: 24px;
+  right: 24px;
+  top: 18px;
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: #263d34;
+  align-items: center;
+}
+.topbar > span {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  background: #eee9d9cf;
+  padding: 7px 10px;
+  border-radius: 20px;
+}
+.topbar i {
+  width: 6px;
+  height: 6px;
+  background: #40815e;
+  border-radius: 100%;
+}
+.topbar button {
+  background: #eee9d9cf;
+  margin-left: 8px;
+  padding: 7px 10px;
+  border-radius: 20px;
+}
+.garageCopy {
+  position: absolute;
+  left: 5%;
+  top: 17%;
+  color: #233c32;
+  pointer-events: none;
+}
+.tag {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 2px;
+}
+.garageCopy h2 {
+  font-size: clamp(32px, 5vw, 60px);
+  line-height: 1.02;
+  font-weight: 900;
+  letter-spacing: -2px;
+  margin: 18px 0;
+}
+.garageCopy p {
+  font-size: 14px;
+  line-height: 1.6;
+  opacity: 0.8;
+}
+.garage {
+  position: absolute;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(480px, 90%);
+  background: #f2edddef;
+  color: #233c32;
+  padding: 18px 22px;
+  border-radius: 9px;
+  box-shadow: 0 8px 30px #24352d25;
+}
+.carSelect {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  text-align: center;
+}
+.carSelect h3 {
+  font-size: 20px;
+  font-weight: 850;
+  letter-spacing: -0.6px;
+  margin: 5px 0;
+}
+.carSelect p {
+  font-size: 12px;
+  opacity: 0.65;
+}
+.carSelect button {
+  font-size: 24px;
+  padding: 10px;
+}
+.start {
+  display: flex !important;
+  justify-content: space-between;
+  align-items: center;
+  background: #d95131 !important;
+  color: #fff6e4 !important;
+  font-size: 12px !important;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  padding: 15px 22px !important;
+  border-radius: 4px !important;
+  width: 100%;
+  margin-top: 18px;
+}
+.hint {
+  font-size: 10px;
+  text-align: center;
+  margin-top: 10px;
+  opacity: 0.6;
+}
+.timer {
+  position: absolute;
+  top: 80px;
+  left: 25px;
+  color: #243b32;
+  background: #f2edddea;
+  border-radius: 6px;
+  padding: 15px 22px;
+  display: grid;
+}
+.timer small {
+  font-size: 9px;
+  letter-spacing: 2px;
+}
+.timer strong {
+  font-size: 38px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 900;
+  letter-spacing: -2px;
+}
+.timer span {
+  font-size: 10px;
+  opacity: 0.6;
+}
+.speed {
+  position: absolute;
+  bottom: 36px;
+  right: 30px;
+  display: grid;
+  text-align: right;
+  color: #233c32;
+}
+.speed strong {
+  font-size: 65px;
+  font-weight: 900;
+  line-height: 1;
+}
+.speed small {
+  font-size: 11px;
+  letter-spacing: 3px;
+}
+.pause {
+  position: absolute;
+  bottom: 32px;
+  left: 25px;
+  background: #f2edddeb;
+  padding: 10px 18px;
+  border-radius: 4px;
+  color: #233c32;
+  font-size: 12px;
+}
+.progress {
+  position: absolute;
+  bottom: 0;
+  height: 5px;
+  width: 100%;
+  background: #263b3430;
+}
+.progress > div {
+  height: 100%;
+  background: #d95131;
+  transition: width 0.2s;
+}
+.count {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  font-size: 130px;
+  font-weight: 950;
+  color: #fff6df;
+  text-shadow: 0 5px 0 #254033;
+}
+.overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background: #1c332de0;
+  backdrop-filter: blur(8px);
+  gap: 16px;
+  padding: 28px;
+  text-align: center;
+}
+.overlay h2 {
+  font-size: clamp(38px, 6vw, 74px);
+  font-weight: 900;
+  letter-spacing: -3px;
+}
+.overlay .start {
+  max-width: 290px;
+}
+.overlay > button:not(.start) {
+  font-size: 13px;
+  text-decoration: underline;
+  text-underline-offset: 5px;
+  padding: 7px;
+}
+.below {
+  display: flex;
+  justify-content: space-between;
+  gap: 30px;
+  margin-top: 25px;
+  color: var(--foreground);
+}
+.below p {
+  font-size: 12px;
+  line-height: 1.7;
+  margin-top: 9px;
+  opacity: 0.8;
+}
+.below small {
+  display: block;
+  font-size: 11px;
+  opacity: 0.5;
+  margin-top: 10px;
+}
+.below a {
+  white-space: nowrap;
+  font-size: 12px;
+}
+.page button {
+  cursor: pointer;
+}
+.page button:focus-visible {
+  outline: 3px solid #ecb632;
+  outline-offset: 4px;
+}
+@media (max-width: 650px) {
+  .stageInfo {
+    display: none;
+  }
+  .heading h1 {
+    letter-spacing: -2px;
+  }
+  .garageCopy {
+    top: 14%;
+  }
+  .garageCopy h2 {
+    font-size: 35px;
+  }
+  .garageCopy p {
+    display: none;
+  }
+  .game {
+    min-height: 600px;
+  }
+  .below {
+    flex-direction: column;
+  }
+  .topbar {
+    left: 12px;
+    right: 12px;
+  }
+  .topbar button {
+    font-size: 10px;
+  }
+  .carSelect h3 {
+    font-size: 17px;
+  }
+}
+
+.touchControls { display: none; position: absolute; bottom: 18px; left: 12px; right: 12px; justify-content: space-between; gap: 6px; touch-action: none; }
+.touchControls button { min-width: 44px; min-height: 48px; border-radius: 9px; padding: 8px; color: #233c32; background: #f2edddec; font-size: 12px; font-weight: 800; touch-action: none; user-select: none; -webkit-user-select: none; }
+.touchControls button:active { background: #e3ad49; }
+@media (pointer: coarse), (max-width: 650px) { .touchControls { display: flex; } .pause { bottom: 86px; } .speed { bottom: 86px; } }

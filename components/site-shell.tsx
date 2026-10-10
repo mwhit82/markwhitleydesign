@@ -1,6 +1,10 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { ArrowUpRight01Icon, Linkedin01Icon, SparklesIcon } from "@hugeicons/core-free-icons";
+import {
+  ArrowUpRight01Icon,
+  Linkedin01Icon,
+  SparklesIcon,
+} from "@hugeicons/core-free-icons";
 import { Icon } from "@/components/icon";
 import { LogoMark } from "@/components/logo-mark";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -54,13 +58,28 @@ export function SiteShell({ children }: { children: ReactNode }) {
         </nav>
       </header>
 
+      <Link
+        href="/playground/rally"
+        className="mb-6 flex items-center justify-between rounded-xl bg-[#d95131] px-5 py-3 text-sm font-semibold text-[#fff3de]"
+      >
+        <span>
+          POCKET RALLY · A tiny car. A forest stage. Your next best time.
+        </span>
+        <span aria-hidden="true">Play ↗</span>
+      </Link>
       <main>{children}</main>
 
       <footer className="mt-12 border-t border-[color:var(--border)] py-8 text-sm text-[color:var(--muted)]">
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <p>Mark Whitley. Product design engineering, AI experiences, and premium interfaces.</p>
+          <p>
+            Mark Whitley. Product design engineering, AI experiences, and
+            premium interfaces.
+          </p>
           <div className="flex gap-5">
-            <Link href="https://www.linkedin.com/in/mark-whitley-/" className="inline-flex items-center gap-2">
+            <Link
+              href="https://www.linkedin.com/in/mark-whitley-/"
+              className="inline-flex items-center gap-2"
+            >
               <Icon icon={Linkedin01Icon} size={18} />
               LinkedIn
             </Link>
