@@ -29,6 +29,26 @@ export function RallyGame() {
   });
   const [best, setBest] = useState<number | null>(null);
   useEffect(() => {
+    const surface = game.current;
+    if (!surface) return;
+    // Native non-passive touch events cancel iOS long-press selection early.
+    // Limit cancellation to held driving controls so normal menu taps still work.
+    const preventHold = (event: TouchEvent) => {
+      if (!(event.target instanceof Element) || !event.target.closest("[data-driving-control]")) return;
+      if (event.cancelable) event.preventDefault();
+      window.getSelection()?.removeAllRanges();
+    };
+    const preventSelection = (event: Event) => event.preventDefault();
+    surface.addEventListener("touchstart", preventHold, { passive: false });
+    surface.addEventListener("touchmove", preventHold, { passive: false });
+    surface.addEventListener("selectstart", preventSelection);
+    return () => {
+      surface.removeEventListener("touchstart", preventHold);
+      surface.removeEventListener("touchmove", preventHold);
+      surface.removeEventListener("selectstart", preventSelection);
+    };
+  }, []);
+  useEffect(() => {
     let disposed = false;
     import("./world")
       .then(({ RallyWorld }) => {
@@ -145,6 +165,7 @@ export function RallyGame() {
   const touchButton = (key: string, label: string, name: string) => (
     <button
       key={key}
+      data-driving-control="true"
       aria-label={name}
       onContextMenu={(event) => event.preventDefault()}
       onPointerDown={(event) => {
@@ -164,7 +185,7 @@ export function RallyGame() {
     <div className={styles.page}>
       <div className={styles.heading}>
         <div>
-          <p className={styles.eyebrow}>MARK WHITLEY / POCKET RALLY V1.5.1</p>
+          <p className={styles.eyebrow}>MARK WHITLEY / POCKET RALLY V1.6</p>
           <h1>
             POCKET<span>RALLY.</span>
           </h1>

@@ -38,7 +38,7 @@ const assets = [
 
 /** Three small decoded loops run on the audio thread. No media-rate changes, per-frame work, or live synthesis. */
 export class RallyAudio {
-  private ambience = new Audio("/rally/forest-air.wav");
+  private ambience = new Audio("/rally/forest-birds.wav");
   private context: AudioContext | null = null;
   private master: GainNode | null = null;
   private buffers = new Map<string, AudioBuffer>();

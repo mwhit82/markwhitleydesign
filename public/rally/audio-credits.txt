@@ -18,4 +18,13 @@ car voices, not recordings of the named Subaru, Ford, Toyota or Lancia.
 
 The source recording is preserved in scripts/audio-source/car-engine-cc0.wav.
 Rebuild with python3 scripts/generate-rally-audio.py.
-Forest and gravel layers are original procedural sounds.
+Gravel is an original procedural sound.
+
+Forest background: Ambient Bird Sounds by isaiah658
+https://opengameart.org/content/ambient-bird-sounds
+Source: https://opengameart.org/sites/default/files/birds-isaiah658_0.ogg
+Licence: CC0 1.0 Universal
+https://creativecommons.org/publicdomain/zero/1.0/
+Downloaded 10 October 2026. Trimmed, converted to mono 22050 Hz,
+loop-crossfaded and reduced in level. Rebuild on macOS with
+python3 scripts/prepare-rally-forest.py.
