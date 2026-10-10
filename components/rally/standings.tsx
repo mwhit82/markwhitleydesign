@@ -1,18 +1,19 @@
 "use client";
 import {useEffect,useRef,useState} from 'react';
 import {cars,formatTime} from './data';
-import {stages,trackNames,stageTimes,weatherNames,timeNames,timesOfDay,timeOfDay,trackName,boardKey,type StageSelection,type Weather} from './stages';
+import {lapCount,stages,trackNames,stageTimes,weatherNames,timeNames,timesOfDay,timeOfDay,trackName,boardKey,type StageSelection,type Weather} from './stages';
 import styles from './rally.module.css';
 type Entry={rank:number;name:string;car:number;time:number;mine:boolean;selection:StageSelection};
 export function Standings({onClose}:{onClose:()=>void}){
  const [showFilters,setShowFilters]=useState(false);
- const [filters,setFilters]=useState({track:'',stage:'',weather:'',reverse:'',timeOfDay:'',car:'',search:''});
+ const [filters,setFilters]=useState({laps:'',track:'',stage:'',weather:'',reverse:'',timeOfDay:'',car:'',search:''});
+ const [mine,setMine]=useState<Entry[]>([]);
  const [search,setSearch]=useState('');const [rows,setRows]=useState<Entry[]>([]);const [cursor,setCursor]=useState<string|null>(null);const [busy,setBusy]=useState(true);const [error,setError]=useState('');const [revision,setRevision]=useState(0);const generation=useRef(0);const pending=useRef<AbortController|null>(null);
  useEffect(()=>{const timer=setTimeout(()=>setSearch(filters.search.trim()),300);return()=>clearTimeout(timer);},[filters.search]);
  const query=new URLSearchParams(Object.entries({...filters,search}).filter(([,v])=>v!=='')).toString();
  useEffect(()=>{
-  const version=++generation.current;pending.current?.abort();const abort=new AbortController();pending.current=abort;setRows([]);setCursor(null);setBusy(true);setError('');
-  fetch(`/api/rally/standings?${query}`,{signal:abort.signal}).then(async response=>{const data=await response.json();if(!response.ok)throw Error(data.error);if(version===generation.current){setRows(data.entries);setCursor(data.cursor);}}).catch(e=>{if(!abort.signal.aborted)setError(e.message||'Could not load times.');}).finally(()=>{if(version===generation.current)setBusy(false);});
+  const version=++generation.current;pending.current?.abort();const abort=new AbortController();pending.current=abort;setRows([]);setMine([]);setCursor(null);setBusy(true);setError('');
+  fetch(`/api/rally/standings?${query}`,{signal:abort.signal}).then(async response=>{const data=await response.json();if(!response.ok)throw Error(data.error);if(version===generation.current){setRows(data.entries);setMine(data.me??[]);setCursor(data.cursor);}}).catch(e=>{if(!abort.signal.aborted)setError(e.message||'Could not load times.');}).finally(()=>{if(version===generation.current)setBusy(false);});
   return()=>{abort.abort();generation.current=version+1;};
  },[query,revision]);
  const more=async()=>{
@@ -27,7 +28,7 @@ export function Standings({onClose}:{onClose:()=>void}){
   <div className={styles.filterBar}>
    <label>Find a driver<input type="search" maxLength={20} placeholder="Player name…" value={filters.search} onChange={e=>change('search',e.target.value)}/></label>
    <button aria-expanded={showFilters} aria-controls="rally-filters" onClick={()=>setShowFilters(v=>!v)}>{showFilters?'Hide filters':'Filters'}{Object.entries(filters).filter(([k,v])=>k!=='search'&&v).length?` (${Object.entries(filters).filter(([k,v])=>k!=='search'&&v).length})`:''}</button>
-   <button onClick={()=>setFilters({stage:'',weather:'',reverse:'',timeOfDay:'',car:'',track:'',search:''})}>Clear filters</button>
+   <button onClick={()=>setFilters({laps:'',stage:'',weather:'',reverse:'',timeOfDay:'',car:'',track:'',search:''})}>Clear filters</button>
   </div>
   <small className={styles.filterSummary}>{[filters.stage&&stages.find(s=>s.id===filters.stage)?.name,filters.track&&`Track ${filters.track}`,filters.weather&&weatherNames[filters.weather as Weather],filters.reverse&&(filters.reverse==='true'?'Reverse':'Forward'),filters.timeOfDay&&timeNames[filters.timeOfDay as keyof typeof timeNames],filters.car&&cars[Number(filters.car)]?.name].filter(Boolean).join(' · ')||'All tracks, conditions and cars'}</small>
   {showFilters&&<div id="rally-filters" className={styles.boardFilters}>
@@ -36,10 +37,12 @@ export function Standings({onClose}:{onClose:()=>void}){
    <label>Direction<select value={filters.reverse} onChange={e=>change('reverse',e.target.value)}><option value="">Both directions</option><option value="false">Forward</option><option value="true">Reverse</option></select></label>
    <label>Weather<select value={filters.weather} onChange={e=>change('weather',e.target.value)}><option value="">All weather</option>{conditions.map(w=><option key={w} value={w}>{weatherNames[w]}</option>)}</select></label>
    <label>Time of day<select value={filters.timeOfDay} onChange={e=>change('timeOfDay',e.target.value)}><option value="">Any time</option>{(filters.stage?stageTimes(filters.stage as keyof typeof trackNames):timesOfDay).map(t=><option key={t} value={t}>{timeNames[t]}</option>)}</select></label>
+   <label>Kart laps<select value={filters.laps} onChange={e=>change('laps',e.target.value)}><option value="">All race lengths</option>{[1,3,5].map(n=><option key={n} value={n}>{n} laps</option>)}</select></label>
    <label>Car<select value={filters.car} onChange={e=>change('car',e.target.value)}><option value="">All cars</option>{cars.map((c,i)=>(!filters.stage||(filters.stage==='kart'?i===8:i<8))&&<option key={c.name} value={i}>{c.name}</option>)}</select></label>
   </div>}
-  <small>Grouped by track and conditions. Each # rank is within that configuration{filters.car!==''?' and car':''} — not an overall ranking.</small>
+  <small>Matching runs ordered by total time. Different tracks and lap counts have different lengths — filter to compare like-for-like.</small>
+  {mine.filter(e=>!rows.some(r=>r.mine&&r.rank===e.rank)).length>0&&<div className={styles.personalRanks}><strong>Your other matching results</strong>{mine.filter(e=>!rows.some(r=>r.mine&&r.rank===e.rank)).map(e=><p key={e.rank}>#{e.rank} · {e.name} · {trackName(e.selection)} · {e.selection.reverse?'Reverse':'Forward'} · {weatherNames[e.selection.weather]} · {timeNames[timeOfDay(e.selection)]} · {cars[e.car]?.name}{e.selection.stage==='kart'?` · ${lapCount(e.selection)} laps`:''} · {formatTime(e.time)}</p>)}</div>}
   {error&&<p role="alert">{error} <button onClick={()=>setRevision(r=>r+1)}>Retry</button></p>}
-  <div className={styles.boardRows} tabIndex={0} aria-label="Times grouped by stage conditions"><ol>{rows.map((e,i)=><li key={`${boardKey(e.selection)}-${e.rank}-${i}`} className={e.mine?styles.myRow:''}><b>#{e.rank}</b><span>{e.name}{e.mine?' · You':''}<small>{trackName(e.selection)} · {e.selection.reverse?'Reverse':'Forward'} · {weatherNames[e.selection.weather]} · {timeNames[timeOfDay(e.selection)]}</small><small>{cars[e.car]?.name}</small></span><strong>{formatTime(e.time)}</strong></li>)}</ol>{busy&&<p role="status">Finding times…</p>}{!busy&&!error&&!rows.length&&<p>{cursor?'More records to search. Continue below.':'No matching times yet.'}</p>}{cursor&&<button disabled={busy} onClick={more}>{rows.length?'Show more':'Continue search'}</button>}</div>
+  <div className={styles.boardRows} tabIndex={0} aria-label="Matching times, fastest first"><ol>{rows.map((e,i)=><li key={`${boardKey(e.selection)}-${e.rank}-${i}`} className={e.mine?styles.myRow:''}><b>#{e.rank}</b><span>{e.name}{e.mine?' · You':''}<small>{trackName(e.selection)} · {e.selection.reverse?'Reverse':'Forward'} · {weatherNames[e.selection.weather]} · {timeNames[timeOfDay(e.selection)]}</small><small>{cars[e.car]?.name}{e.selection.stage==='kart'?` · ${lapCount(e.selection)} laps`:''}</small></span><strong>{formatTime(e.time)}</strong></li>)}</ol>{busy&&<p role="status">Finding times…</p>}{!busy&&!error&&!rows.length&&<p>{cursor?'More records to search. Continue below.':'No matching times yet.'}</p>}{cursor&&<button disabled={busy} onClick={more}>{rows.length?'Show more':'Continue search'}</button>}</div>
  </div>;
 }

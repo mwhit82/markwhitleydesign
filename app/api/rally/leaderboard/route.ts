@@ -8,7 +8,7 @@ export async function GET(request:Request) {
   if(!configured()) return unavailable();
   try {
     const q=new URL(request.url).searchParams;
-    const selection={stage:q.get('stage'),weather:q.get('weather'),reverse:q.get('reverse')==='true',timeOfDay:q.get('timeOfDay')??'midday',track:q.has('track')?Number(q.get('track')):1};
+    const selection={...(q.has('laps')?{laps:Number(q.get('laps'))}:{}),...(q.has('circuitVersion')?{circuitVersion:Number(q.get('circuitVersion'))}:{}),stage:q.get('stage'),weather:q.get('weather'),reverse:q.get('reverse')==='true',timeOfDay:q.get('timeOfDay')??'midday',track:q.has('track')?Number(q.get('track')):1};
     const offset=Number(q.get('offset')||0),car=q.get('car');
     if(!validSelection(selection)||!Number.isInteger(offset)||offset<0||offset>100000 || (car!==null&&!validCar(Number(car),selection))) return Response.json({error:'Invalid board'},{status:400});
     const board=`rally:${boardKey(selection)}${car===null?'':`:car${car}`}`;

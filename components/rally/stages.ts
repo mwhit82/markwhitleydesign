@@ -11,7 +11,7 @@ export type Weather = 'clear'|'rain'|'fog'|'snow'|'wind'|'haze';
 export const timesOfDay = ['sunrise','midday','sunset','night'] as const;
 export type TimeOfDay = typeof timesOfDay[number];
 export const timeNames:Record<TimeOfDay,string>={sunrise:'Sunrise',midday:'Midday',sunset:'Sunset',night:'Night'};
-export type StageSelection = { stage: StageId; weather: Weather; reverse: boolean; track?:1|2|3; timeOfDay?:TimeOfDay };
+export type StageSelection = { stage: StageId; weather: Weather; reverse: boolean; track?:1|2|3; laps?:1|3|5; circuitVersion?:2; timeOfDay?:TimeOfDay };
 export function timeOfDay(s:StageSelection):TimeOfDay{return s.timeOfDay??'midday';}
 export const initialStage: StageSelection = {stage:'forest',weather:'clear',reverse:false};
 export const weatherNames: Record<Weather,string> = {clear:'Clear',rain:'Rain',fog:'Fog',snow:'Snowfall',wind:'Wind',haze:'Dust haze'};
@@ -19,11 +19,11 @@ export function stageDefinition(selection: StageSelection) { return stages.find(
 export function validSelection(value: unknown): value is StageSelection {
   if(!value || typeof value !== 'object') return false;
   const s=value as StageSelection;
-  return (s.track===undefined || [1,2,3].includes(s.track)) && (s.stage!=='kart'||(s.weather==='clear'&&timeOfDay(s)==='midday')) && (s.timeOfDay===undefined || timesOfDay.includes(s.timeOfDay)) && typeof s.reverse==='boolean' && stages.some(stage=>stage.id===s.stage && (stage.conditions as readonly string[]).includes(s.weather));
+  return (s.laps===undefined || (s.circuitVersion===2&&[1,3,5].includes(s.laps))) && (s.circuitVersion===undefined||s.circuitVersion===2) && (s.stage==='kart'||(s.laps===undefined&&s.circuitVersion===undefined)) && (s.track===undefined || [1,2,3].includes(s.track)) && (s.stage!=='kart'||(s.weather==='clear'&&timeOfDay(s)==='midday')) && (s.timeOfDay===undefined || timesOfDay.includes(s.timeOfDay)) && typeof s.reverse==='boolean' && stages.some(stage=>stage.id===s.stage && (stage.conditions as readonly string[]).includes(s.weather));
 }
-export function boardKey(s: StageSelection) { const key=`v2:${s.stage}:${s.weather}:${s.reverse?'reverse':'forward'}`;const timed=timeOfDay(s)==='midday'?key:`${key}:${timeOfDay(s)}`;return trackNumber(s)===1?timed:`${timed}:track${trackNumber(s)}`; }
+export function boardKey(s: StageSelection) { if(s.stage==='kart'&&s.circuitVersion===2)return `v3:kart:track${trackNumber(s)}:${s.reverse?'reverse':'forward'}:laps${lapCount(s)}`; const key=`v2:${s.stage}:${s.weather}:${s.reverse?'reverse':'forward'}`;const timed=timeOfDay(s)==='midday'?key:`${key}:${timeOfDay(s)}`;return trackNumber(s)===1?timed:`${timed}:track${trackNumber(s)}`; }
 export function stagePoints(selection: StageSelection) {
-  const points = new CatmullRomCurve3(routeControlPoints(selection).map(([x,z])=>new Vector3(x,0,z)),false,'catmullrom',.4).getSpacedPoints(650);
+  const points = new CatmullRomCurve3(routeControlPoints(selection).map(([x,z])=>new Vector3(x,0,z)),selection.stage==='kart'&&selection.circuitVersion===2,'catmullrom',.4).getSpacedPoints(650);
   return selection.reverse ? points.reverse() : points;
 }
 export const checkpointIndices = Array.from({length:18},(_,i)=>Math.round((i+1)*650/18));
@@ -56,3 +56,6 @@ const extraRoutes:Record<StageId,readonly (readonly (readonly [number,number])[]
  [[-62,58],[-62,13],[-59,-46],[-27,-59],[7,-55],[5,-24],[-29,-15],[-24,18],[6,39],[32,12],[32,-27],[60,-44],[64,3],[60,56]]]
 };
 export function routeControlPoints(s:StageSelection):readonly (readonly [number,number])[]{return trackNumber(s)===1?stageDefinition(s).points:extraRoutes[s.stage][trackNumber(s)-2];}
+
+export function lapCount(s:StageSelection){return s.stage==='kart'&&s.circuitVersion===2?(s.laps??3):1;}
+export function routeLength(s:StageSelection){const points=stagePoints(s);return points.slice(1).reduce((n,p,i)=>n+p.distanceTo(points[i]),0);}

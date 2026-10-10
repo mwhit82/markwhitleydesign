@@ -1,0 +1,38 @@
+Pocket Rally V2.6 verification — 11 October 2026
+
+Automated coverage:
+- Legacy rally keys/traces retained; 18 new kart configurations (3 circuits,
+  two directions, 1/3/5 laps), distinct from the six archived open-kart boards.
+- Closed start crossing cannot finish immediately; ordered gates on each lap;
+  five-lap replay traces pass server validation. Missing gates remain practice.
+- Finish areas and retreat positions on all 30 route/direction layouts.
+- Bridge support clearance against the complete route; bounded local road relief.
+- Exact production standings Lua exercised with 2,301 records: global ordering,
+  pagination, equal times, filtered rank, own rank, literal name search.
+  Above 20,000 matching-board records, asks for narrower filters instead of
+  returning incomplete/misleading rankings. No Redis records are migrated/reset.
+- Replay interpolation, eligibility, completion/skip deduplication, failure paths,
+  surface effects, crowd caps, weather, handling and control regressions.
+- Audio graph: 22 buffers decoded once, four engine/driving loops + one crowd bed,
+  at most two crowd one-shots; fixed 20Hz automation. WAV seams and levels checked.
+
+Browser simulation:
+- Desktop garage height/top remain identical across all eight rally cars.
+- Phone portrait and landscape menu/controls; lap choices and distance update.
+- Practice celebration transitions to labelled TV replay, toggle returns to tent,
+  results remain fixed; pause/Main menu returns to garage.
+- Representative jump inspected: road texture continuous over shaded earth crest.
+- Representative same forest/clear/midday garage, Chrome default desktop viewport:
+  V2.5 681 draw calls / 95,278 triangles / 638 geometries.
+  V2.6 681 draw calls / 110,670 triangles / 631 geometries.
+  About 16.2% more triangles with the larger crowd; no added draw calls in this
+  view. An initial whole-ground tessellation was replaced with local crest meshes.
+  These are rendering counters, not a physical phone FPS benchmark.
+
+Limitations:
+- Actual iPhone sound quality, frame rate, long-press behaviour and PS5-controller
+  input require physical-device testing; responsive desktop checks are separate.
+- Engine regions checked for spectral stability/seams, not subjectively auditioned
+  on phone speakers. Exact car-model authenticity is not claimed.
+- Co-driver dialogue deferred per approved licence fallback; see audio research.
+- Developer-only preview buttons used during QA are removed before release.

@@ -44,3 +44,25 @@ Rebuild with scripts/prepare-rally-sports.py (numpy and soundfile).
 V2.4 UI cues (ui-select, ui-start, ui-restart): original procedural compositions
 created for Pocket Rally; generated offline by scripts/generate-rally-ui.py.
 No third-party samples. Decoded once and reused in-game.
+
+V2.6 engine recordings (replaces the eight generic engine loops above):
+Interior Rally Racing Car.wav — efksound
+https://freesound.org/people/efksound/sounds/193679/
+Licence: Creative Commons Attribution 3.0 Unported
+https://creativecommons.org/licenses/by/3.0/
+Source: https://cdn.freesound.org/previews/193/193679_364895-hq.mp3
+Recorded inside a rally car using an Edirol R09HR. Vehicle model unspecified.
+
+Karting.flac — qubodup
+https://freesound.org/people/qubodup/sounds/189628/
+Licence: CC0 1.0 Universal
+https://creativecommons.org/publicdomain/zero/1.0/
+Source: https://cdn.freesound.org/previews/189/189628_71257-hq.mp3
+Recorded in an indoor kart venue in Berlin using an iPod Touch 4G.
+
+Retrieved 11 October 2026. Modifications: selected stationary engine regions,
+mono/resampling to 22050Hz, DC removal, spectral EQ, seam crossfade, level
+normalisation and small tonal variations. Separate idle/load/lift layers.
+These are representative rally/kart recordings, not exact named-car matches.
+Original source previews are retained in scripts/audio-source.
+Rebuild with scripts/prepare-rally-engines-v26.py (numpy and soundfile).

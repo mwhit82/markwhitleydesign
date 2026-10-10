@@ -1,0 +1,24 @@
+V2.6 audio research — 11 October 2026
+
+Free source licences and author attribution are in public/rally/audio-credits.txt.
+The rally and kart recordings were evaluated for steady spectral regions and
+clean looping; subjective listening on actual iPhone speakers remains a user
+acceptance check. Four tonal rally variants share one real interior recording;
+the kart has a separate venue recording. Do not advertise exact model authenticity.
+
+Co-driver follow-up:
+PacenotePal (https://github.com/Koenvh1/PacenotePal) documents useful phrase-bank
+and route-trigger architecture. Its linked voice packs include voices extracted
+from other games. A mod download or source-code licence is not permission to
+redistribute the recordings in Pocket Rally. No freely licensed English recording
+bank with clear redistribution permission was verified. Per the approved fallback,
+voice playback is not shipped and no unavailable toggle is exposed.
+
+Implementation once an original/appropriately licensed voice bank is available:
+Prepare English left/right 1–6 (1 tightest, 6 fastest), hairpin, into, crest and
+finish phrases offline; band-limit around 350–3000Hz, compress lightly, retain
+intelligibility. Author per-route forward/reverse notes and review in driving tests.
+Schedule calls 2–3 seconds before each bend based on route distance and speed,
+never nearest-point jumps; one voice source, no repeated calls, pause/resume and
+recovery resynchronisation, subtitles and remembered toggle. Kart mode has no
+co-driver. No live speech generation or network requests while driving.

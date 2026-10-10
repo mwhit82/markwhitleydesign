@@ -1,5 +1,5 @@
 import * as T from 'three';
-import {stageDefinition,type StageSelection} from './stages';
+import {type StageSelection} from './stages';
 const ramps=[{index:135,height:.85},{index:325,height:2.2},{index:515,height:.85}];
 export function rampHeight(index:number){let y=0;for(const r of ramps){const u=(index-(r.index-12))/24;if(u>0&&u<1)y=Math.max(y,r.height*Math.sin(Math.PI*u)**2);}return y;}
 /** Cosmetic vertical profile only; ranked x/z motion, grip and traces stay unchanged.
@@ -22,7 +22,7 @@ export class StageScenery {
  group=new T.Group();private birds:T.InstancedMesh|null=null;private object=new T.Object3D();private clock=0;
  constructor(selection:StageSelection,points:T.Vector3[],reserved:(x:number,z:number)=>boolean){
   this.group.name="stage-scenery";
-  const stage=stageDefinition(selection),mat=(color:string)=>new T.MeshStandardMaterial({color,roughness:.9});
+  const mat=(color:string)=>new T.MeshStandardMaterial({color,roughness:.9});
   const box=(w:number,h:number,d:number,color:string,x:number,y:number,z:number,parent=this.group)=>{const m=new T.Mesh(new T.BoxGeometry(w,h,d),mat(color));m.position.set(x,y,z);m.receiveShadow=true;m.castShadow=true;parent.add(m);return m;};
   if(selection.stage==='kart'){
    // Cutaway warehouse: tall rear walls, low front edges, no roof over the racing view.
@@ -37,23 +37,13 @@ export class StageScenery {
     if(points.every(q=>Math.hypot(q.x-v.x,q.z-v.z)>6.4)&&!reserved(v.x,v.z))placements.push(v);
    }}
    const tyres=new T.InstancedMesh(new T.TorusGeometry(.63,.24,5,10),mat('#343a3c'),placements.length*2);
-   placements.forEach((p,i)=>{for(let layer=0;layer<2;layer++){this.object.position.copy(p);this.object.position.y=.32+layer*.43;this.object.rotation.set(Math.PI/2,0,0);this.object.scale.setScalar(1);this.object.updateMatrix();tyres.setMatrixAt(i*2+layer,this.object.matrix);tyres.setColorAt(i*2+layer,new T.Color(i%9<3?'#dc5d3c':i%9<6?'#e0d8bc':'#303838'));}});tyres.castShadow=true;this.group.add(tyres);
+   placements.forEach((p,i)=>{for(let layer=0;layer<2;layer++){this.object.position.copy(p);this.object.position.y=-.06+layer*.48;this.object.rotation.set(Math.PI/2,0,0);this.object.scale.setScalar(1);this.object.updateMatrix();tyres.setMatrixAt(i*2+layer,this.object.matrix);tyres.setColorAt(i*2+layer,new T.Color(i%9<3?'#dc5d3c':i%9<6?'#e0d8bc':'#303838'));}});tyres.castShadow=true;this.group.add(tyres);
    return;
   }
-  // Three short raised crests: two subtle hops and one showcase crest per run.
-  for(const r of ramps){
-   const vertices:number[]=[],indices:number[]=[];
-   for(let i=r.index-12;i<=r.index+12;i++){
-    const p=points[i],next=points[i+1],a=Math.atan2(next.x-p.x,next.z-p.z),h=rampHeight(i);
-    for(const [side,y] of [[-7.8,.045],[-5.6,h+.05],[5.6,h+.05],[7.8,.045]])vertices.push(p.x+Math.cos(a)*side,y,p.z-Math.sin(a)*side);
-    if(i<r.index+12){const n=(i-(r.index-12))*4;for(let k=0;k<3;k++)indices.push(n+k,n+k+4,n+k+1,n+k+1,n+k+4,n+k+5);}
-   }
-   const geometry=new T.BufferGeometry();geometry.setAttribute('position',new T.Float32BufferAttribute(vertices,3));geometry.setIndex(indices);geometry.computeVertexNormals();const ramp=new T.Mesh(geometry,mat(stage.road));ramp.receiveShadow=true;this.group.add(ramp);
-  }
-  for(const [j,index] of [235,445].entries()){
+  for(const [j,index] of bridgeIndices(points,reserved).entries()){
    const p=points[index],next=points[index+1],bridge=new T.Group();bridge.position.copy(p);bridge.rotation.y=Math.atan2(next.x-p.x,next.z-p.z);this.group.add(bridge);
    box(17,.7,3.2,selection.stage==='desert'?'#bd9169':'#84918a',0,5.3,0,bridge);
-   for(const x of [-7.3,7.3])box(.8,5.2,2.8,'#7a8278',x,2.5,0,bridge);
+   for(const x of [-7.8,7.8])box(.8,5.2,2.8,'#7a8278',x,2.5,0,bridge);
    for(const z of [-1.65,1.65]){const ad=panel(j?'TURBO • MOTOR OIL':'APEX • RALLY TYRES',j?'#35789d':'#c65437');ad.position.set(0,6.1,z);bridge.add(ad);}
   }
   this.birds=new T.InstancedMesh(new T.ConeGeometry(.4,1.3,3),mat(selection.stage==='alpine'?'#f0eadd':selection.stage==='desert'?'#5c4939':'#344e48'),16);this.birds.frustumCulled=false;this.group.add(this.birds);this.update(0,false);
@@ -65,4 +55,19 @@ export class StageScenery {
    this.object.position.set(x+side*.4,10+i%3*2,z);this.object.rotation.set(0,t,side*(reduced?.3:.3+Math.sin(this.clock*5+i)*.45));this.object.scale.set(.7,.7,.18);this.object.updateMatrix();this.birds.setMatrixAt(i*2+(side===1?1:0),this.object.matrix);
   }this.birds.instanceMatrix.needsUpdate=true;
  }
+}
+
+/** Supports must clear every road segment, not just the road beneath the deck. */
+export function bridgeIndices(points:T.Vector3[],reserved:(x:number,z:number)=>boolean){
+ const chosen:number[]=[];
+ for(const preferred of [235,445]){
+  const candidates=Array.from({length:490},(_,i)=>i+80).sort((a,b)=>Math.abs(a-preferred)-Math.abs(b-preferred));
+  const index=candidates.find(i=>{
+   if(chosen.some(n=>Math.abs(n-i)<90)||rampHeight(i)>0)return false;
+   const p=points[i],direction=points[i+4].clone().sub(points[i-4]).normalize();
+   const before=p.clone().sub(points[i-10]).normalize(),after=points[i+10].clone().sub(p).normalize();
+   if(before.dot(after)<.97||reserved(p.x,p.z))return false;
+   return [-1,1].every(side=>{const x=p.x+direction.z*7.8*side,z=p.z-direction.x*7.8*side;return !reserved(x,z)&&points.every(q=>Math.hypot(q.x-x,q.z-z)>6.9);});
+  });if(index!==undefined)chosen.push(index);
+ }return chosen;
 }

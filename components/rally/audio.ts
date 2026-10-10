@@ -19,6 +19,7 @@ export function soundMix(drive: DriveSound, mode: Mode, car: number) {
       Math.min(2.2, drive.rpm !== undefined && mode === "race" ? 0.72 + (drive.rpm - 950) / 4400 : 0.72 + speed * 0.043 + throttle * 0.42 - brake * 0.1),
     idle: (mode==="celebrating"||mode==="finished"?0:0.07) * (1 - Math.min(speed / 9, 1)) * (1 - throttle * 0.85),
     load: mode === "race" ? throttle * (drive.limited ? 0.06 : 0.48) + Math.min(speed / 24, 1) * 0.018 : 0,
+    lift: mode === "race" ? Math.min(speed/10,1)*(1-throttle)*.14 : 0,
     gravel:
       mode === "race"
         ? Math.min(speed / 12, 1) *
@@ -29,15 +30,16 @@ export function soundMix(drive: DriveSound, mode: Mode, car: number) {
 
 type Layer = { source: AudioBufferSourceNode; gain: GainNode };
 const assets = [
-  ...Array.from({ length: 4 }, (_, i) => [
+  ...Array.from({ length: 5 }, (_, i) => [
     `recorded-car-${i}-idle`,
     `recorded-car-${i}-load`,
+    `recorded-car-${i}-lift`,
   ]).flat(),
   "gravel", "crowd-bed", "crowd-cheer", "crowd-applause", "ui-select", "ui-start", "ui-restart",
 ];
 
 export function crowdLevel(distance:number){return .004+.048*Math.max(0,Math.min(1,(35-distance)/25));}
-/** Three small decoded loops run on the audio thread. No media-rate changes, per-frame work, or live synthesis. */
+/** Four small decoded loops run on the audio thread. No media-rate changes, per-frame work, or live synthesis. */
 export class RallyAudio {
   private ambience = new Audio("/rally/forest-birds.wav");
   private context: AudioContext | null = null;
@@ -174,6 +176,7 @@ export class RallyAudio {
       `recorded-car-${this.car}-idle`,
       `recorded-car-${this.car}-load`,
       "gravel",
+      `recorded-car-${this.car}-lift`,
     ].map((name) => {
       const source = context.createBufferSource();
       source.buffer = this.buffers.get(name)!;
@@ -197,7 +200,7 @@ export class RallyAudio {
     if(this.playing) void this.ambience.play().catch(()=>{this.pause();this.onError();});
   }
   setCar(car: number) {
-    this.car = [0,1,2,3,1,3,2,0,3][car]??0;
+    this.car = [0,1,2,3,1,3,2,0,4][car]??0;
     if (this.playing) this.installLayers();
   }
   private crowdSource(name:string,volume:number,loop=false):Layer|null{
@@ -228,14 +231,16 @@ export class RallyAudio {
     if(layer)layer.source.onended=()=>{layer.source.disconnect();layer.gain.disconnect();if(this.uiLayer===layer){this.uiLayer=null;if(this.mode==="paused")void this.context?.suspend().catch(()=>{});}};
   }
   private update() {
-    if (!this.playing || !this.context || this.layers.length !== 3) return;
+    if (!this.playing || !this.context || this.layers.length !== 4) return;
     const mix = soundMix(this.drive, this.mode, this.car);
     const time = this.context.currentTime;
     this.layers[0].source.playbackRate.setTargetAtTime(mix.rate, time, 0.09);
     this.layers[1].source.playbackRate.setTargetAtTime(mix.rate, time, 0.09);
     this.layers[0].gain.gain.setTargetAtTime(mix.idle, time, 0.08);
     this.layers[1].gain.gain.setTargetAtTime(mix.load, time, 0.07);
-    this.layers[2].gain.gain.setTargetAtTime(mix.gravel, time, 0.1);
+    this.layers[2].gain.gain.setTargetAtTime(this.indoor?mix.gravel*.15:mix.gravel, time, 0.1);
+    this.layers[3].source.playbackRate.setTargetAtTime(mix.rate,time,.14);
+    this.layers[3].gain.gain.setTargetAtTime(mix.lift,time,.12);
     const celebration=this.mode==='celebrating'||this.mode==='finished';
     const crowd=this.mode==='race'?crowdLevel(this.crowdDistance):celebration?.04*Math.max(0,Math.min(1,(this.finishUntil-time)/3)):0;
     this.crowdLoop?.gain.gain.setTargetAtTime(crowd,time,.3);

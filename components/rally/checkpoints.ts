@@ -21,17 +21,19 @@ export function forwardGateCrossing(a:Point,b:Point,center:Point,before:Point,ha
  return Math.abs(x*nz-z*nx)<=halfWidth;
 }
 // The cursor only advances, so each checkpoint emits exactly once per attempt.
-export function advanceCheckpoints(points:Point[],indices:number[],cursor:number,a:Point,b:Point,time:number){
+export function advanceCheckpoints(points:Point[],indices:number[],cursor:number,a:Point,b:Point,time:number,circuit=false,finishArmed=cursor>0){
  const events:CheckpointEvent[]=[];
  while(cursor<indices.length && segmentDistance(a,b,points[indices[cursor]])<7){
   if(cursor===indices.length-1){
    const end=points[indices[cursor]],before=points[indices[cursor]-1];
+   if(circuit&&!forwardGateCrossing(a,b,end,before))break;
    if((b.x-a.x)*(end.x-before.x)+(b.z-a.z)*(end.z-before.z)<=0)break;
   }
   events.push({checkpoint:++cursor,outcome:'accepted',time});
  }
  let crossed=-1;
  for(let i=cursor;i<indices.length;i++){
+  if(circuit&&!finishArmed&&i===indices.length-1)continue;
   const index=indices[i];
   if(forwardGateCrossing(a,b,points[index],points[Math.max(0,index-1)]))crossed=i;
  }

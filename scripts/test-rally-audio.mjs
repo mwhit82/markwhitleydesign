@@ -158,8 +158,8 @@ test("bounded audio graph: no native media rate mutations, cached decoding, paus
   try {
     assert.equal(mediaPlays, 0, "preloading must not autoplay");
     await audio.enable();
-    assert.equal(decodes, 15);
-    assert.equal(sources, 4);
+    assert.equal(decodes, 22);
+    assert.equal(sources, 5);
     assert.deepEqual(periods, [50]);
     const previous = automation;
     for (let i = 0; i < 600; i++) {
@@ -174,18 +174,18 @@ test("bounded audio graph: no native media rate mutations, cached decoding, paus
     [...timers.values()][0]();
     assert.equal(
       automation - previous,
-      6,
-      "one fixed-rate update schedules six parameters",
+      8,
+      "one fixed-rate update schedules eight parameters",
     );
     audio.setCar(2);
-    assert.equal(decodes, 15);
-    assert.equal(sources, 7);
+    assert.equal(decodes, 22);
+    assert.equal(sources, 9);
     audio.setMode("paused");
     assert.equal(timers.size, 0);
     assert.ok(mediaPauses > 0);
     audio.setMode("race");
     await audio.enable();
-    assert.equal(decodes, 15);
+    assert.equal(decodes, 22);
     assert.equal(timers.size, 1);
     audio.cue('select');const selectedCue=audio.uiLayer;audio.cue('start');assert.notEqual(audio.uiLayer,selectedCue);audio.cue('restart');assert.ok(audio.uiLayer);
     audio.setMode('celebrating');const finishSources=sources;audio.setMode('celebrating');assert.equal(sources,finishSources);
@@ -199,7 +199,7 @@ test("bounded audio graph: no native media rate mutations, cached decoding, paus
     assert.equal(closed, 1);
     globalThis.fetch=async url=>({ok:!String(url).includes('crowd-'),arrayBuffer:async()=>new ArrayBuffer(8)});
     const fallback=new RallyAudio(()=>assert.fail('optional crowd assets must not stop engine audio'));
-    await fallback.enable();assert.equal(fallback.layers.length,3);assert.equal(fallback.crowdLoop,null);fallback.dispose();
+    await fallback.enable();assert.equal(fallback.layers.length,4);assert.equal(fallback.crowdLoop,null);fallback.dispose();
   } finally {
     if (!closed) audio.dispose();
     for (const [key, descriptor] of saved) {
@@ -220,15 +220,15 @@ test('recorded engine mix follows actual RPM and cuts load at the limiter', () =
 });
 
 test('all recorded layers are compact valid PCM WAV assets', async () => {
-  for(let car=0;car<4;car++) {
-    for(const layer of ['idle','load']) {
+  for(let car=0;car<5;car++) {
+    for(const layer of ['idle','load','lift']) {
       const data = await readFile(new URL(`../public/rally/recorded-car-${car}-${layer}.wav`, import.meta.url));
       assert.equal(data.toString('ascii',0,4), 'RIFF');
       assert.equal(data.toString('ascii',8,12), 'WAVE');
       assert.equal(data.readUInt16LE(20),1);
       assert.equal(data.readUInt16LE(22),1);
       assert.equal(data.readUInt32LE(24),22050);
-      assert.ok(data.length < 50000);
+      assert.ok(data.length < 110000);
       let peak=0, energy=0;
       for(let i=44;i<data.length;i+=2) {
         const sample=data.readInt16LE(i);

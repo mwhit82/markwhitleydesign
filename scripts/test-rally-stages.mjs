@@ -46,9 +46,9 @@ test('finish areas follow all endpoints; crowd remains outside roads and arrival
    assert.ok(clearance>=8,stage.id+' apron covers racing road');
   }
   for(const p of layout.approach.getPoints(80))assert.ok(points.slice(0,-35).every(q=>p.distanceTo(q)>7.8),stage.id+' arrival crosses another road');
-  assert.equal(atmosphere.spectators.length,36);
+  assert.equal(atmosphere.spectators.length,72);
   for(const person of atmosphere.spectators){
-   assert.equal(atmosphere.reserved(person.x,person.z),false,stage.id+' arrival corridor');
+   assert.ok(atmosphere.layout.approach.getPoints(24).every(p=>Math.hypot(p.x-person.x,p.z-person.z)>6.8),stage.id+' arrival corridor');
    assert.ok(points.every(p=>Math.hypot(p.x-person.x,p.z-person.z)>7),stage.id+' crowd on road');
   }
   atmosphere.celebrate();atmosphere.update(.1,1);atmosphere.reset();assert.equal(atmosphere.confetti.visible,false);
@@ -82,7 +82,7 @@ test('fans venture out only with a clear road and retreat before a fast approach
  assert.ok(a.spectators.some(p=>p.excursion));
  a.update(2,2,new (a.layout.center.constructor)(500,0,500),0,true);
  assert.ok(a.spectators.some(p=>p.progress>0));
- a.reset();assert.ok(a.spectators.every(p=>p.progress===0));
+ a.reset();assert.ok(a.spectators.every(p=>p.progress===(p.finish?1:0)));
  a.reduced=true;a.update(2,4,new (a.layout.center.constructor)(500,0,500),0,true);
  assert.ok(a.spectators.every(p=>p.progress===0));
 });

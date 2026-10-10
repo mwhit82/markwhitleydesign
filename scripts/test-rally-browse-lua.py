@@ -17,21 +17,25 @@ def to_python(value):
         return {k:to_python(v) for k,v in items}
     return value
 def redis_call(command,key,*args):
+    if command=='ZCARD':return len(boards.get(key,[]))
     if command=='ZRANGE':
         start,end=int(args[0]),int(args[1]);out=[]
-        for member,score in boards.get(key,[])[start:end+1]:out.extend([member,str(score)])
+        for member,score in boards.get(key,[])[start:(None if end==-1 else end+1)]:out.extend([member,str(score)])
         return lua.table_from(out)
     if command=='HGET':return json.dumps(info[args[0]])
     raise AssertionError(command)
 lua.globals().redis=lua.table_from({'call':redis_call})
 lua.globals().cjson=lua.table_from({'decode':lambda s:lua.table_from(json.loads(s)), 'encode':lambda v:json.dumps(to_python(v))})
-def run(cursor='0:0',search=''):
-    board,offset=cursor.split(':');lua.globals().KEYS=lua.table_from(['a','b']);lua.globals().ARGV=lua.table_from([board,offset,search,'friend'])
-    result=lua.execute(script);return json.loads(result[1]),f'{result[2]}:{result[3]}'
-rows,cursor=run();assert len(rows)==20 and rows[0]['rank']==1 and rows[-1]['rank']==20
-rows,cursor=run(cursor);assert rows[0]['rank']==21
-rows,cursor=run(search='alice');assert not rows and cursor=='0:2000'
-rows,cursor=run(cursor,'alice');assert [r['rank'] for r in rows]==[2158,1] and rows[1]['mine'] and cursor=='2:0'
-rows,cursor=run('0:2290');assert len(rows)==11 and rows[-1]['board']==1 and rows[-1]['rank']==1
-rows,cursor=run(search='.*');assert not rows # literal matching, not a Lua pattern
-print('Lua integration: top-20 pagination, search beyond rank 2,000, literal names, cross-board ranks and final cursors pass.')
+def run(offset=0,search=''):
+    lua.globals().KEYS=lua.table_from(['a','b']);lua.globals().ARGV=lua.table_from([0,offset,search,'friend'])
+    result=lua.execute(script);return json.loads(result[1]),result[2],result[3],json.loads(result[4])
+rows,total,cursor,mine=run();assert len(rows)==20 and rows[0]['rank']==1 and rows[-1]['rank']==20
+assert total==2301 and mine[0]['rank']==1002
+rows,total,cursor,mine=run(cursor);assert rows[0]['rank']==21
+rows,total,cursor,mine=run(search='alice');assert [r['rank'] for r in rows]==[1,2] and rows[0]['mine'] and rows[0]['board']==1
+rows,total,cursor,mine=run(2290);assert len(rows)==11 and rows[-1]['rank']==2301
+rows,total,cursor,mine=run(search='.*');assert not rows
+rows,total,cursor,mine=run(995);assert rows[5]['time']==rows[6]['time'] and rows[5]['board']==0 and rows[6]['board']==1
+boards['a']=[('x',1)]*20001
+assert run()[1]==-1
+print('Lua integration: global ordering, pagination, filtered rank, own rank, equal-time ordering, literal search and bounded overflow pass.')

@@ -227,3 +227,38 @@
 .stageChoices button>svg{position:absolute;right:9px;top:9px;width:14px;height:14px;color:#d8b672}.stageChoices span svg{display:inline-block;width:12px;height:12px;margin-left:3px}.garageLinks button{display:flex;align-items:center;justify-content:space-between;gap:6px}.garageLinks svg{display:inline-block;width:16px;height:16px}.carSelect button{display:grid;place-items:center}.game button:disabled{opacity:.45;cursor:default}
 
 @media(max-height:550px) and (orientation:landscape){.stageChoices{grid-template-columns:repeat(4,minmax(0,1fr))}.stageChoices button>svg{display:none}.stageChoices strong{font-size:10px}.garage{max-height:calc(100% - 70px)}.garage .garageLinks{gap:5px}}
+
+/* V2.6: stable instruments, compact checkpoint feedback, broadcast replay. */
+.carSelect > div { min-height: 112px; display:flex; flex-direction:column; justify-content:center; }
+.carSelect h3 { min-height: 56px; display:flex; align-items:center; }
+.carSelect p { min-height: 36px; }
+.circuitSummary { min-width:0; padding:14px; border:1px solid #607069; background:#2a3934; display:flex; flex-direction:column; gap:7px; }
+.circuitSummary small { font-size:10px; letter-spacing:.12em; color:#d0cab5; }
+.circuitSummary strong { font-size:20px; color:#fff1d0; }
+.circuitSummary span { font-size:11px; color:#c6cbbb; }
+.stageChoices small svg { width:16px; height:16px; vertical-align:middle; }
+.checkpointToast { background:#23332fee; color:#fff0d0; border:1px solid #6b8470; border-left:3px solid #96b992; box-shadow:0 3px 0 #111d19; border-radius:3px; padding:10px 12px; }
+.checkpointToast strong { color:#fff0d0; font-size:11px; letter-spacing:.06em; }
+.checkpointToast small { color:#c7d1bf; }
+.checkpointSymbol { background:none; color:#9fc49c; }
+.missedToast { background:#302e24ee; border-color:#b89957; color:#f1c779; }
+.missedToast .checkpointSymbol { color:#f1c779; }
+.replayFrame { position:absolute; inset:0; z-index:2; pointer-events:none; border:8px solid #171f20aa; background:repeating-linear-gradient(0deg,transparent 0px,transparent 3px,#101b2214 4px); }
+.replayFrame b { position:absolute; top:18px; left:18px; padding:8px 12px; font:700 12px monospace; color:#fff2d5; background:#182621e8; letter-spacing:.12em; }
+.personalRanks { max-height:150px; overflow:auto; padding:12px; border:1px solid #738572; font-size:12px; }
+@media(max-height:550px) and (orientation:landscape){.carSelect > div{min-height:76px}.carSelect h3{min-height:40px}.carSelect p{min-height:24px}.circuitSummary{padding:8px}.circuitSummary strong{font-size:15px}}
+.stageChoices .circuitSummary { padding:10px; min-height:66px; position:relative; }
+.stageChoices .circuitSummary span { position:static; display:block; font-size:9px; }
+.carSelect > div { flex:1; min-width:0; }
+.carSelect h3 { justify-content:center; }
+.carSelect h3 { height:2.4em; min-height:2.4em; line-height:1.2; display:flex; justify-content:center; overflow:hidden; }
+.carSelect p { height:32px; min-height:32px; overflow:hidden; }
+.ghostStatus { height:28px; min-height:28px; overflow:hidden; }
+@media(max-height:550px) and (orientation:landscape){.ghostStatus{height:22px;min-height:22px}.carSelect p{display:none}}
+@media(max-height:550px) and (orientation:landscape){
+ .stageChoices .circuitSummary{min-height:54px;padding:7px;gap:0}
+ .stageChoices .circuitSummary small{font-size:7px;letter-spacing:.6px}
+ .stageChoices .circuitSummary strong{font-size:10px;margin-top:4px}
+ .stageChoices .circuitSummary span{display:none}
+ .carSelect > div{min-height:62px}.carSelect h3{font-size:16px}
+}
