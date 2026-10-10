@@ -35,8 +35,9 @@ test('reject invalid conditions and names; wet roads reduce grip',()=>{
  assert.ok(surfaceGrip({stage:'forest',weather:'rain',reverse:false})<surfaceGrip({stage:'forest',weather:'clear',reverse:false}));
 });
 
+const kartVenueUri=uri(compile(await readFile(new URL('../components/rally/kart-venue.ts',import.meta.url),'utf8')).replace("from 'three'",`from '${import.meta.resolve('three')}'`));
 const atmosphereCode=compile(await readFile(new URL('../components/rally/atmosphere.ts',import.meta.url),'utf8')).replace("from 'three'",`from '${import.meta.resolve('three')}'`);
-const {Atmosphere,finishLayout,fanProgress}=await import(uri(atmosphereCode));
+const {Atmosphere,finishLayout,fanProgress}=await import(uri(atmosphereCode.replace('"./kart-venue"',JSON.stringify(kartVenueUri))));
 test('finish areas follow all endpoints; crowd remains outside roads and arrival corridor',()=>{
  for(const stage of stages)for(const weather of stage.conditions)for(const reverse of [false,true])for(const track of [1,2,3]){
   const points=stagePoints({stage:stage.id,weather,reverse,track}),atmosphere=new Atmosphere(points);

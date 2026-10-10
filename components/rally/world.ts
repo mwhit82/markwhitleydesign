@@ -1,3 +1,4 @@
+import {kartFloor,kartLapProgress,type KartFinish} from "./kart-venue";
 import {paceNotes,PaceScheduler} from "./codriver";
 import * as T from "three";
 import {roadRelief} from "./road-relief";
@@ -22,6 +23,7 @@ type Callbacks = {
     rpm: number;
     limited: boolean;
     progress: number;
+    lapProgress:number;
     count: number;
     lap:number;
     lastLap:number;
@@ -211,7 +213,7 @@ export class RallyWorld {
     this.audio?.setEnvironment(selection.stage);
   }
   buildStage() {
-    this.atmosphere = new Atmosphere(this.points);
+    this.atmosphere = new Atmosphere(this.points,this.selection);
     const stage = stageDefinition(this.selection);
     const weather = this.selection.weather,preset=lighting(this.selection),sky=timeOfDay(this.selection)==='midday'?stage.sky:preset.sky;
     const fogColor=new T.Color(sky);if(weather==="fog"||weather==="haze")fogColor.lerp(new T.Color(timeOfDay(this.selection)==="night"?"#657487":"#c2c9c4"),.55);
@@ -220,7 +222,8 @@ export class RallyWorld {
     this.sun.color.set(preset.sun);this.sun.intensity=preset.power;this.sun.position.set(...preset.position as [number,number,number]);
     this.checkpointEffects=new CheckpointEffects(this.atmosphere.reduced);this.root.add(this.checkpointEffects.group);
     const service=this.atmosphere.layout.center;
-    this.box(Math.max(170,Math.abs(service.x)*2+32), 3, Math.max(160,Math.abs(service.z)*2+32), stage.ground, 0, -1.8, 0);
+    if(this.selection.stage==='kart')this.root.add(kartFloor(this.atmosphere.layout as KartFinish));
+    else this.box(Math.max(170,Math.abs(service.x)*2+32), 3, Math.max(160,Math.abs(service.z)*2+32), stage.ground, 0, -1.8, 0);
     // A single stamped surface cannot fold over itself at tight bends, unlike the old ribbon triangles.
     const canvas = document.createElement("canvas");
     canvas.width = canvas.height = 2048;
@@ -237,9 +240,9 @@ export class RallyWorld {
     });
     // Feather the shoulder outwards while retaining the original 11.2-unit route.
     paint.strokeStyle = stage.ground;
-    for(let width=21;width>=13;width-=.7){paint.globalAlpha=.06;paint.lineWidth=width;paint.stroke();}
+    if(this.selection.stage!=='kart')for(let width=21;width>=13;width-=.7){paint.globalAlpha=.06;paint.lineWidth=width;paint.stroke();}
     paint.strokeStyle = stage.edge;
-    for(let width=15;width>=11.4;width-=.45){paint.globalAlpha=.09;paint.lineWidth=width;paint.stroke();}
+    for(let width=this.selection.stage==='kart'?11.7:15;width>=11.4;width-=.45){paint.globalAlpha=.09;paint.lineWidth=width;paint.stroke();}
     paint.globalAlpha=1;
     paint.strokeStyle = stage.road;
     paint.lineWidth = 11.2;
@@ -597,10 +600,11 @@ export class RallyWorld {
     this.callbacks.finish?.(this.time,this.cleanRun ? this.trace : [],replay,{eligible:this.cleanRun,reasons:[...this.reasons]});
     this.arrival=0;this.arrivalFrom.copy(this.vehicle.position);this.arrivalAngle=this.angle;
     this.velocity.set(0,0,0);this.setMode("celebrating");
+    if(this.selection.stage==='kart'&&this.atmosphere.reduced)this.skipCelebration();
   }
   skipCelebration(){
     if(this.mode!=="celebrating")return;
-    this.vehicle.position.copy(this.atmosphere.layout.center);this.vehicle.rotation.y=this.atmosphere.layout.angle;
+    this.vehicle.position.copy(this.atmosphere.layout.center);this.vehicle.rotation.set(0,this.atmosphere.layout.angle,0);
     this.velocity.set(0,0,0);this.atmosphere.celebrate();this.setMode("finished");
   }
   setMode(mode: Mode) {
@@ -625,7 +629,7 @@ export class RallyWorld {
       next = this.points[Math.min(idx + 3, 650)];
     this.vehicle.position.copy(p);
     this.angle = Math.atan2(next.x - p.x, next.z - p.z);
-    this.vehicle.rotation.set(0,this.angle,0);
+    this.vehicle.rotation.set(0,this.angle,0,'XYZ');
     this.velocity.set(0, 0, 0);
     this.rpm = 950;
     this.limited = false;
@@ -935,14 +939,14 @@ export class RallyWorld {
       }
     }
     if(this.mode==="celebrating"){
-      this.arrival+=dt;const t=Math.min(1,this.arrival/3),ease=1-Math.pow(1-t,3);
+      this.arrival+=dt;const t=Math.min(1,this.arrival/(this.selection.stage==='kart'?6:3)),ease=this.selection.stage==='kart'?t*t*(3-2*t):1-Math.pow(1-t,3);
       const {finish,approach}=this.atmosphere.layout;
       const lead=this.arrivalFrom.distanceTo(finish),length=approach.getLength(),travel=ease*(lead+length);
       const u=Math.max(0,Math.min(1,(travel-lead)/length));
       if(travel<lead)this.vehicle.position.lerpVectors(this.arrivalFrom,finish,travel/lead);
       else this.vehicle.position.copy(approach.getPointAt(u));
       const tangent=travel<lead?finish.clone().sub(this.arrivalFrom):approach.getTangentAt(u);
-      this.vehicle.rotation.set(0,headingBetween(this.arrivalAngle,Math.atan2(tangent.x,tangent.z),Math.min(1,t*6)),0);
+      this.vehicle.rotation.set(this.selection.stage==='kart'?T.MathUtils.lerp(this.vehicle.rotation.x,-Math.atan2(tangent.y,Math.hypot(tangent.x,tangent.z)),1-Math.exp(-dt*10)):0,headingBetween(this.arrivalAngle,Math.atan2(tangent.x,tangent.z),Math.min(1,t*6)),0,this.selection.stage==='kart'?'YXZ':'XYZ');
       if(t===1){this.atmosphere.celebrate();this.setMode("finished");}
     }
     if(this.mode==="finished"&&this.replayEnabled&&this.resultReplay){
@@ -1009,6 +1013,7 @@ export class RallyWorld {
         rpm: Math.round(this.rpm / 50) * 50,
         limited: this.limited,
         progress: ((this.lap-1)+this.checkpoint / this.checkpoints.length)/lapCount(this.selection),
+        lapProgress:this.mode==='celebrating'||this.mode==='finished'?1:kartLapProgress(this.routeProgress(this.vehicle.position),this.checkpoint,this.checkpoints),
         lap:this.lap,lastLap:this.lapTimes.at(-1)??0,
         count: Math.ceil(this.countdown),
       });

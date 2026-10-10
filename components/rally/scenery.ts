@@ -1,3 +1,4 @@
+import {kartBarrierSegments} from "./kart-venue";
 import * as T from 'three';
 import {type StageSelection} from './stages';
 const ramps=[{index:135,height:.85},{index:325,height:2.2},{index:515,height:.85}];
@@ -25,19 +26,26 @@ export class StageScenery {
   const mat=(color:string)=>new T.MeshStandardMaterial({color,roughness:.9});
   const box=(w:number,h:number,d:number,color:string,x:number,y:number,z:number,parent=this.group)=>{const m=new T.Mesh(new T.BoxGeometry(w,h,d),mat(color));m.position.set(x,y,z);m.receiveShadow=true;m.castShadow=true;parent.add(m);return m;};
   if(selection.stage==='kart'){
-   // Cutaway warehouse: tall rear walls, low front edges, no roof over the racing view.
-   box(170,9,.8,'#737d7d',0,4,-79);box(.8,9,158,'#737d7d',-84,4,0);
-   box(170,.7,.8,'#596466',0,.1,79);box(.8,.7,158,'#596466',84,.1,0);
-   for(let x=-72;x<80;x+=24){box(.8,11,1.2,'#d5673d',x,4.8,-77);const strip=box(15,.2,.4,'#fff4cc',x,8.3,-76);(strip.material as T.MeshStandardMaterial).emissive.set('#fff4cc');(strip.material as T.MeshStandardMaterial).emissiveIntensity=2;}
-   for(let z=-64;z<74;z+=24)box(1.2,11,.8,'#d5673d',-82,4.8,z);
-   const banner=panel('POCKET KART • 1993','#cb5137',28);banner.position.set(-18,5,-78);this.group.add(banner);
-   const placements:T.Vector3[]=[];
-   for(let i=8;i<643;i+=3){const p=points[i],next=points[i+1],a=Math.atan2(next.x-p.x,next.z-p.z);for(const side of [-1,1]){
-    const v=new T.Vector3(p.x+Math.cos(a)*7.2*side,.6,p.z-Math.sin(a)*7.2*side);
-    if(points.every(q=>Math.hypot(q.x-v.x,q.z-v.z)>6.4)&&!reserved(v.x,v.z))placements.push(v);
-   }}
-   const tyres=new T.InstancedMesh(new T.TorusGeometry(.63,.24,5,10),mat('#343a3c'),placements.length*2);
-   placements.forEach((p,i)=>{for(let layer=0;layer<2;layer++){this.object.position.copy(p);this.object.position.y=-.06+layer*.48;this.object.rotation.set(Math.PI/2,0,0);this.object.scale.setScalar(1);this.object.updateMatrix();tyres.setMatrixAt(i*2+layer,this.object.matrix);tyres.setColorAt(i*2+layer,new T.Color(i%9<3?'#dc5d3c':i%9<6?'#e0d8bc':'#303838'));}});tyres.castShadow=true;this.group.add(tyres);
+   // Roofless clay warehouse: structure sits at the perimeter, never above the kart.
+   box(240,10,.8,'#67716f',0,4.7,-119);box(.8,10,238,'#67716f',-119,4.7,0);
+   box(240,.65,.8,'#484f4d',0,.02,119);box(.8,.65,238,'#484f4d',119,.02,0);
+   const posts=new T.InstancedMesh(new T.BoxGeometry(.9,10.5,1.1),mat('#b84b3e'),20);
+   const panels=new T.InstancedMesh(new T.BoxGeometry(20,5.4,.15),mat('#929a94'),10);
+   const lights=new T.InstancedMesh(new T.BoxGeometry(13,.2,.5),new T.MeshStandardMaterial({color:'#fff2cc',emissive:'#ffe6ac',emissiveIntensity:.8}),20);
+   for(let i=0;i<10;i++){
+    for(const side of [0,1]){this.object.position.set(side?-117:-108+i*24,5,side?-108+i*24:-117);this.object.rotation.set(0,side?Math.PI/2:0,0);this.object.scale.setScalar(1);this.object.updateMatrix();posts.setMatrixAt(i*2+side,this.object.matrix);this.object.position.y=9.5;this.object.updateMatrix();lights.setMatrixAt(i*2+side,this.object.matrix);}
+    this.object.position.set(-108+i*24,4,-118.4);this.object.rotation.set(0,0,0);this.object.updateMatrix();panels.setMatrixAt(i,this.object.matrix);
+   }posts.castShadow=true;this.group.add(posts,panels,lights);
+   box(236,.4,.5,'#3f4947',0,9,-116);box(.5,.4,236,'#3f4947',-116,9,0);
+   const banner=panel('POCKET KART • 1993','#b94d3e',28);banner.position.set(-18,6,-117.8);this.group.add(banner);
+   const blocks=kartBarrierSegments(points,reserved),placements:T.Vector3[]=[];
+   const barriers=new T.InstancedMesh(new T.BoxGeometry(.85,1.1,1),mat('#eee6cf'),blocks.length);
+   blocks.forEach(({p,angle,length,normal},i)=>{
+    this.object.position.copy(p).setY(.25);this.object.rotation.set(0,angle,0);this.object.scale.set(1,1,length+.12);this.object.updateMatrix();barriers.setMatrixAt(i,this.object.matrix);barriers.setColorAt(i,new T.Color((Math.floor((p.x+p.z)/5)%2+2)%2?'#eee6cf':'#b9493a'));
+    const count=Math.max(1,Math.round(length/1.65));for(let j=0;j<count;j++){const tyre=p.clone().addScaledVector(normal,1.4).add(new T.Vector3(Math.sin(angle),0,Math.cos(angle)).multiplyScalar((j+.5)/count*length-length/2)).setY(-.06);if(!reserved(tyre.x,tyre.z)&&points.every(q=>Math.hypot(q.x-tyre.x,q.z-tyre.z)>7.1))placements.push(tyre);}
+   });barriers.castShadow=true;barriers.receiveShadow=true;this.group.add(barriers);
+   const tyres=new T.InstancedMesh(new T.TorusGeometry(.63,.24,5,10),mat('#292f2e'),placements.length);
+   placements.forEach((p,i)=>{this.object.position.copy(p);this.object.rotation.set(Math.PI/2,0,0);this.object.scale.setScalar(1);this.object.updateMatrix();tyres.setMatrixAt(i,this.object.matrix);});tyres.castShadow=true;this.group.add(tyres);
    return;
   }
   for(const [j,index] of bridgeIndices(points,reserved).entries()){

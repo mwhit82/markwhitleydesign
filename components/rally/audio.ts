@@ -57,7 +57,7 @@ export class RallyAudio {
   private uiLayer:Layer|null=null;
   private finishUntil=0;
   private finishGain=.12;private finishDuration=3;
-  finishResult(clean:boolean,best:boolean){this.finishGain=clean?(best?.48:.31):.12;this.finishDuration=clean?(best?10:6):3;}
+  finishResult(clean:boolean,best:boolean){this.finishGain=clean?(best?.48:.31):.12;this.finishDuration=(clean?(best?10:6):3)+(this.indoor?3:0);}
   private nextCheer=0;
   crowdDistance=Infinity;
   private interval: number | null = null;

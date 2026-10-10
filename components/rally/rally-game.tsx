@@ -58,7 +58,7 @@ export function RallyGame() {
     speed: 0,
     rpm: 950,
     limited: false,
-    progress: 0,
+    progress: 0,lapProgress:0,
     count: 3,lap:1,lastLap:0,
   });
   const [best, setBest] = useState<number | null>(null);
@@ -280,7 +280,7 @@ export function RallyGame() {
     <div className={styles.page}>
       <div className={styles.heading}>
         <div>
-          <p className={styles.eyebrow}>MARK WHITLEY / POCKET RALLY V2.6.1</p>
+          <p className={styles.eyebrow}>MARK WHITLEY / POCKET RALLY V2.7</p>
           <h1>
             POCKET<span>RALLY.</span>
           </h1>
@@ -292,6 +292,7 @@ export function RallyGame() {
       </div>
       <div
         ref={game}
+        data-stage={selection.stage}
         data-time={timeOfDay(selection)}
         data-steering={controls.steering}
         className={`${styles.game} ${expanded ? styles.expanded : ""}`}
@@ -437,15 +438,21 @@ export function RallyGame() {
             </div>
           </>
         )}
+        {selection.stage==='kart'&&['race','countdown','celebrating'].includes(mode)&&<div className={styles.lapCard} aria-label="Lap information">
+          <small>{mode==='celebrating'?'FINISHED':stats.lap===lapCount(selection)?'FINAL LAP':'CIRCUIT RACE'}</small>
+          <strong>LAP <b>{Math.min(stats.lap,lapCount(selection))}</b><span> / {lapCount(selection)}</span></strong>
+          <div className={styles.lapProgressLabel}><span>Lap progress</span><b>{Math.round(stats.lapProgress*100)}%</b></div>
+          <div className={styles.lapProgress} role="progressbar" aria-label="Current lap progress" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(stats.lapProgress*100)}><div style={{width:`${stats.lapProgress*100}%`}}/></div>
+          <span className={styles.lastLap}>LAST LAP <b>{stats.lastLap>0?formatTime(stats.lastLap):'—'}</b></span>
+        </div>}
         {mode === "celebrating" && <div className={styles.arrival}><strong>{result?.eligible?"STAGE COMPLETE":"PRACTICE FINISH"} · {formatTime(result?.time ?? stats.time)}</strong><button onClick={()=>api.current?.skipCelebration()}>Skip celebration <HudIcon name="right"/></button></div>}
         {(mode === "race" || mode === "countdown") && (
           <>
             <div className={styles.timer}>
-              <small>{selection.stage==='kart'?`LAP ${stats.lap} / ${lapCount(selection)}`:'STAGE TIME'}</small>
-              {selection.stage==='kart'&&stats.lastLap>0&&<span>LAST LAP {formatTime(stats.lastLap)}</span>}
+              <small>{selection.stage==='kart'?'RACE TIME':'STAGE TIME'}</small>
               <strong>{formatTime(stats.time)}</strong>
               <span>BEST <b>{best ? formatTime(best) : "—"}</b></span>
-              <div className={styles.progress} aria-label="Stage progress"><div style={{width:`${stats.progress*100}%`}}/></div>
+              {selection.stage!=='kart'&&<div className={styles.progress} aria-label="Stage progress"><div style={{width:`${stats.progress*100}%`}}/></div>}
               {practice.length>0 && <em className={styles.practice}>! PRACTICE RUN</em>}
             </div>
             <div className={styles.speed}>

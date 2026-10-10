@@ -1,0 +1,10 @@
+Pocket Rally V2.7 verification — 11 October 2026
+
+49 regression tests pass; production build passes; diff whitespace check passes.
+Underpass tests cover all three circuits in both directions: continuous racing floor, open ramp entrances, underground crossing, finite arrival paths and celebration reset.
+Existing circuit/lap regression coverage retained for 1/3/5 laps, reverse and practice eligibility. New visual progress never advances official lap/checkpoint state.
+Browser inspections: desktop, 393x852 portrait, 852x393 landscape and 1024x768 tablet. Dedicated lap card, final-lap and finished states inspected. A temporary local practice fixture verified frozen finish time and arrival/results transition; fixture removed before production build.
+Audio: kart-only offline edits of existing CC0 recording. Objective seam, duration and level checks pass; no new continuous sources or repeated decoding. Stylised high-rev sound, not an authentic F1 recording. Physical iPhone listening remains outstanding.
+Venue-only geometry comparison against V2.6.1: 26 meshes/83,290 triangles before, 12 meshes/78,634 triangles after before final tyre-clearance culling (which only reduces this). New underpass geometry is additional; these are not whole-game frame-rate measurements.
+Physical iPhone/controller testing and whole-game device performance remain outstanding. Local browser tests are not physical-device verification.
+No public scores submitted and no existing records reset.

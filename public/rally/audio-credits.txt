@@ -74,3 +74,9 @@ Source: author's high-quality MP3 preview. Edits: individual phrase trimming,
 220–3400 Hz gentle radio EQ, peak/RMS normalisation, 12ms edge fades,
 mono 22050 Hz PCM delivery. No generative AI, voice cloning or synthesis.
 Original voice remains the author's; this credit does not imply endorsement.
+
+V2.7 kart-only revision: qubodup's CC0 kart venue recording above.
+Offline 105–920 Hz source-band isolation, layer-specific upward resampling,
+3.3 kHz soft high-frequency rolloff, raised-cosine loop crossfades and level trim.
+Stylised high-rev/F1-inspired kart sound, not an authentic Formula One recording.
+Prepared with scripts/prepare-kart-v27.py. Rally engine files are unchanged.

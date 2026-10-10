@@ -1,3 +1,5 @@
+import {kartFinishLayout} from "./kart-venue";
+import type {StageSelection} from "./stages";
 import * as T from 'three';
 // Choose a service area beyond the gate without covering another part of the route.
 export function finishLayout(points:T.Vector3[]) {
@@ -29,7 +31,7 @@ export function fanProgress(current:number,travel:number,distance:number,speed:n
 }
 export class Atmosphere {
  group=new T.Group();
- layout:ReturnType<typeof finishLayout>;
+ layout:ReturnType<typeof finishLayout>|ReturnType<typeof kartFinishLayout>;
  private people:T.InstancedMesh;
  private arms:T.InstancedMesh;
  private flashes:T.InstancedMesh;
@@ -43,8 +45,9 @@ export class Atmosphere {
  private burst=-1;
  private roofs:T.Mesh[]=[];
  reduced=typeof matchMedia!=='undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches;
- constructor(points:T.Vector3[]) {
-  this.layout=finishLayout(points);
+ constructor(points:T.Vector3[],selection?:StageSelection) {
+  const kart=selection?.stage==='kart';
+  this.layout=kart?kartFinishLayout(points,selection):finishLayout(points);
   this.reservedPath=this.layout.approach.getPoints(24);
   const {center,angle}=this.layout;
   const mat=(color:string)=>new T.MeshStandardMaterial({color,roughness:.9});
@@ -52,11 +55,11 @@ export class Atmosphere {
    const mesh=new T.Mesh(new T.BoxGeometry(w,h,d),mat(color));mesh.position.set(x,y,z);mesh.receiveShadow=true;parent.add(mesh);return mesh;
   };
   const tent=new T.Group();tent.position.copy(center);tent.rotation.y=angle;this.group.add(tent);
-  box(17,.12,18,'#cfbd92',0,.02,0,tent);
-  const approach=this.layout.approach.getPoints(40),vertices:number[]=[],indices:number[]=[];
-  approach.forEach((p,i)=>{const tangent=this.layout.approach.getTangent(i/40),right=new T.Vector3(tangent.z,0,-tangent.x).multiplyScalar(5.6);vertices.push(p.x-right.x,.075,p.z-right.z,p.x+right.x,.075,p.z+right.z);if(i<40){const n=i*2;indices.push(n,n+2,n+1,n+1,n+2,n+3);}});
+  box(17,.12,18,kart?'#4e555b':'#cfbd92',0,.02,0,tent);
+  const approach=Array.from({length:81},(_,i)=>this.layout.approach.getPointAt(i/80)),vertices:number[]=[],indices:number[]=[];
+  approach.forEach((p,i)=>{const tangent=this.layout.approach.getTangentAt(i/80),right=new T.Vector3(tangent.z,0,-tangent.x).normalize().multiplyScalar(kart?4:5.6);vertices.push(p.x-right.x,p.y+.075,p.z-right.z,p.x+right.x,p.y+.075,p.z+right.z);if(i<80){const n=i*2;indices.push(n,n+2,n+1,n+1,n+2,n+3);}});
   const laneGeometry=new T.BufferGeometry();laneGeometry.setAttribute('position',new T.Float32BufferAttribute(vertices,3));laneGeometry.setIndex(indices);laneGeometry.computeVertexNormals();
-  const lane=new T.Mesh(laneGeometry,mat('#cfbd92'));lane.receiveShadow=true;this.group.add(lane);
+  const lane=new T.Mesh(laneGeometry,mat(kart?'#4e555b':'#cfbd92'));lane.receiveShadow=true;this.group.add(lane);
   for(const x of [-5,5])for(const z of [-4,4])box(.22,4.8,.22,'#f7eed8',x,2.4,z,tent);
   for(const side of [-1,1]) {const roof=box(5.6,.18,9.6,'#df5838',side*2.55,5.35,0,tent);roof.rotation.z=-side*.3;this.roofs.push(roof);}
   box(10.6,.6,.18,'#fff0d0',0,4.65,4.5,tent);
@@ -68,7 +71,7 @@ export class Atmosphere {
   const colors=['#dd593c','#3478a0','#e5b93f','#677f53','#a572a1','#eee9d8'];
   let count=0,photoCount=0;
   for(const [section,index] of [90,210,340,480,560,600,640,640,640,640,640,640].entries()) {
-   const finish=section>=6,u=.25+(section-6)*.13;
+   const finish=section>=6,u=kart?.85+(section-6)*.025:.25+(section-6)*.13;
    const p=finish?this.layout.approach.getPointAt(u):points[index],dir=finish?this.layout.approach.getTangentAt(u):points[Math.min(index+3,650)].clone().sub(points[index-3]).normalize();
    const right=new T.Vector3(dir.z,0,-dir.x);
    for(let j=0;j<6;j++) {
@@ -76,13 +79,13 @@ export class Atmosphere {
     for(const side of [j%2?1:-1,j%2?-1:1])for(const distance of [7.8,9,11,14,18]) {
      if(chosen)break;
      const candidate=p.clone().addScaledVector(right,side*distance).addScaledVector(dir,(j-2.5)*1.4);
-     if(points.every(q=>q.distanceTo(candidate)>7)&& (finish?this.reservedPath.every(q=>q.distanceTo(candidate)>6.8):!this.reserved(candidate.x,candidate.z))&&this.spectators.every(q=>Math.hypot(q.x-candidate.x,q.z-candidate.z)>1.1)){chosen=candidate;break;}
+     if((!kart||(Math.abs(candidate.x)<114&&Math.abs(candidate.z)<114))&&points.every(q=>q.distanceTo(candidate)>7)&& (finish?this.reservedPath.every(q=>q.distanceTo(candidate)>6.8):!this.reserved(candidate.x,candidate.z))&&this.spectators.every(q=>Math.hypot(q.x-candidate.x,q.z-candidate.z)>1.1)){chosen=candidate;break;}
     }
     // Guaranteed safe fallback behind the finish spectator barrier on extended apron.
     if(!chosen){
      for(let radius=18;!chosen && radius<100;radius+=3)for(let k=0;k<72;k++){
       const candidate=center.clone().add(new T.Vector3(Math.cos(k*Math.PI/36)*radius,0,Math.sin(k*Math.PI/36)*radius));
-      if(points.every(q=>q.distanceTo(candidate)>8.7)&&!this.reserved(candidate.x,candidate.z)&&this.spectators.every(q=>Math.hypot(q.x-candidate.x,q.z-candidate.z)>1.3)){chosen=candidate;break;}
+      if((!kart||(Math.abs(candidate.x)<114&&Math.abs(candidate.z)<114))&&points.every(q=>q.distanceTo(candidate)>8.7)&&!this.reserved(candidate.x,candidate.z)&&this.spectators.every(q=>Math.hypot(q.x-candidate.x,q.z-candidate.z)>1.3)){chosen=candidate;break;}
      }
     }
     if(!chosen)continue;
