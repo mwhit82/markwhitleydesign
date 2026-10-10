@@ -43,6 +43,11 @@ export const cars = [
     power: 14.5,
     shape: "hatch",
   },
+  {name:"Ford Sierra RS Cosworth",year:"1990",color:"#f1eddb",accent:"#2467ab",trait:"Long-legged rally saloon",grip:6.8,steer:1.98,power:15,shape:"sierra"},
+  {name:"Volkswagen Golf GTI 16V",year:"1990",color:"#d84232",accent:"#272f31",trait:"Boxy, eager and precise",grip:7.5,steer:2.3,power:14.5,shape:"golf"},
+  {name:"Peugeot 205 GTI",year:"1990",color:"#eee8d8",accent:"#e14c36",trait:"A featherweight through the bends",grip:6.9,steer:2.45,power:14.2,shape:"peugeot"},
+  {name:"Renault Clio Williams",year:"1993",color:"#284e9a",accent:"#d7b357",trait:"Little blue corner hunter",grip:7.4,steer:2.3,power:14.7,shape:"clio"},
+  {name:"Pocket Kart",year:"SPECIAL",color:"#e65e38",accent:"#f4d24b",trait:"Indoor exclusive · little driver, big ambition",grip:9,steer:2.35,power:12,shape:"kart"},
 ] as const;
 export type Mode = "garage" | "countdown" | "race" | "paused" | "finished" | "celebrating";
 export const formatTime = (value: number) =>

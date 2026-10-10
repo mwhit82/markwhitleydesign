@@ -1,14 +1,15 @@
-import {stages,timesOfDay,boardKey,type StageSelection} from '../../components/rally/stages';
+import {stages,timesOfDay,stageTimes,boardKey,type StageSelection} from '../../components/rally/stages';
 export function browseRequest(q:URLSearchParams){
+ const track=q.get('track');
  const stage=q.get('stage'),weather=q.get('weather'),day=q.get('timeOfDay'),direction=q.get('reverse'),car=q.get('car'),search=(q.get('search')||'').trim();
- if((stage&&!stages.some(s=>s.id===stage))||(weather&&!stages.some(s=>(s.conditions as readonly string[]).includes(weather)))||(day&&!(timesOfDay as readonly string[]).includes(day))||(direction!==null&&!['true','false'].includes(direction))||(car!==null&&!/^[0-3]$/.test(car))||search.length>20) return null;
+ if((track!==null&&!/^[1-3]$/.test(track))||(stage&&!stages.some(s=>s.id===stage))||(weather&&!stages.some(s=>(s.conditions as readonly string[]).includes(weather)))||(day&&!(timesOfDay as readonly string[]).includes(day))||(direction!==null&&!['true','false'].includes(direction))||(car!==null&&!/^[0-8]$/.test(car))||search.length>20) return null;
  const cursor=(q.get('cursor')||'0:0').split(':');
  if(cursor.length!==2||!cursor.every(v=>/^\d{1,8}$/.test(v)))return null;
  const [board,offset]=cursor.map(Number);
  const selections:StageSelection[]=[];
- for(const s of stages)for(const w of s.conditions)for(const r of [false,true])for(const d of timesOfDay){
-  if((stage&&s.id!==stage)||(weather&&w!==weather)||(day&&d!==day)||(direction!==null&&String(r)!==direction))continue;
-  selections.push({stage:s.id,weather:w,reverse:r,timeOfDay:d});
+ for(const s of stages)for(const w of s.conditions)for(const r of [false,true])for(const d of stageTimes(s.id))for(const layout of [1,2,3] as const){
+  if((track!==null&&layout!==Number(track))||(car!==null&&(s.id==='kart'?car!=='8':car==='8'))||(stage&&s.id!==stage)||(weather&&w!==weather)||(day&&d!==day)||(direction!==null&&String(r)!==direction))continue;
+  selections.push({stage:s.id,weather:w,reverse:r,timeOfDay:d,track:layout});
  }
  if(board>selections.length||offset>10000000)return null;
  return {selections,keys:selections.map(s=>`rally:${boardKey(s)}${car===null?'':`:car${car}`}`),board,offset,search:search.toLowerCase()};

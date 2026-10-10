@@ -1,7 +1,10 @@
 import type {ReactNode} from 'react';
-export type IconName='pause'|'sound'|'muted'|'expand'|'contract'|'ghost'|'recover';
+export type IconName='pause'|'sound'|'muted'|'expand'|'contract'|'ghost'|'recover'|'left'|'right'|'next';
 export function HudIcon({name}:{name:IconName}){
  const paths:Record<IconName,ReactNode>={
+  left:<path d="M20 12H4m6-6-6 6 6 6"/>,
+  right:<path d="M4 12h16m-6-6 6 6-6 6"/>,
+  next:<path d="M6 18 18 6M7 6h11v11"/>,
   pause:<><path d="M8 5v14M16 5v14" strokeWidth="3"/></>,
   sound:<><path d="M11 5 6 9H3v6h3l5 4Z"/><path d="M15 8q5 4 0 8m3-11q8 7 0 14"/></>,
   muted:<><path d="M11 5 6 9H3v6h3l5 4Z"/><path d="m16 9 5 6m0-6-5 6"/></>,

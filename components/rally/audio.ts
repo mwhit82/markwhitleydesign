@@ -36,7 +36,7 @@ const assets = [
   "gravel", "crowd-bed", "crowd-cheer", "crowd-applause", "ui-select", "ui-start", "ui-restart",
 ];
 
-export function crowdLevel(distance:number){return .012+.075*Math.max(0,Math.min(1,(35-distance)/25));}
+export function crowdLevel(distance:number){return .004+.048*Math.max(0,Math.min(1,(35-distance)/25));}
 /** Three small decoded loops run on the audio thread. No media-rate changes, per-frame work, or live synthesis. */
 export class RallyAudio {
   private ambience = new Audio("/rally/forest-birds.wav");
@@ -51,6 +51,8 @@ export class RallyAudio {
   private finishStarted=false;
   private uiLayer:Layer|null=null;
   private finishUntil=0;
+  private finishGain=.12;private finishDuration=3;
+  finishResult(clean:boolean,best:boolean){this.finishGain=clean?(best?.48:.31):.12;this.finishDuration=clean?(best?10:6):3;}
   private nextCheer=0;
   crowdDistance=Infinity;
   private interval: number | null = null;
@@ -59,6 +61,7 @@ export class RallyAudio {
   private disposed = false;
   private playing = false;
   private car = 0;
+  private indoor=false;
   private mode: Mode = "garage";
   // The render loop only publishes these numbers. Audio work is bounded to 20 Hz.
   drive: DriveSound = { speed: 0, throttle: 0, brake: 0, sliding: false };
@@ -185,6 +188,7 @@ export class RallyAudio {
   }
 
   setEnvironment(stage: string) {
+    this.indoor=stage==="kart";this.ambience.volume=this.indoor?0:1;
     const next = stage === "forest" || stage === "alpine" ? "/rally/forest-birds.wav" : "/rally/open-wind.wav";
     if (this.ambience.getAttribute("src") === next) return;
     this.ambience.pause();
@@ -193,7 +197,7 @@ export class RallyAudio {
     if(this.playing) void this.ambience.play().catch(()=>{this.pause();this.onError();});
   }
   setCar(car: number) {
-    this.car = car;
+    this.car = [0,1,2,3,1,3,2,0,3][car]??0;
     if (this.playing) this.installLayers();
   }
   private crowdSource(name:string,volume:number,loop=false):Layer|null{
@@ -211,9 +215,9 @@ export class RallyAudio {
     if(mode===this.mode)return;
     this.mode=mode;
     if(mode==='garage'||mode==='countdown'){
-      this.clearCheers();this.finishStarted=false;this.finishUntil=0;this.nextCheer=(this.context?.currentTime??0)+7;
+      this.clearCheers();this.finishStarted=false;this.finishUntil=0;this.finishGain=.12;this.finishDuration=3;this.nextCheer=(this.context?.currentTime??0)+7;
     }
-    if((mode==='celebrating'||mode==='finished')&&!this.finishStarted){this.finishStarted=true;this.clearCheers();this.finishUntil=(this.context?.currentTime??0)+6;this.cheer('crowd-applause',.25);}
+    if((mode==='celebrating'||mode==='finished')&&!this.finishStarted){this.finishStarted=true;this.clearCheers();this.finishUntil=(this.context?.currentTime??0)+this.finishDuration;this.cheer('crowd-applause',this.finishGain);}
     if(mode==='paused')this.pause();
   }
   cue(kind:"select"|"start"|"restart"){
@@ -235,8 +239,8 @@ export class RallyAudio {
     const celebration=this.mode==='celebrating'||this.mode==='finished';
     const crowd=this.mode==='race'?crowdLevel(this.crowdDistance):celebration?.04*Math.max(0,Math.min(1,(this.finishUntil-time)/3)):0;
     this.crowdLoop?.gain.gain.setTargetAtTime(crowd,time,.3);
-    if(this.mode==='race'&&this.crowdDistance<25&&time>=this.nextCheer){this.nextCheer=time+7;this.cheer('crowd-cheer',.10);}
-    if(celebration)for(const layer of this.cheers)layer.gain.gain.setTargetAtTime(.22*Math.max(0,Math.min(1,(this.finishUntil-time)/2)),time,.3);
+    if(this.mode==='race'&&this.crowdDistance<25&&time>=this.nextCheer){this.nextCheer=time+7;this.cheer('crowd-cheer',crowdLevel(this.crowdDistance)*1.4);}
+    if(celebration)for(const layer of this.cheers)layer.gain.gain.setTargetAtTime(this.finishGain*Math.max(0,Math.min(1,(this.finishUntil-time)/2)),time,.3);
   }
   pause() {
     this.generation++;

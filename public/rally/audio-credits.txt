@@ -29,19 +29,17 @@ Downloaded 10 October 2026. Trimmed, converted to mono 22050 Hz,
 loop-crossfaded and reduced in level. Rebuild on macOS with
 python3 scripts/prepare-rally-forest.py.
 
-Crowd recordings (all CC0 1.0 Universal):
-- Crowd Shouting/Speaking Ambience by StarNinjas
-  https://opengameart.org/content/crowd-shoutingspeaking-ambience
-  https://opengameart.org/users/starninjas
-- Cheers by Nocturnal_Vanguard / AuraVoice
-  https://opengameart.org/content/cheers-0
-- Applause in a large hall or church by eXpl0it3r
-  https://opengameart.org/content/applause-in-a-large-hall-or-church
-Licence: https://creativecommons.org/publicdomain/zero/1.0/
-Downloaded 10 October 2026. Trimmed, level-normalised, converted to mono
-22050 Hz; the background crowd is softened and loop-crossfaded.
-Sources retained in scripts/audio-source. Rebuild with
-python3 scripts/prepare-rally-crowd.py (numpy and soundfile).
+V2.5 sports crowd (crowd-bed, crowd-cheer, crowd-applause):
+Crowd Cheer by FoolBoyMedia, recorded after a football/sports match.
+https://freesound.org/people/FoolBoyMedia/sounds/397434/
+Licence: CC0 1.0 Universal
+https://creativecommons.org/publicdomain/zero/1.0/
+Source preview: https://cdn.freesound.org/previews/397/397434_4019029-hq.mp3
+Retrieved 10 October 2026. Mono conversion to 22050 Hz, excerpts,
+loop crossfade, fades and level normalisation. Replaces the previous
+spoken crowd/“Cheers” assets. No conversational samples are used.
+Source retained in scripts/audio-source/sports-crowd-cc0.mp3.
+Rebuild with scripts/prepare-rally-sports.py (numpy and soundfile).
 
 V2.4 UI cues (ui-select, ui-start, ui-restart): original procedural compositions
 created for Pocket Rally; generated offline by scripts/generate-rally-ui.py.

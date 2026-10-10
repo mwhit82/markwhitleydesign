@@ -2,7 +2,7 @@ export type Point = {x:number;z:number};
 export type RunReason = 'missed-checkpoint' | 'car-recovered' | 'time-limit';
 export type Eligibility = {eligible:boolean; reasons:RunReason[]};
 export const reasonText:Record<RunReason,string> = {
- 'missed-checkpoint':'Missed checkpoint', 'car-recovered':'Car recovered', 'time-limit':'Over the ten-minute ranked limit',
+ 'missed-checkpoint':'Missed checkpoint', 'car-recovered':'Car recovered (+1.5s each)' , 'time-limit':'Over the ten-minute ranked limit',
 };
 export type CheckpointEvent = {checkpoint:number; outcome:'accepted'|'missed'; time:number; delta?:number};
 export type CheckpointNotice = {id:number; checkpoints:number[]; outcome:CheckpointEvent['outcome']; time:number; delta?:number; duration:number; remaining:number};

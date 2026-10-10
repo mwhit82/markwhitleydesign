@@ -6,17 +6,17 @@ const compile=s=>ts.transpileModule(s,{compilerOptions:{module:ts.ModuleKind.ESN
 const uri=s=>`data:text/javascript;base64,${Buffer.from(s).toString('base64')}`;
 const stageCode=compile(await readFile(new URL('../components/rally/stages.ts',import.meta.url),'utf8')).replace("from 'three'",`from '${import.meta.resolve('three')}'`);
 const stageUri=uri(stageCode);
-const {stages,stagePoints,boardKey,validSelection,surfaceGrip,timesOfDay}=await import(stageUri);
+const {stages,stagePoints,boardKey,validSelection,surfaceGrip,timesOfDay,stageTimes}=await import(stageUri);
 const replayCode=compile(await readFile(new URL('../components/rally/replay.ts',import.meta.url),'utf8')).replace("'./stages'",JSON.stringify(stageUri));
 const replayUri=uri(replayCode);
 const {validReplay,replayPose,matchingReplay,checkpointSplits}=await import(replayUri);
 const checkpointUri=uri(compile(await readFile(new URL('../components/rally/checkpoints.ts',import.meta.url),'utf8')));
 const validation=compile(await readFile(new URL('../lib/rally/validation.ts',import.meta.url),'utf8')).replace("'../../components/rally/stages'",JSON.stringify(stageUri)).replace('"../../components/rally/replay"',JSON.stringify(replayUri)).replace("'../../components/rally/checkpoints'",JSON.stringify(checkpointUri));
 const {validateRun,validName,replayAgrees}=await import(uri(validation));
-test('96 unique configurations, reversed endpoints, bounded roads and valid completion traces',()=>{
+test('294 unique configurations, reversed endpoints, bounded roads and valid completion traces',()=>{
  const keys=new Set();
- for(const stage of stages) for(const weather of stage.conditions) for(const reverse of [false,true]) for(const timeOfDay of timesOfDay) {
-  const selection={stage:stage.id,weather,reverse,timeOfDay};
+ for(const stage of stages) for(const weather of stage.conditions) for(const reverse of [false,true]) for(const timeOfDay of stageTimes(stage.id)) for(const track of [1,2,3]) {
+  const selection={stage:stage.id,weather,reverse,timeOfDay,track};
   assert.ok(validSelection(selection));keys.add(boardKey(selection));
   const points=stagePoints(selection),opposite=stagePoints({...selection,reverse:!reverse});
   assert.ok(points[0].distanceTo(opposite.at(-1))<.001);
@@ -27,7 +27,7 @@ test('96 unique configurations, reversed endpoints, bounded roads and valid comp
   assert.equal(validateRun(selection,time,trace.slice(50),time+3),false);
   assert.equal(validateRun(selection,time,trace,time-4),false);
  }
- assert.equal(keys.size,96);
+ assert.equal(keys.size,294);
 });
 test('reject invalid conditions and names; wet roads reduce grip',()=>{
  assert.equal(validSelection({stage:'desert',weather:'snow',reverse:false}),false);
@@ -38,8 +38,8 @@ test('reject invalid conditions and names; wet roads reduce grip',()=>{
 const atmosphereCode=compile(await readFile(new URL('../components/rally/atmosphere.ts',import.meta.url),'utf8')).replace("from 'three'",`from '${import.meta.resolve('three')}'`);
 const {Atmosphere,finishLayout,fanProgress}=await import(uri(atmosphereCode));
 test('finish areas follow all endpoints; crowd remains outside roads and arrival corridor',()=>{
- for(const stage of stages)for(const weather of stage.conditions)for(const reverse of [false,true]){
-  const points=stagePoints({stage:stage.id,weather,reverse}),atmosphere=new Atmosphere(points);
+ for(const stage of stages)for(const weather of stage.conditions)for(const reverse of [false,true])for(const track of [1,2,3]){
+  const points=stagePoints({stage:stage.id,weather,reverse,track}),atmosphere=new Atmosphere(points);
   const layout=finishLayout(points),sin=Math.sin(layout.angle),cos=Math.cos(layout.angle);
   for(const p of points){const x=p.x-layout.center.x,z=p.z-layout.center.z;
    const clearance=Math.hypot(Math.max(0,Math.abs(x*cos-z*sin)-8.5),Math.max(0,Math.abs(x*sin+z*cos)-9));

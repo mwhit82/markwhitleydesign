@@ -1,11 +1,11 @@
 "use client";
 import { useEffect, useState } from 'react';
 import { cars, formatTime } from './data';
-import { boardKey, stageDefinition, weatherNames, timeOfDay, timeNames, type StageSelection } from './stages';
+import { boardKey, trackName, weatherNames, timeOfDay, timeNames, type StageSelection } from './stages';
 import styles from './rally.module.css';
 import {reasonText, type Eligibility} from "./checkpoints";
 import type { Replay } from "./replay";
-export type RaceResult = Eligibility & {time:number;trace:number[][];replay?:Replay;run:Promise<string|null>};
+export type RaceResult = Eligibility & {time:number;penalty?:number;trace:number[][];replay?:Replay;run:Promise<string|null>};
 type Entry = {rank:number;name:string;time:number;car:number;mine:boolean};
 export function Leaderboard({selection,result,onClose}:{selection:StageSelection;result:RaceResult|null;onClose:()=>void}) {
   const [entries,setEntries]=useState<Entry[]>([]);
@@ -21,7 +21,7 @@ export function Leaderboard({selection,result,onClose}:{selection:StageSelection
   const [revision,setRevision]=useState(0);
   const key=boardKey(selection);
   useEffect(()=>{try {setName(localStorage.getItem('rally-name')||'');} catch {}},[]);
-  const query=new URLSearchParams({stage:selection.stage,weather:selection.weather,reverse:String(selection.reverse),timeOfDay:timeOfDay(selection),...(filter?{car:filter}:{})}).toString();
+  const query=new URLSearchParams({stage:selection.stage,weather:selection.weather,reverse:String(selection.reverse),timeOfDay:timeOfDay(selection),track:String(selection.track??1),...(filter?{car:filter}:{})}).toString();
   useEffect(()=>{
     const abort=new AbortController();
     setLoading(true); setError(''); setEntries([]); setMe(null); setMore(false);
@@ -53,10 +53,10 @@ export function Leaderboard({selection,result,onClose}:{selection:StageSelection
   };
   const row=(entry:Entry)=><><b>#{entry.rank}</b><span>{entry.name}{entry.mine?' · You':''}<small>{cars[entry.car]?.name || 'Rally car'}</small></span><strong>{formatTime(entry.time)}</strong></>;
   return <div className={styles.leaderboard} data-rally-menu="true" role="dialog" aria-modal="true" aria-label="Stage leaderboard" onKeyDown={e=>{if(e.key==='Escape'){e.stopPropagation();onClose();}}}>
-    <header><div><span className={styles.tag}>STAGE LEADERBOARD</span><h2>{stageDefinition(selection).name}</h2><p>{weatherNames[selection.weather]} · {timeNames[timeOfDay(selection)]} · {selection.reverse?'Reverse':'Forward'}</p></div><button autoFocus onClick={onClose} aria-label="Close leaderboard">Close ×</button></header>
+    <header><div><span className={styles.tag}>STAGE LEADERBOARD</span><h2>{trackName(selection)}</h2><p>{weatherNames[selection.weather]} · {timeNames[timeOfDay(selection)]} · {selection.reverse?'Reverse':'Forward'}</p></div><button autoFocus onClick={onClose} aria-label="Close leaderboard">Close ×</button></header>
     {result && !submitted && (result.eligible && result.trace.length ? <form onSubmit={submit}><label>Driver name<input value={name} onChange={e=>setName(e.target.value)} minLength={2} maxLength={20} required placeholder="Your name" autoComplete="nickname" /></label><button disabled={busy||loading||Boolean(error)} type="submit">{busy?'Submitting…':`Submit ${formatTime(result.time)}`}</button><small>Public name · best time per driver on this browser. Clearing cookies or switching devices creates a new driver.</small></form>:<p>{result.reasons.map(r=>reasonText[r]).join(" · ")}. Practice time: {formatTime(result.time)}. Complete a clean run to rank.</p>)}
     {message&&<p role="status">{message}</p>}
-    <label className={styles.boardFilter}>Show<select value={filter} onChange={e=>setFilter(e.target.value)} disabled={loading}><option value="">All cars</option>{cars.map((c,i)=><option value={i} key={c.name}>{c.name}</option>)}</select></label>
+    <label className={styles.boardFilter}>Show<select value={filter} onChange={e=>setFilter(e.target.value)} disabled={loading}><option value="">All cars</option>{cars.map((c,i)=>(selection.stage==='kart'?i===8:i<8)&&<option value={i} key={c.name}>{c.name}</option>)}</select></label>
     {error&&<p role="status">{error} <button onClick={()=>setRevision(r=>r+1)}>Retry</button></p>}
     <div className={styles.boardRows} tabIndex={0} aria-label="Ranked times"><ol>{entries.map(entry=><li key={entry.rank} className={entry.mine?styles.myRow:''}>{row(entry)}</li>)}</ol>{!loading&&!error&&!entries.length&&<p>No times yet. Set the first one.</p>}{loading&&<p role="status">Loading times…</p>}{more&&<button disabled={loading} onClick={showMore}>Show 20 more</button>}</div>
     {me&&!entries.some(e=>e.mine)&&<div className={styles.myRank}><small>YOUR POSITION</small><div>{row(me)}</div></div>}

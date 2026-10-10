@@ -6,7 +6,7 @@ import {defaultControls,readControls,type ControlSettings} from "./controls";
 import {Standings} from "./standings";
 import { cars, formatTime, type Mode } from "./data";
 import styles from "./rally.module.css";
-import { stages, initialStage, stageDefinition, weatherNames, timesOfDay, timeNames, timeOfDay, type TimeOfDay, type StageSelection, type Weather } from "./stages";
+import { stages, initialStage, stageDefinition, trackName, trackNames, trackNumber, weatherNames, stageTimes, timeNames, timeOfDay, type TimeOfDay, type StageSelection, type Weather } from "./stages";
 import { Leaderboard, type RaceResult } from "./leaderboard";
 import { HudIcon } from "./ui";
 import { reasonText, type CheckpointNotice, type RunReason } from "./checkpoints";
@@ -43,7 +43,7 @@ export function RallyGame() {
   const toggleScreenWeather=()=>{setScreenWeather(on=>{try{localStorage.setItem("rally-screen-weather",on?"off":"on");}catch{}return !on;});};
   const [checkpointNotices,setCheckpointNotices]=useState<CheckpointNotice[]>([]);
   const [practice,setPractice]=useState<RunReason[]>([]);
-  const [optionPanel,setOptionPanel]=useState<'stage'|'weather'|'direction'|'ghost'|'time'|null>(null);
+  const [optionPanel,setOptionPanel]=useState<'stage'|'weather'|'direction'|'ghost'|'time'|'track'|null>(null);
   const optionOpener=useRef<HTMLButtonElement|null>(null);
   const menuAction=useRef<(action:'next'|'previous'|'activate'|'back')=>void>(()=>{});
   const [stats, setStats] = useState({
@@ -87,7 +87,7 @@ export function RallyGame() {
             const world=api.current;
             run.current=fetch('/api/rally/start',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({selection:world?.selection,car:world?.selected})}).then(async response=>response.ok?(await response.json()).run:null).catch(()=>null);
           },
-          finish: (time,trace,replay,eligibility) => setResult({time,trace,replay,...eligibility,run:run.current}),
+          finish: (time,trace,replay,eligibility) => setResult({time,trace,replay,...eligibility,penalty:api.current?.recoveryPenalty??0,run:run.current}),
           checkpoints:setCheckpointNotices,
           practice:setPractice,
           menu:action=>menuAction.current(action),
@@ -198,7 +198,7 @@ export function RallyGame() {
       setAudioBusy(false);
     }
   };
-  const touchButton = (key: string, label: string, name: string) => (
+  const touchButton = (key: string, label: React.ReactNode, name: string) => (
     <button
       key={key}
       data-driving-control="true"
@@ -227,13 +227,14 @@ export function RallyGame() {
   const mainMenu=()=>{setControlPanel(false);setAllBoards(false);setLeaderboard(false);setOptionPanel(null);setResult(null);run.current=Promise.resolve(null);api.current?.garage();};
   const openOptions=(panel:NonNullable<typeof optionPanel>,button:HTMLButtonElement)=>{optionOpener.current=button;setOptionPanel(panel);};
   const closeOptions=()=>{setOptionPanel(null);requestAnimationFrame(()=>optionOpener.current?.focus());};
-  const optionTitle=optionPanel==='time'?'Time of day':optionPanel==='stage'?'Choose stage':optionPanel==='weather'?'Choose weather':optionPanel==='direction'?'Route direction':'Ghost rival';
-  const options=optionPanel==='time'?timesOfDay.map(t=>({value:t,label:timeNames[t],detail:t==='night'?'Moonlight and headlights':t==='midday'?'Bright skies':t==='sunrise'?'First light':'Golden hour',selected:timeOfDay(selection)===t})):optionPanel==='stage'?stages.map(s=>({value:s.id,label:s.name,detail:s.surface,selected:selection.stage===s.id})):
+  const optionTitle=optionPanel==='track'?'Choose track':optionPanel==='time'?'Time of day':optionPanel==='stage'?'Choose stage':optionPanel==='weather'?'Choose weather':optionPanel==='direction'?'Route direction':'Ghost rival';
+  const options=optionPanel==='track'?trackNames[selection.stage].map((name,i)=>({value:String(i+1),label:name,detail:i===0?'Original layout · existing records':'New route · separate records',selected:trackNumber(selection)===i+1})):optionPanel==='time'?stageTimes(selection.stage).map(t=>({value:t,label:timeNames[t],detail:t==='night'?'Moonlight and headlights':t==='midday'?'Bright skies':t==='sunrise'?'First light':'Golden hour',selected:timeOfDay(selection)===t})):optionPanel==='stage'?stages.map(s=>({value:s.id,label:s.name,detail:s.surface,selected:selection.stage===s.id})):
     optionPanel==='weather'?stage.conditions.map(w=>({value:w,label:weatherNames[w],detail:w==='clear'?'Open skies':w==='fog'||w==='haze'?'Reduced visibility':'Changing conditions',selected:selection.weather===w})):
     optionPanel==='direction'?[{value:'forward',label:'Forward',detail:'Original route',selected:!selection.reverse},{value:'reverse',label:'Reverse',detail:'Same stage, other direction',selected:selection.reverse}]:
     [{value:'off',label:'Off',detail:'Just you and the stage',selected:ghostSource==='off'},{value:'personal',label:'My best',detail:'Your fastest clean run on this device',selected:ghostSource==='personal'},{value:'leader',label:'Leaderboard best',detail:'Fastest submitted run · same car and conditions',selected:ghostSource==='leader'}];
   const selectOption=(value:string)=>{
-    if(optionPanel==='stage')changeStage({...selection,stage:value as StageSelection['stage'],weather:'clear'});
+    if(optionPanel==='stage')changeStage({...selection,stage:value as StageSelection['stage'],weather:'clear',timeOfDay:value==='kart'?'midday':timeOfDay(selection)});
+    if(optionPanel==='track')changeStage({...selection,track:Number(value) as 1|2|3});
     if(optionPanel==='time')changeStage({...selection,timeOfDay:value as TimeOfDay});
     if(optionPanel==='weather')changeStage({...selection,weather:value as Weather});
     if(optionPanel==='direction')changeStage({...selection,reverse:value==='reverse'});
@@ -266,14 +267,14 @@ export function RallyGame() {
     <div className={styles.page}>
       <div className={styles.heading}>
         <div>
-          <p className={styles.eyebrow}>MARK WHITLEY / POCKET RALLY V2.4</p>
+          <p className={styles.eyebrow}>MARK WHITLEY / POCKET RALLY V2.5</p>
           <h1>
             POCKET<span>RALLY.</span>
           </h1>
         </div>
         <div className={styles.stageInfo}>
-          <b>{stage.name.toUpperCase()}</b>
-          <span>{stage.surface} · {weatherNames[selection.weather]} · {timeNames[timeOfDay(selection)]} · {selection.reverse?"Reverse":"Forward"}</span>
+          <b>{trackName(selection).toUpperCase()}</b>
+          <span>{stage.surface} · {weatherNames[selection.weather]} · {(selection.stage==='kart'?'Indoor lights':timeNames[timeOfDay(selection)])} · {selection.reverse?"Reverse":"Forward"}</span>
         </div>
       </div>
       <div
@@ -341,7 +342,7 @@ export function RallyGame() {
               className={styles.start}
               onClick={() => setInstallHelp(false)}
             >
-              CONTINUE IN BROWSER →
+              CONTINUE IN BROWSER <HudIcon name="right"/>
             </button>
           </div>
         )}
@@ -370,7 +371,7 @@ export function RallyGame() {
                 Big sideways.
               </h2>
               <p>
-                Four worlds. Ninety-six ways to race.
+                Five worlds. Fifteen tracks. Eight rally cars.
                 <br />Find your place on the leaderboard.
               </p>
             </div>
@@ -378,41 +379,42 @@ export function RallyGame() {
               <div className={styles.menuEyebrow}><span>SERVICE PARK</span><span>01 / SET UP</span></div>
               <div className={styles.carSelect}>
                 <button
-                  aria-label="Previous car"
+                  disabled={selection.stage==='kart'} aria-label="Previous car"
                   onClick={() => api.current?.choose(selected - 1)}
                 >
-                  ←
+                  <HudIcon name="left"/>
                 </button>
                 <div>
                   <span className={styles.eyebrow}>
-                    {car.year} / {String(selected + 1).padStart(2, "0")} OF 04
+                    {selection.stage==='kart'?'INDOOR EXCLUSIVE':`${car.year} / ${String(selected + 1).padStart(2,"0")} OF 08`}
                   </span>
                   <h3>{car.name}</h3>
                   <p>{car.trait}</p>
                 </div>
                 <button
-                  aria-label="Next car"
+                  disabled={selection.stage==='kart'} aria-label="Next car"
                   onClick={() => api.current?.choose(selected + 1)}
                 >
-                  →
+                  <HudIcon name="right"/>
                 </button>
               </div>
               <div className={styles.stageChoices}>
-                <button onClick={e=>openOptions('stage',e.currentTarget)}><small>STAGE</small><strong>{stage.name}</strong><span>{stage.surface} ↗</span></button>
-                <button onClick={e=>openOptions('weather',e.currentTarget)}><small>WEATHER</small><strong>{weatherNames[selection.weather]}</strong><span>↗</span></button>
-                <button onClick={e=>openOptions('time',e.currentTarget)}><small>TIME OF DAY</small><strong>{timeNames[timeOfDay(selection)]}</strong><span>↗</span></button>
-                <button onClick={e=>openOptions('direction',e.currentTarget)}><small>ROUTE</small><strong>{selection.reverse?'Reverse':'Forward'}</strong><span>↗</span></button>
-                <button onClick={e=>openOptions('ghost',e.currentTarget)}><small>GHOST</small><strong>{ghostSource==='off'?'Off':ghostSource==='personal'?'My best':'Leaderboard'}</strong><span>↗</span></button>
+                <button onClick={e=>openOptions('stage',e.currentTarget)}><small>ENVIRONMENT</small><strong>{stage.name}</strong><span>{stage.surface} <HudIcon name="next"/></span></button>
+                <button onClick={e=>openOptions('track',e.currentTarget)}><small>TRACK {trackNumber(selection)} / 3</small><strong>{trackName(selection)}</strong><HudIcon name="next"/></button>
+                <button disabled={selection.stage==='kart'} onClick={e=>openOptions('weather',e.currentTarget)}><small>WEATHER</small><strong>{selection.stage==='kart'?'Indoors':weatherNames[selection.weather]}</strong><span><HudIcon name="next"/></span></button>
+                <button disabled={selection.stage==='kart'} onClick={e=>openOptions('time',e.currentTarget)}><small>TIME OF DAY</small><strong>{(selection.stage==='kart'?'Indoor lights':timeNames[timeOfDay(selection)])}</strong><span><HudIcon name="next"/></span></button>
+                <button onClick={e=>openOptions('direction',e.currentTarget)}><small>ROUTE</small><strong>{selection.reverse?'Reverse':'Forward'}</strong><span><HudIcon name="next"/></span></button>
+                <button onClick={e=>openOptions('ghost',e.currentTarget)}><small>GHOST</small><strong>{ghostSource==='off'?'Off':ghostSource==='personal'?'My best':'Leaderboard'}</strong><span><HudIcon name="next"/></span></button>
                 <button aria-pressed={screenWeather} onClick={toggleScreenWeather}><small>SCREEN WEATHER</small><strong>{screenWeather?"On":"Off"}</strong></button>
               </div>
-              <small className={styles.ghostStatus} role="status">{ghostStatus}</small>
-              <div className={styles.garageLinks}><button className={styles.boardButton} onClick={()=>setAllBoards(true)}>Leaderboards ↗</button><button onClick={()=>setControlPanel(true)}>Controls ↗</button><Link href="/playground">Back to Playground ↗</Link></div>
+              <small className={styles.ghostStatus} role="status">{selection.stage==='kart'?'Dry track · fixed warehouse lighting · kart only. ':''}{ghostStatus}</small>
+              <div className={styles.garageLinks}><button className={styles.boardButton} onClick={()=>setAllBoards(true)}>Leaderboards <HudIcon name="next"/></button><button onClick={()=>setControlPanel(true)}>Controls <HudIcon name="next"/></button><Link href="/playground">Back to Playground <HudIcon name="next"/></Link></div>
               <button
                 className={styles.start}
                 data-menu-default="true"
                 data-start-cue="true" onClick={() => api.current?.start()}
               >
-                START STAGE <span>↗</span>
+                START STAGE <span><HudIcon name="next"/></span>
               </button>
               <p className={styles.hint}>
                 L1 / R1 car · D-pad menu · Cross select
@@ -420,7 +422,7 @@ export function RallyGame() {
             </div>
           </>
         )}
-        {mode === "celebrating" && <div className={styles.arrival}><strong>{result?.eligible?"STAGE COMPLETE":"PRACTICE FINISH"} · {formatTime(result?.time ?? stats.time)}</strong><button onClick={()=>api.current?.skipCelebration()}>Skip celebration →</button></div>}
+        {mode === "celebrating" && <div className={styles.arrival}><strong>{result?.eligible?"STAGE COMPLETE":"PRACTICE FINISH"} · {formatTime(result?.time ?? stats.time)}</strong><button onClick={()=>api.current?.skipCelebration()}>Skip celebration <HudIcon name="right"/></button></div>}
         {(mode === "race" || mode === "countdown") && (
           <>
             <div className={styles.timer}>
@@ -443,10 +445,10 @@ export function RallyGame() {
               aria-label="Touch driving controls"
             >
               <div className={styles.steeringPad}>
-                {controls.steering==="wheel"?<TouchWheel sensitivity={controls.sensitivity} onInput={(value,held)=>{if(api.current){if(held)api.current.touchSteer=value;api.current.touchHeld=held;api.current.touchActive=true;}}}/>:<>{touchButton("KeyA", "←", "Steer left")}{touchButton("KeyD", "→", "Steer right")}</>}
+                {controls.steering==="wheel"?<TouchWheel sensitivity={controls.sensitivity} onInput={(value,held)=>{if(api.current){if(held)api.current.touchSteer=value;api.current.touchHeld=held;api.current.touchActive=true;}}}/>:<>{touchButton("KeyA", <HudIcon name="left"/>, "Steer left")}{touchButton("KeyD", <HudIcon name="right"/>, "Steer right")}</>}
               </div>
               <div className={styles.pedalPad}>
-                {touchButton("Space", "Slide", "Handbrake")}
+
                 {touchButton("KeyS", "Brake", "Brake")}
                 {touchButton("KeyW", "Go", "Accelerate")}
               </div>
@@ -455,7 +457,7 @@ export function RallyGame() {
               className={styles.recover}
               onClick={() => api.current?.resetPosition()}
             >
-              <HudIcon name="recover"/> Recover
+              <HudIcon name="recover"/> Recover +1.5s
             </button>
 
           </>
@@ -470,11 +472,11 @@ export function RallyGame() {
             <div className={styles.pauseCard}>
               <span className={styles.tag}>SERVICE BREAK</span>
               <h2>PAUSED<span>.</span></h2>
-              <p>{stage.name} · {timeNames[timeOfDay(selection)]} / {formatTime(stats.time)}</p>
-              <button className={styles.start} data-menu-default="true" onClick={()=>api.current?.pause()}>RESUME <span>→</span></button>
+              <p>{trackName(selection)} · {(selection.stage==='kart'?'Indoor lights':timeNames[timeOfDay(selection)])} / {formatTime(stats.time)}</p>
+              <button className={styles.start} data-menu-default="true" onClick={()=>api.current?.pause()}>RESUME <span><HudIcon name="right"/></span></button>
               <button className={styles.menuButton} onClick={()=>api.current?.start()}>Restart stage <span>↻</span></button>
               <button className={styles.menuButton} onClick={mainMenu}>Main menu <small>Ends this run</small></button>
-              <button className={styles.menuButton} onClick={()=>setControlPanel(true)}>Controls & feedback →</button>
+              <button className={styles.menuButton} onClick={()=>setControlPanel(true)}>Controls & feedback <HudIcon name="right"/></button>
             <div className={styles.pauseSettings}>
                 <button disabled={audioBusy} aria-pressed={!muted} onClick={toggleSound}><HudIcon name={muted?'muted':'sound'}/>{muted?'Sound off':'Sound on'}</button>
                 <button disabled={ghostSource==='off'} aria-pressed={ghostShown&&ghostSource!=='off'} onClick={()=>api.current?.toggleGhost()}><HudIcon name="ghost"/>Ghost {ghostShown&&ghostSource!=='off'?'on':'off'}</button>
@@ -490,15 +492,16 @@ export function RallyGame() {
               {result?.eligible ? 'STAGE COMPLETE' : 'PRACTICE FINISH'}
             </span>
             <h2>{formatTime(result?.time ?? stats.time)}</h2>
-            <p>{car.name} · {stage.name} · {weatherNames[selection.weather]} · {timeNames[timeOfDay(selection)]} · {selection.reverse?"Reverse":"Forward"}</p>
+            <p>{car.name} · {trackName(selection)} · {weatherNames[selection.weather]} · {(selection.stage==='kart'?'Indoor lights':timeNames[timeOfDay(selection)])} · {selection.reverse?"Reverse":"Forward"}</p>
             {result && !result.eligible && <p className={styles.practiceReason}>{result.reasons.map(r=>reasonText[r]).join(" · ")} — time shown, not ranked.</p>}
+            {Boolean(result?.penalty)&&<p className={styles.practiceReason}>Recovery penalties: +{result!.penalty!.toFixed(2)}s · included in stage time</p>}
             <p>Personal best: {best ? formatTime(best) : "—"}</p>
-            <button onClick={()=>setLeaderboard(true)}>{result?.eligible?"Submit time & leaderboard ↗":"View leaderboard ↗"}</button>
+            <button onClick={()=>setLeaderboard(true)}>{result?.eligible?"Submit time & leaderboard":"View leaderboard"}</button>
             <button
               className={styles.start}
               data-start-cue="true" onClick={() => api.current?.start()}
             >
-              ONE MORE RUN ↗
+              ONE MORE RUN <HudIcon name="next"/>
             </button>
             <button onClick={mainMenu}>Main menu</button>
           </div>
@@ -511,11 +514,11 @@ export function RallyGame() {
         </div>}
         {optionPanel && <div className={styles.optionScrim}><div className={styles.optionPanel} role="dialog" aria-modal="true" aria-label={optionTitle} data-rally-menu="true">
           <header><div><span className={styles.tag}>SERVICE PARK / SELECT</span><h2>{optionTitle}</h2></div><button aria-label="Close options" onClick={closeOptions}>×</button></header>
-          <div className={styles.optionList}>{options.map(o=><button key={o.value} aria-pressed={o.selected} data-menu-default={o.selected||undefined} onClick={()=>selectOption(o.value)}><span>{o.label}<small>{o.detail}</small></span><b>{o.selected?'✓':'→'}</b></button>)}</div>
+          <div className={styles.optionList}>{options.map(o=><button key={o.value} aria-pressed={o.selected} data-menu-default={o.selected||undefined} onClick={()=>selectOption(o.value)}><span>{o.label}<small>{o.detail}</small></span><b>{o.selected?'✓':<HudIcon name="right"/>}</b></button>)}</div>
         </div></div>}
         {controlPanel&&<div className={styles.optionScrim}><div className={styles.optionPanel} role="dialog" aria-modal="true" aria-label="Driving controls" data-rally-menu="true">
           <header><div><span className={styles.tag}>YOUR CONTROLS</span><h2>Driving controls</h2></div><button onClick={()=>setControlPanel(false)} aria-label="Close controls">×</button></header>
-          <div className={styles.optionList}>{(['arrows','wheel'] as const).map(steering=><button key={steering} aria-pressed={controls.steering===steering} onClick={()=>setControls(c=>({...c,steering}))}>{steering==='arrows'?'← → Arrow buttons':'◉ Steering wheel'}<b>{controls.steering===steering?'✓':''}</b></button>)}</div>
+          <div className={styles.optionList}>{(['arrows','wheel'] as const).map(steering=><button key={steering} aria-pressed={controls.steering===steering} onClick={()=>setControls(c=>({...c,steering}))}>{steering==='arrows'?'Arrow buttons':'◉ Steering wheel'}<b>{controls.steering===steering?'✓':''}</b></button>)}</div>
           <label className={styles.controlRange}>Wheel sensitivity <strong>{controls.sensitivity.toFixed(1)}×</strong><input type="range" min="0.5" max="1.5" step="0.1" value={controls.sensitivity} onChange={e=>setControls(c=>({...c,sensitivity:Number(e.target.value)}))}/></label>
           <p>Drag around the wheel rim to turn. Release to centre. Use your other thumb for the pedals.</p>
           <button className={styles.menuButton} aria-pressed={controls.haptics} onClick={()=>setControls(c=>({...c,haptics:!c.haptics}))}>Haptic feedback: {controls.haptics?'On':'Off'}</button>
@@ -528,14 +531,14 @@ export function RallyGame() {
       <div className={styles.below}>
         <div>
           <span className={styles.tag}>HOW TO DRIVE</span>
-          <p><a href="/rally/audio-credits.txt" target="_blank" rel="noreferrer">Engine audio credits ↗</a></p>
+          <p><a href="/rally/audio-credits.txt" target="_blank" rel="noreferrer">Engine audio credits <HudIcon name="next"/></a></p>
           {!standalone && (
             <p>
               <button
                 className={styles.installLink}
                 onClick={() => { setExpanded(true); api.current?.blur(); setInstallHelp(true); }}
               >
-                Play as a Home Screen app ↗
+                Play as a Home Screen app <HudIcon name="next"/>
               </button>
             </p>
           )}
@@ -553,7 +556,7 @@ export function RallyGame() {
             button. Times are saved on this device.
           </small>
         </div>
-        <Link href="/playground">Back to Playground ↗</Link>
+        <Link href="/playground">Back to Playground <HudIcon name="next"/></Link>
       </div>
     </div>
   );

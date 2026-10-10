@@ -10,7 +10,7 @@ export async function POST(request:Request) {
     if(Number(request.headers.get('content-length'))>2048) return new Response(null,{status:413});
     const text=await request.text(); if(text.length>2048) return new Response(null,{status:413});
     const {selection,car}=JSON.parse(text);
-    if(!validSelection(selection)||!validCar(car)) return Response.json({error:'Invalid stage'},{status:400});
+    if(!validSelection(selection)||!validCar(car,selection)) return Response.json({error:'Invalid stage'},{status:400});
     const id=await player(true);
     if(!await rateLimit(id!,'start',12)) return Response.json({error:'Please wait before starting another ranked run.'},{status:429});
     const run=randomUUID();

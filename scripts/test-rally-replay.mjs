@@ -47,3 +47,9 @@ test('missed gates and recovery explicitly block PB/replay; pausing preserves co
  w.completeRun();assert.equal(w.best,null);assert.deepEqual(outcome,{eligible:false,reasons:['missed-checkpoint','car-recovered']});assert.equal(memory.size,0);
  const countdown=fixture();countdown.muted=true;countdown.mode='countdown';countdown.countdown=2;countdown.pause();assert.equal(countdown.mode,'paused');countdown.pause();assert.equal(countdown.mode,'countdown');assert.equal(countdown.countdown,2);
 });
+
+test('recovery adds exactly 1.5 seconds, stays practice-only and cannot change a finished result',()=>{
+ const w=fixture(55);w.recoveryPenalty=0;w.points=[new T.Vector3(1,0,2),new T.Vector3(1,0,3),new T.Vector3(1,0,4),new T.Vector3(1,0,5)];w.checkpoint=0;w.callbacks.pad=()=>{};
+ w.resetPosition();assert.equal(w.time,61.5);assert.equal(w.recoveryPenalty,1.5);w.resetPosition();assert.equal(w.time,63);assert.equal(w.recoveryPenalty,3);
+ w.completeRun();assert.equal(w.best,55);assert.equal(w.cleanRun,false);w.resetPosition();assert.equal(w.time,63);
+});

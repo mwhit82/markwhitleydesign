@@ -10,8 +10,8 @@ export async function GET(request:Request){
  if(!configured())return Response.json({error:'Ghost unavailable'},{status:503});
  try{
   const q=new URL(request.url).searchParams;
-  const selection={stage:q.get('stage'),weather:q.get('weather'),reverse:q.get('reverse')==='true',timeOfDay:q.get('timeOfDay')??'midday'},car=Number(q.get('car'));
-  if(!validSelection(selection)||q.get('car')===null||!validCar(car))return Response.json({error:'Invalid ghost selection'},{status:400});
+  const selection={stage:q.get('stage'),weather:q.get('weather'),reverse:q.get('reverse')==='true',timeOfDay:q.get('timeOfDay')??'midday',track:q.has('track')?Number(q.get('track')):1},car=Number(q.get('car'));
+  if(!validSelection(selection)||q.get('car')===null||!validCar(car,selection))return Response.json({error:'Invalid ghost selection'},{status:400});
   const rows=await redis<string[]>('EVAL',readLeader,1,`rally:${boardKey(selection)}:car${car}`);
   if(!rows.length)return Response.json({replay:null,name:null,time:null},{headers:{'Cache-Control':'no-store'}});
   const time=Number(rows[0])/1000,info=JSON.parse(rows[1]||'{}'),replay=JSON.parse(rows[2]||'null');

@@ -1,0 +1,19 @@
+Pocket Rally V2.5 design references
+
+The cars are original chunky clay-style approximations, not licensed manufacturer models.
+The four additional period-inspired cars are:
+Ford Sierra RS Cosworth (1990), Volkswagen Golf GTI 16V (1990),
+Peugeot 205 GTI (1990) and Renault Clio Williams (1993).
+Historical reference sources:
+https://www.fromtheroad.ford.com/us/en/articles/2026/ford-wrc-history-motorsport-heritage
+https://www.volkswagen-newsroom.com/en/the-new-golf-gti-international-media-drive-6282/golf-gti-history-6287
+https://www.media.stellantis.com/it-it/peugeot/press/peugeot-205-gti-plus-n-lusso-per-piedi-pesanti
+https://theoriginals.renault.com/es/clio-williams
+
+Warehouse tracks: original layouts, informed by indoor UK karting tracks:
+https://www.team-sport.co.uk/go-kart-tracks/manchester-trafford-park/track-details-manchester-trafford-park
+https://www.team-sport.co.uk/go-kart-tracks/liverpool/track-details-liverpool
+The layouts, art and fictional bridge advertising were created for Pocket Rally.
+No third-party track map, logo or artwork was copied.
+
+Audio sources and licences: /rally/audio-credits.txt

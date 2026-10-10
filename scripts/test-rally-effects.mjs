@@ -11,13 +11,13 @@ async function load(path){
 }
 const {lighting,WeatherParticles}=await import(await load(resolve('components/rally/conditions.ts')));
 const {CheckpointEffects}=await import(await load(resolve('components/rally/checkpoint-effects.ts')));
-const {stages,timesOfDay}=await import(await load(resolve('components/rally/stages.ts')));
+const {stages,timesOfDay,stageTimes}=await import(await load(resolve('components/rally/stages.ts')));
 const paint={fillRect(){},fillText(){},createRadialGradient(){return {addColorStop(){}};}};
 globalThis.document={createElement:()=>({width:0,height:0,getContext:()=>paint})};
-test('96 lighting configurations keep a readable ambient floor and bounded headlights',()=>{
- let count=0;for(const stage of stages)for(const weather of stage.conditions)for(const reverse of [true,false])for(const timeOfDay of timesOfDay){
-  const p=lighting({stage:stage.id,weather,reverse,timeOfDay});assert.ok(p.ambient>=.5);assert.ok(p.near<p.far);assert.ok(p.lamps<=65);assert.equal(p.lamps===0,timeOfDay==='midday');count++;
- }assert.equal(count,96);
+test('294 lighting configurations keep a readable ambient floor and bounded headlights',()=>{
+ let count=0;for(const stage of stages)for(const weather of stage.conditions)for(const reverse of [true,false])for(const timeOfDay of stageTimes(stage.id)) for(const track of [1,2,3]){
+  const p=lighting({stage:stage.id,weather,reverse,timeOfDay,track});assert.ok(p.ambient>=.5);assert.ok(p.near<p.far);assert.ok(p.lamps<=65);assert.equal(p.lamps===0,timeOfDay==='midday');count++;
+ }assert.equal(count,294);
 });
 test('weather buffers are reused, bounded, camera-centred and pause cleanly',()=>{
  for(const [type,count] of [['rain',400],['snow',180]]){
@@ -43,8 +43,8 @@ test('checkpoint flags persist, bursts deduplicate and cap at 96; reset restores
 const {SurfaceEffects,TRACK_CAP,SPLASH_CAP,createMud}=await import(await load(resolve('components/rally/surface-effects.ts')));
 const {stagePoints}=await import(await load(resolve('components/rally/stages.ts')));
 test('rain-only puddles follow each route; mud, tracks and splash pools are bounded and pause/reset',()=>{
- for(const stage of stages)for(const reverse of [true,false]){
-  const selection={stage:stage.id,weather:'rain',reverse},points=stagePoints(selection),effect=new SurfaceEffects(selection,points,false);
+ for(const stage of stages.filter(s=>s.id!=="kart"))for(const reverse of [true,false])for(const track of [1,2,3]){
+  const selection={stage:stage.id,weather:'rain',reverse,track},points=stagePoints(selection),effect=new SurfaceEffects(selection,points,false);
   assert.equal(effect.puddles.length,5);assert.equal(new SurfaceEffects({...selection,weather:'clear'},points,false).puddles.length,0);
   assert.ok(effect.puddles.every(p=>points.some(q=>Math.hypot(q.x-p.x,q.z-p.z)<2.2)));
   for(let i=0;i<1800;i++)effect.update(.016,new T.Vector3(i*.05,0,0),0,12,true);

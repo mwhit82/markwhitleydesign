@@ -216,3 +216,14 @@
 @media(max-width:370px){.touchControls .touchWheel{width:100px;height:100px;}}
 @media(orientation:landscape) and (max-height:550px){.garageLinks{grid-template-columns:1fr 1fr 1fr;}.garageLinks a{font-size:9px;}.garageLinks button{min-height:40px;font-size:10px;}.pauseCard{overflow:auto;max-height:100%;}.pauseCard>.menuButton:last-of-type{grid-column:1/-1;}.boardFilters{grid-template-columns:repeat(6,minmax(0,1fr));}.boardFilters label:first-child{grid-column:auto;}}
 .game[data-steering=wheel] .recover {bottom:calc(var(--safe-bottom) + 128px);}
+
+/* V2.5: compact register, tactile controls and quiet night instruments. */
+.filterBar{display:flex;align-items:end;gap:10px;flex-wrap:wrap;margin:16px 0 8px}.filterBar label{flex:1;min-width:150px;display:grid;gap:5px;font-size:11px;letter-spacing:.08em}.filterBar input{background:#303936;border:1px solid #657067;border-radius:4px;color:#fff0d5;padding:12px;font:inherit;min-height:44px}.filterBar button{min-height:44px;padding:8px 14px}.filterSummary{display:block;margin:6px 0 14px;color:#e2c693}.boardFilters{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;padding:12px;background:#29332e}.boardFilters select{padding:8px;min-height:44px}.page button svg,.page a svg{display:inline-block;vertical-align:middle;flex-shrink:0}.touchControls button{border:2px solid #182720;box-shadow:0 5px 0 #182720,inset 0 1px 0 #ffffff30}.game[data-time="night"] .touchControls button,.game[data-time="sunrise"] .touchControls button,.game[data-time="sunset"] .touchControls button{background:#475047;color:#e1ddc6;border-color:#111d19;box-shadow:0 5px 0 #111d19,inset 0 1px 0 #ffffff15}.game[data-time="night"] .touchControls button:active,.touchControls button:active{filter:brightness(1.2);box-shadow:0 1px 0 #111d19;transform:translateY(4px)}
+@media(max-width:600px){.boardFilters{grid-template-columns:repeat(2,minmax(0,1fr))}.filterBar{gap:6px}.filterBar label{flex-basis:100%}}
+
+@media(max-width:600px){.pedalPad{display:flex}.pedalPad button:first-child{width:64px;height:72px}}
+.game[data-time="night"] .touchControls button[data-held=true],.game[data-time="sunrise"] .touchControls button[data-held=true],.game[data-time="sunset"] .touchControls button[data-held=true]{background:#9b743c;color:#fff0d4}
+
+.stageChoices button>svg{position:absolute;right:9px;top:9px;width:14px;height:14px;color:#d8b672}.stageChoices span svg{display:inline-block;width:12px;height:12px;margin-left:3px}.garageLinks button{display:flex;align-items:center;justify-content:space-between;gap:6px}.garageLinks svg{display:inline-block;width:16px;height:16px}.carSelect button{display:grid;place-items:center}.game button:disabled{opacity:.45;cursor:default}
+
+@media(max-height:550px) and (orientation:landscape){.stageChoices{grid-template-columns:repeat(4,minmax(0,1fr))}.stageChoices button>svg{display:none}.stageChoices strong{font-size:10px}.garage{max-height:calc(100% - 70px)}.garage .garageLinks{gap:5px}}
