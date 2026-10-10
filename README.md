@@ -151,3 +151,19 @@ The HUD adds no 3D instruments or animated blur; gate labels add four static
 planes (eight triangles), with at most four extra draw calls. A desktop Node
 microbenchmark averaged 0.00032 ms per checkpoint update; this is not an iPhone
 frame-rate measurement. Physical iPhone and controller verification remains manual.
+
+
+### Clear service areas and moving supporters (V2.2.1)
+
+Finish placement checks the entire apron against every racing-road segment,
+including the start, and chooses a clear curved approach after the finish gate.
+Arrival follows that approach; timed results and replay data still end at the
+gate. Tests cover the apron and approach in all 24 stage configurations.
+
+Up to two supporters per group briefly enter the road through barrier gaps,
+then retreat at six times their walking speed. Retreat distance grows with car
+speed, with a close-range fallback returning them to the verge. They remain
+non-colliding decorations. Photographers stay roadside. Reduced motion keeps
+supporters off the road; pause freezes movement and restarting resets them.
+The existing instanced crowd meshes are reused without additional crowd draw
+calls. Regression coverage includes fast approaches, reset and reduced motion.

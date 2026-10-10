@@ -36,11 +36,16 @@ test('reject invalid conditions and names; wet roads reduce grip',()=>{
 });
 
 const atmosphereCode=compile(await readFile(new URL('../components/rally/atmosphere.ts',import.meta.url),'utf8')).replace("from 'three'",`from '${import.meta.resolve('three')}'`);
-const {Atmosphere,finishLayout}=await import(uri(atmosphereCode));
+const {Atmosphere,finishLayout,fanProgress}=await import(uri(atmosphereCode));
 test('finish areas follow all endpoints; crowd remains outside roads and arrival corridor',()=>{
  for(const stage of stages)for(const weather of stage.conditions)for(const reverse of [false,true]){
   const points=stagePoints({stage:stage.id,weather,reverse}),atmosphere=new Atmosphere(points);
-  assert.ok(Math.abs(finishLayout(points).center.distanceTo(points.at(-1))-11)<.001);
+  const layout=finishLayout(points),sin=Math.sin(layout.angle),cos=Math.cos(layout.angle);
+  for(const p of points){const x=p.x-layout.center.x,z=p.z-layout.center.z;
+   const clearance=Math.hypot(Math.max(0,Math.abs(x*cos-z*sin)-8.5),Math.max(0,Math.abs(x*sin+z*cos)-9));
+   assert.ok(clearance>=8,stage.id+' apron covers racing road');
+  }
+  for(const p of layout.approach.getPoints(80))assert.ok(points.slice(0,-35).every(q=>p.distanceTo(q)>7.8),stage.id+' arrival crosses another road');
   assert.equal(atmosphere.spectators.length,36);
   for(const person of atmosphere.spectators){
    assert.equal(atmosphere.reserved(person.x,person.z),false,stage.id+' arrival corridor');
@@ -63,4 +68,21 @@ test('replay interpolation uses short angle path, rejects corrupt and mismatched
  assert.equal(validReplay({...replay,samples:[[0,0,0,NaN],[1,0,0,0]]}),false);
  assert.ok(replayAgrees(replay,selection,0,1,[[0,0,0],[1,10,5]]));
  assert.equal(replayAgrees(replay,selection,0,1,[[0,0,0],[1,11,5]]),false);
+});
+
+test('fans venture out only with a clear road and retreat before a fast approaching car',()=>{
+ let progress=0;
+ for(let i=0;i<180;i++)progress=fanProgress(progress,12,120,27,1/30,true);
+ assert.ok(progress>0.999);
+ let distance=100;
+ while(distance>20){progress=fanProgress(progress,12,distance,27,1/30,true);distance-=27/30;if(distance<45)assert.equal(progress,0);}
+ assert.equal(fanProgress(1,20,12,0,1/60,true),0);
+ assert.equal(fanProgress(.5,12,120,0,0,true),.5);
+ const a=new Atmosphere(stagePoints({stage:'forest',weather:'clear',reverse:false}));
+ assert.ok(a.spectators.some(p=>p.excursion));
+ a.update(2,2,new (a.layout.center.constructor)(500,0,500),0,true);
+ assert.ok(a.spectators.some(p=>p.progress>0));
+ a.reset();assert.ok(a.spectators.every(p=>p.progress===0));
+ a.reduced=true;a.update(2,4,new (a.layout.center.constructor)(500,0,500),0,true);
+ assert.ok(a.spectators.every(p=>p.progress===0));
 });

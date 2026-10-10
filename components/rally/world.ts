@@ -171,7 +171,8 @@ export class RallyWorld {
     const weather = this.selection.weather;
     this.renderer.setClearColor(stage.sky);
     this.scene.fog = new T.Fog(stage.sky, weather === "fog" ? 28 : weather === "haze" ? 38 : 95, weather === "fog" ? 100 : weather === "haze" ? 115 : 240);
-    this.box(170, 3, 160, stage.ground, 0, -1.8, 0);
+    const service=this.atmosphere.layout.center;
+    this.box(Math.max(170,Math.abs(service.x)*2+32), 3, Math.max(160,Math.abs(service.z)*2+32), stage.ground, 0, -1.8, 0);
     // A single stamped surface cannot fold over itself at tight bends, unlike the old ribbon triangles.
     const canvas = document.createElement("canvas");
     canvas.width = canvas.height = 2048;
@@ -834,8 +835,13 @@ export class RallyWorld {
     }
     if(this.mode==="celebrating"){
       this.arrival+=dt;const t=Math.min(1,this.arrival/3),ease=1-Math.pow(1-t,3);
-      this.vehicle.position.lerpVectors(this.arrivalFrom,this.atmosphere.layout.center,ease);
-      this.vehicle.rotation.set(0,headingBetween(this.arrivalAngle,this.atmosphere.layout.angle,ease),0);
+      const {finish,approach}=this.atmosphere.layout;
+      const lead=this.arrivalFrom.distanceTo(finish),length=approach.getLength(),travel=ease*(lead+length);
+      const u=Math.max(0,Math.min(1,(travel-lead)/length));
+      if(travel<lead)this.vehicle.position.lerpVectors(this.arrivalFrom,finish,travel/lead);
+      else this.vehicle.position.copy(approach.getPointAt(u));
+      const tangent=travel<lead?finish.clone().sub(this.arrivalFrom):approach.getTangentAt(u);
+      this.vehicle.rotation.set(0,headingBetween(this.arrivalAngle,Math.atan2(tangent.x,tangent.z),Math.min(1,t*6)),0);
       if(t===1){this.atmosphere.celebrate();this.setMode("finished");}
     }
     if(this.ghostCar){
@@ -844,7 +850,7 @@ export class RallyWorld {
       if(pose){this.ghostCar.position.set(pose.x,.08,pose.z);this.ghostCar.rotation.set(0,pose.angle,0);}
     }
     if(this.notifications.tick(dt,this.mode==="paused"))this.callbacks.checkpoints?.([...this.notifications.items]);
-    this.atmosphere.update(this.mode==="paused"?0:dt,now/1000);
+    this.atmosphere.update(this.mode==="paused"?0:dt,now/1000,this.vehicle.position,this.velocity.length(),this.mode==="race");
     if(this.mode === "race" || this.mode === "garage") this.updateWeather(dt);
     this.dust.forEach((d) => {
       const m = d.material as T.MeshStandardMaterial;
