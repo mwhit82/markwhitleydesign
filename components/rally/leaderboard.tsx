@@ -3,7 +3,8 @@ import { useEffect, useState } from 'react';
 import { cars, formatTime } from './data';
 import { boardKey, stageDefinition, weatherNames, type StageSelection } from './stages';
 import styles from './rally.module.css';
-export type RaceResult = {time:number;trace:number[][];run:Promise<string|null>};
+import type { Replay } from "./replay";
+export type RaceResult = {time:number;trace:number[][];replay?:Replay;run:Promise<string|null>};
 type Entry = {rank:number;name:string;time:number;car:number;mine:boolean};
 export function Leaderboard({selection,result,onClose}:{selection:StageSelection;result:RaceResult|null;onClose:()=>void}) {
   const [entries,setEntries]=useState<Entry[]>([]);

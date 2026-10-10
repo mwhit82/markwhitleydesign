@@ -4,6 +4,8 @@ import { cars, type Mode } from "./data";
 import { RallyAudio } from "./audio";
 import { handling, engine } from "./handling";
 import { initialStage, stageDefinition, stagePoints, checkpointIndices, boardKey, surfaceGrip, type StageSelection } from "./stages";
+import { Atmosphere } from "./atmosphere";
+import { type Replay, type GhostSource, matchingReplay, replayKey, replayPose, headingBetween } from "./replay";
 type Callbacks = {
   stats: (s: {
     time: number;
@@ -19,7 +21,9 @@ type Callbacks = {
   best: (n: number | null) => void;
   audio?: (muted: boolean) => void;
   start?: () => void;
-  finish?: (time: number, trace: number[][]) => void;
+  finish?: (time: number, trace: number[][], replay?: Replay) => void;
+  ghost?: (status:string) => void;
+  ghostVisibility?: (visible:boolean) => void;
 };
 export class RallyWorld {
   obstacles: { x: number; z: number; radius: number }[] = [];
@@ -59,6 +63,17 @@ export class RallyWorld {
   trace: number[][] = [];
   traceAt = 0;
   cleanRun = true;
+  atmosphere!: Atmosphere;
+  arrival = 0;
+  arrivalFrom = new T.Vector3();
+  arrivalAngle = 0;
+  ghostSource: GhostSource = "personal";
+  ghostVisible = true;
+  ghostReplay: Replay | null = null;
+  ghostCar: T.Group | null = null;
+  ghostGeneration = 0;
+  ghostAbort: AbortController | null = null;
+  replaySamples: number[][] = [];
   constructor(
     public host: HTMLDivElement,
     public callbacks: Callbacks,
@@ -90,6 +105,7 @@ export class RallyWorld {
     this.scene.add(sun);
     this.points = stagePoints(this.selection);
     this.checkpoints = [...checkpointIndices];
+    try {const stored=localStorage.getItem("rally-ghost-source");if(stored==="off"||stored==="personal"||stored==="leader")this.ghostSource=stored;}catch{}
     this.buildStage();
     this.choose(0);
     this.observer = new ResizeObserver(() => this.resize());
@@ -128,6 +144,7 @@ export class RallyWorld {
   configure(selection: StageSelection) {
     if (this.mode !== "garage") return;
     this.selection = { ...selection };
+    this.clearGhost();
     this.release(this.root);
     this.root.clear();
     this.obstacles = [];
@@ -140,6 +157,7 @@ export class RallyWorld {
     this.audio?.setEnvironment(selection.stage);
   }
   buildStage() {
+    this.atmosphere = new Atmosphere(this.points);
     const stage = stageDefinition(this.selection);
     const weather = this.selection.weather;
     this.renderer.setClearColor(stage.sky);
@@ -201,7 +219,7 @@ export class RallyWorld {
     for (let i = 0; i < 170; i++) {
       const x = (random() - 0.5) * 158,
         z = (random() - 0.5) * 148;
-      if (this.nearest(x, z).distance < 9) continue;
+      if (this.nearest(x, z).distance < 9 || this.atmosphere.reserved(x,z)) continue;
       this.obstacles.push({ x, z, radius: 1.5 });
       const h = 3 + random() * 5;
       if (stage.id === "desert") {
@@ -230,7 +248,7 @@ export class RallyWorld {
     for (let i = 0; i < 90; i++) {
       const x = (random() - 0.5) * 150,
         z = (random() - 0.5) * 140;
-      if (this.nearest(x, z).distance < 7) continue;
+      if (this.nearest(x, z).distance < 7 || this.atmosphere.reserved(x,z)) continue;
       const rock = new T.Mesh(
         new T.DodecahedronGeometry(0.5 + random(), 0),
         this.material(stage.id === "desert" ? "#b68057" : stage.id === "alpine" ? "#eceded" : "#a3a48e"),
@@ -284,8 +302,7 @@ export class RallyWorld {
           gate,
         );
     }
-    this.box(8, 2, 5, "#e6dfc8", -36, 1, 57);
-    this.box(10, 0.5, 7, "#c95137", -36, 2.3, 57);
+    this.root.add(this.atmosphere.group);
     for (let i = 0; i < 24; i++) {
       const mesh = new T.Mesh(
         new T.IcosahedronGeometry(0.3, 0),
@@ -334,6 +351,7 @@ export class RallyWorld {
   }
   release(group: T.Object3D) {
     group.traverse((obj) => {
+      if (obj instanceof T.InstancedMesh) obj.dispose();
       if (obj instanceof T.Mesh || obj instanceof T.Points) {
         obj.geometry.dispose();
         const materials = Array.isArray(obj.material)
@@ -347,6 +365,7 @@ export class RallyWorld {
     });
   }
   choose(index: number) {
+    this.clearGhost();
     this.selected = (index + cars.length) % cars.length;
     this.audio?.setCar(this.selected);
     this.callbacks.select(this.selected);
@@ -419,12 +438,75 @@ export class RallyWorld {
     }
     this.callbacks.best(this.best);
     this.resetPosition();
+    void this.prepareGhost();
+  }
+  clearGhost() {
+    this.ghostGeneration++;this.ghostAbort?.abort();this.ghostAbort=null;
+    if(this.ghostCar){this.root.remove(this.ghostCar);this.release(this.ghostCar);this.ghostCar=null;}
+    this.ghostReplay=null;
+  }
+  toggleGhost(){this.ghostVisible=!this.ghostVisible;this.callbacks.ghostVisibility?.(this.ghostVisible);}
+  setGhost(source:GhostSource){
+    this.ghostSource=source;this.ghostVisible=true;this.callbacks.ghostVisibility?.(true);
+    try{localStorage.setItem("rally-ghost-source",source);}catch{}
+    if(this.mode==="garage")void this.prepareGhost();
+  }
+  async prepareGhost(){
+    this.clearGhost();
+    if(this.ghostSource==="off"){this.callbacks.ghost?.("Ghost off");return;}
+    const generation=this.ghostGeneration;
+    let replay:unknown=null,label="My best";
+    try{
+      if(this.ghostSource==="personal"){
+        replay=JSON.parse(localStorage.getItem(replayKey(this.selection,this.selected))||"null");
+        if(!matchingReplay(replay,this.selection,this.selected,this.best ?? undefined)){this.callbacks.ghost?.(this.best?"Set a new best to record your ghost":"Complete a clean run to record your ghost");return;}
+      }else{
+        this.callbacks.ghost?.("Loading leader’s ghost…");
+        const controller=new AbortController();this.ghostAbort=controller;
+        const timeout=setTimeout(()=>controller.abort(),5000);
+        try {
+          const query=new URLSearchParams({stage:this.selection.stage,weather:this.selection.weather,reverse:String(this.selection.reverse),car:String(this.selected)});
+          const response=await fetch(`/api/rally/ghost?${query}`,{signal:this.ghostAbort.signal});
+          if(!response.ok)throw new Error("unavailable");const data=await response.json();replay=data.replay;label=data.name?`Leader: ${data.name}`:"Leader";
+        }finally{clearTimeout(timeout);}
+      }
+      if(generation!==this.ghostGeneration || this.disposed || (this.mode!=="garage" && this.mode!=="finished"))return;
+      if(!matchingReplay(replay,this.selection,this.selected)){this.callbacks.ghost?.("Leader’s ghost unavailable");return;}
+      this.ghostReplay=replay;
+      this.ghostCar=this.vehicle.clone(true);
+      this.ghostCar.traverse(obj=>{if(obj instanceof T.Mesh){obj.geometry=obj.geometry.clone();const material=(obj.material as T.MeshStandardMaterial).clone();material.transparent=true;material.opacity=.3;material.depthWrite=false;material.color.lerp(new T.Color("#b6f7ed"),.4);obj.material=material;obj.castShadow=false;obj.receiveShadow=false;}});
+      this.ghostCar.visible=false;this.root.add(this.ghostCar);this.callbacks.ghost?.(label);
+    }catch{if(generation===this.ghostGeneration)this.callbacks.ghost?.("Ghost unavailable · racing still works");}
+  }
+  completeRun(){
+    if(this.mode!=="race")return;
+    if((this.trace.at(-1)?.[0] ?? -1)>=this.time){this.trace.pop();this.replaySamples.pop();}
+    this.trace.push([this.time,this.vehicle.position.x,this.vehicle.position.z]);
+    this.replaySamples.push([this.time,Number(this.vehicle.position.x.toFixed(2)),Number(this.vehicle.position.z.toFixed(2)),Number(this.angle.toFixed(4))]);
+    const replay:Replay|undefined=this.cleanRun && this.time<=600 && this.replaySamples.length<=2600 ? {version:1,selection:{...this.selection},car:this.selected,time:this.time,samples:this.replaySamples}:undefined;
+    if (this.cleanRun && (!this.best || this.time < this.best)) {
+      this.best=this.time;
+      try {
+        localStorage.setItem(`pocket-rally-best-${boardKey(this.selection)}-${this.selected}`,String(this.best));
+        if(replay)localStorage.setItem(replayKey(this.selection,this.selected),JSON.stringify(replay));
+      }catch{}
+      this.callbacks.best(this.best);
+    }
+    this.callbacks.finish?.(this.time,this.cleanRun ? this.trace : [],replay);
+    this.arrival=0;this.arrivalFrom.copy(this.vehicle.position);this.arrivalAngle=this.angle;
+    this.velocity.set(0,0,0);this.setMode("celebrating");
+  }
+  skipCelebration(){
+    if(this.mode!=="celebrating")return;
+    this.vehicle.position.copy(this.atmosphere.layout.center);this.vehicle.rotation.y=this.atmosphere.layout.angle;
+    this.velocity.set(0,0,0);this.atmosphere.celebrate();this.setMode("finished");
   }
   setMode(mode: Mode) {
     this.keys.clear();
     this.mode = mode;
     this.audio?.setMode(mode);
     this.callbacks.mode(mode);
+    if(mode==="finished")void this.prepareGhost();
   }
   resetPosition() {
     if(this.mode === "race") this.cleanRun=false;
@@ -443,6 +525,10 @@ export class RallyWorld {
     this.time = 0;
     this.countdown = 3;
     this.cleanRun = true;
+    this.replaySamples = [];
+    this.atmosphere.reset();
+    this.ghostGeneration++;this.ghostAbort?.abort();
+    if(this.ghostSource!=="off" && !this.ghostReplay)this.callbacks.ghost?.("No ghost for this attempt");
     this.trace = [];
     this.traceAt = 0;
     this.callbacks.start?.();
@@ -453,7 +539,9 @@ export class RallyWorld {
     });
   }
   garage() {
+    this.atmosphere.reset();
     this.setMode("garage");
+    void this.prepareGhost();
     this.checkpoint = 0;
     this.resetPosition();
     void this.ensureAudio().catch(() => {
@@ -501,7 +589,7 @@ export class RallyWorld {
       this.disposed ||
       document.hidden ||
       this.mode === "paused" ||
-      this.mode === "finished"
+      this.mode === "finished" || this.mode === "celebrating"
     )
       return;
     this.prepareAudio();
@@ -518,6 +606,8 @@ export class RallyWorld {
       event.preventDefault();
     this.keys.add(event.code);
     if (event.repeat) return;
+    if(this.mode==="celebrating" && (event.code==="Enter"||event.code==="Space")){this.skipCelebration();return;}
+    if(event.code==="KeyG"){this.toggleGhost();return;}
     if (this.mode === "garage") {
       if (event.code === "ArrowLeft") this.choose(this.selected - 1);
       if (event.code === "ArrowRight") this.choose(this.selected + 1);
@@ -586,7 +676,9 @@ export class RallyWorld {
       } else {
         if (edge(9)) this.pause();
         if (edge(3) && this.mode === "race") this.resetPosition();
-        if (this.mode === "finished" && edge(0)) this.start();
+        if(this.mode==="celebrating" && edge(0))this.skipCelebration();
+        else if (this.mode === "finished" && edge(0)) this.start();
+        if(this.mode==="race" && edge(2))this.toggleGhost();
         if ((this.mode === "paused" || this.mode === "finished") && edge(1))
           this.garage();
       }
@@ -675,8 +767,9 @@ export class RallyWorld {
         );
         this.velocity.multiplyScalar(0.3);
       }
-      if(this.time >= this.traceAt) {
+      if(this.time >= this.traceAt && this.time<=600 && this.trace.length<2599) {
         this.trace.push([Number(this.time.toFixed(3)), Number(this.vehicle.position.x.toFixed(2)), Number(this.vehicle.position.z.toFixed(2))]);
+        this.replaySamples.push([Number(this.time.toFixed(3)),Number(this.vehicle.position.x.toFixed(2)),Number(this.vehicle.position.z.toFixed(2)),Number(this.angle.toFixed(4))]);
         this.traceAt=this.time+.25;
       }
       const next = this.checkpoints[this.checkpoint];
@@ -686,19 +779,7 @@ export class RallyWorld {
       ) {
         this.checkpoint++;
         if (this.checkpoint === this.checkpoints.length) {
-          if (!this.best || this.time < this.best) {
-            this.best = this.time;
-            try {
-              localStorage.setItem(
-                `pocket-rally-best-${boardKey(this.selection)}-${this.selected}`,
-                String(this.best),
-              );
-            } catch {}
-            this.callbacks.best(this.best);
-          }
-          this.trace.push([this.time,this.vehicle.position.x,this.vehicle.position.z]);
-          this.callbacks.finish?.(this.time,this.cleanRun ? this.trace : []);
-          this.setMode("finished");
+          this.completeRun();
         }
       }
       if (Math.abs(speed) > 4) {
@@ -719,6 +800,18 @@ export class RallyWorld {
         }
       }
     }
+    if(this.mode==="celebrating"){
+      this.arrival+=dt;const t=Math.min(1,this.arrival/3),ease=1-Math.pow(1-t,3);
+      this.vehicle.position.lerpVectors(this.arrivalFrom,this.atmosphere.layout.center,ease);
+      this.vehicle.rotation.set(0,headingBetween(this.arrivalAngle,this.atmosphere.layout.angle,ease),0);
+      if(t===1){this.atmosphere.celebrate();this.setMode("finished");}
+    }
+    if(this.ghostCar){
+      const pose=this.ghostReplay && (this.mode==="race"||this.mode==="paused")?replayPose(this.ghostReplay,this.time):null;
+      this.ghostCar.visible=Boolean(pose && this.ghostVisible);
+      if(pose){this.ghostCar.position.set(pose.x,.08,pose.z);this.ghostCar.rotation.set(0,pose.angle,0);}
+    }
+    this.atmosphere.update(this.mode==="paused"?0:dt,now/1000);
     if(this.mode === "race" || this.mode === "garage") this.updateWeather(dt);
     this.dust.forEach((d) => {
       const m = d.material as T.MeshStandardMaterial;
@@ -734,6 +827,10 @@ export class RallyWorld {
       target.y = 0.5;
       desired = target.clone().add(new T.Vector3(14, 13, 18));
       this.camera.zoom = 2.2;
+    } else if(this.mode==="celebrating" || this.mode==="finished") {
+      target.lerp(this.atmosphere.layout.center,.6);
+      if(this.mode==="finished"){if(this.host.clientWidth>this.host.clientHeight)target.add(new T.Vector3(8,0,-8));else target.y-=8;}
+      desired=target.clone().add(new T.Vector3(20,24,20));this.camera.zoom=1.3;
     } else {
       target.addScaledVector(this.velocity, 0.35);
       desired = target.clone().add(new T.Vector3(28, 36, 28));
@@ -769,6 +866,7 @@ export class RallyWorld {
   }
   dispose() {
     this.disposed = true;
+    this.clearGhost();
     cancelAnimationFrame(this.frame);
     this.observer.disconnect();
     window.removeEventListener("keydown", this.keydown);

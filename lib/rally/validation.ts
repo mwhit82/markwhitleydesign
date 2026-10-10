@@ -1,3 +1,4 @@
+import { matchingReplay } from "../../components/rally/replay";
 import { checkpointIndices, stagePoints, validSelection, type StageSelection } from '../../components/rally/stages';
 export function validName(name: unknown): name is string { return typeof name==='string' && /^[\p{L}\p{N} _.-]{2,20}$/u.test(name.trim()); }
 export function validCar(car: unknown): car is number { return Number.isInteger(car) && Number(car)>=0 && Number(car)<4; }
@@ -19,4 +20,9 @@ export function validateRun(selection: StageSelection, time: unknown, trace: unk
     previous=row;
   }
   return checkpoint===checkpointIndices.length && previous!==null && Math.abs(previous[0]-time)<.1;
+}
+
+export function replayAgrees(replay:unknown,selection:StageSelection,car:number,time:number,trace:number[][]) {
+ if(!matchingReplay(replay,selection,car,time)||replay.samples.length!==trace.length)return false;
+ return replay.samples.every((s,i)=>Math.abs(s[0]-trace[i][0])<=.002&&Math.abs(s[1]-trace[i][1])<=.011&&Math.abs(s[2]-trace[i][2])<=.011);
 }

@@ -706,3 +706,16 @@
  .leaderboard { padding:12px; gap:8px; }
  .leaderboard h2 { font-size:21px; }
 }
+.ghostChoice {display:grid;gap:5px;margin-top:10px;font-size:11px;font-weight:700;}
+.ghostChoice select {min-height:38px;background:#fff8e6;color:#233c32;border-radius:5px;padding:6px;}
+.ghostChoice small {font-size:10px;opacity:.75;}
+.ghostToggle {position:absolute;z-index:42;right:14px;top:72px;padding:10px;border-radius:8px;background:#f2eddde8;color:#233c32;font-size:12px;min-height:44px;}
+.arrival {position:absolute;z-index:30;bottom:24px;left:50%;transform:translateX(-50%);background:#f2edddec;color:#233c32;border-radius:8px;padding:14px;text-align:center;display:grid;gap:10px;}
+.arrival button {min-height:44px;text-decoration:underline;}
+@media (orientation:landscape) and (max-height:550px){.ghostChoice {grid-template-columns:70px 1fr;margin-top:6px;align-items:center;}.ghostChoice small {grid-column:1/-1;}.garage {max-height:calc(100% - 75px);} }
+
+.finishResults { inset:auto 16px 16px auto; width:min(340px,44%); max-height:calc(100% - 90px); overflow-y:auto; border-radius:12px; padding:18px; gap:9px; backdrop-filter:none; background:#f2edddef; color:#233c32; }
+.finishResults h2 {font-size:40px;letter-spacing:-2px;}
+.finishResults p {font-size:12px;}
+.finishResults .start {margin-top:4px;}
+@media (orientation:portrait) { .finishResults {left:12px;right:12px;bottom:12px;width:auto;max-height:42%;padding:14px;} }

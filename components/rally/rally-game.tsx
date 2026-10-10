@@ -5,6 +5,7 @@ import { cars, formatTime, type Mode } from "./data";
 import styles from "./rally.module.css";
 import { stages, initialStage, stageDefinition, weatherNames, type StageSelection, type Weather } from "./stages";
 import { Leaderboard, type RaceResult } from "./leaderboard";
+import type { GhostSource } from "./replay";
 export function RallyGame() {
   const host = useRef<HTMLDivElement>(null);
   const game = useRef<HTMLDivElement>(null);
@@ -21,6 +22,9 @@ export function RallyGame() {
   const [result, setResult] = useState<RaceResult|null>(null);
   const run = useRef<Promise<string|null>>(Promise.resolve(null));
   const [mode, setMode] = useState<Mode>("garage");
+  const [ghostSource,setGhostSource]=useState<GhostSource>("personal");
+  const [ghostStatus,setGhostStatus]=useState("");
+  const [ghostShown,setGhostShown]=useState(true);
   const [ready, setReady] = useState(false);
   const [error, setError] = useState("");
   const [muted, setMuted] = useState(true);
@@ -66,7 +70,9 @@ export function RallyGame() {
             const world=api.current;
             run.current=fetch('/api/rally/start',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({selection:world?.selection,car:world?.selected})}).then(async response=>response.ok?(await response.json()).run:null).catch(()=>null);
           },
-          finish: (time,trace) => setResult({time,trace,run:run.current}),
+          finish: (time,trace,replay) => setResult({time,trace,replay,run:run.current}),
+          ghost: setGhostStatus,
+          ghostVisibility: setGhostShown,
           mode: setMode,
           pad: setPad,
           select: setSelected,
@@ -76,6 +82,7 @@ export function RallyGame() {
             if (isMuted) setNotice("Audio stopped. Tap Sound to retry.");
           },
         });
+        setGhostSource(api.current.ghostSource);
         setReady(true);
       })
       .catch(() =>
@@ -201,7 +208,7 @@ export function RallyGame() {
     <div className={styles.page}>
       <div className={styles.heading}>
         <div>
-          <p className={styles.eyebrow}>MARK WHITLEY / POCKET RALLY V2.0</p>
+          <p className={styles.eyebrow}>MARK WHITLEY / POCKET RALLY V2.1</p>
           <h1>
             POCKET<span>RALLY.</span>
           </h1>
@@ -330,6 +337,7 @@ export function RallyGame() {
                 <label>Conditions<select value={selection.weather} onChange={e=>changeStage({...selection,weather:e.target.value as Weather})}>{stage.conditions.map(w=><option key={w} value={w}>{weatherNames[w]}</option>)}</select></label>
                 <label>Direction<select value={selection.reverse?"reverse":"forward"} onChange={e=>changeStage({...selection,reverse:e.target.value==="reverse"})}><option value="forward">Forward</option><option value="reverse">Reverse</option></select></label>
               </div>
+              <label className={styles.ghostChoice}>Ghost rival<select value={ghostSource} onChange={e=>{const source=e.target.value as GhostSource;setGhostSource(source);setGhostShown(true);api.current?.setGhost(source);}}><option value="off">Off</option><option value="personal">My best</option><option value="leader">Leaderboard best · same car</option></select><small role="status">{ghostStatus}</small></label>
               <button className={styles.boardButton} onClick={()=>setLeaderboard(true)}>View stage leaderboard ↗</button>
               <button
                 className={styles.start}
@@ -343,6 +351,8 @@ export function RallyGame() {
             </div>
           </>
         )}
+        {mode === "celebrating" && <div className={styles.arrival}><strong>STAGE COMPLETE · {formatTime(result?.time ?? stats.time)}</strong><button onClick={()=>api.current?.skipCelebration()}>Skip celebration →</button></div>}
+        {(mode === "race" || mode === "paused") && ghostSource!=="off" && <button className={styles.ghostToggle} onClick={()=>api.current?.toggleGhost()}>Ghost {ghostShown?"on":"off"} · G</button>}
         {(mode === "race" || mode === "countdown") && (
           <>
             <div className={styles.timer}>
@@ -411,7 +421,7 @@ export function RallyGame() {
           </div>
         )}
         {mode === "finished" && (
-          <div className={styles.overlay}>
+          <div className={`${styles.overlay} ${styles.finishResults}`}>
             <span className={styles.tag}>
               STAGE COMPLETE /{" "}
               {stats.time < 70 ? "GOLD" : stats.time < 90 ? "SILVER" : "BRONZE"}
@@ -449,11 +459,11 @@ export function RallyGame() {
           )}
           <p>
             <b>Keyboard</b> · WASD / arrows to drive · Space to slide · R to
-            recover · Esc to pause
+            recover · G ghost · Esc to pause
           </p>
           <p>
             <b>PS5 controller</b> · Left stick steers · R2 throttle · L2 brake ·
-            Cross handbrake · Triangle recover · Options pause
+            Cross handbrake · Triangle recover · Square ghost · Options pause
           </p>
           <small>
             On phone or iPad, rotate to landscape and tap Fullscreen for the

@@ -190,7 +190,7 @@ export class RallyAudio {
   }
   setMode(mode: Mode) {
     this.mode = mode;
-    if (mode === "paused" || mode === "finished") this.pause();
+    if (mode === "paused" || mode === "finished" || mode === "celebrating") this.pause();
   }
   private update() {
     if (!this.playing || !this.context || this.layers.length !== 3) return;

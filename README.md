@@ -87,3 +87,37 @@ characters; race identifiers are one-use. UI pagination loads 20 rows at a time
 and separately displays the player's rank when outside the loaded rows.
 
 Checks: `node --test scripts/test-rally-*.mjs` and `npm run build`.
+
+
+### Finish celebrations and ghosts (V2.1)
+
+Every route has an open finish tent, a three-second arrival, confetti and a
+36-person clay crowd. The finish callback freezes time and recordings before
+arrival; skipping arrival cannot record another result. Reduced motion disables
+camera flashes and falling confetti and keeps supporters still.
+
+Garage ghosts: Off, My best, or Leaderboard best. G / controller Square / the
+on-screen Ghost button toggle visibility during a run. Personal replays stay
+on the device, keyed by car, stage, weather and direction. Legacy best times
+remain; a new faster clean run is required to add a missing recording.
+
+Version-1 replays contain car, stage selection, finish time and samples
+`[time, x, z, heading]` at about 4 Hz, with a final finish sample. Recordings stop
+at ten minutes / 2,600 samples. Submission checks replay shape and agreement
+with the validated trace. The same Lua operation consumes the one-use race
+identifier and replaces score, metadata and replay only for improved times.
+`GET /api/rally/ghost?stage=forest&weather=clear&reverse=false&car=0` returns
+only the same-car leader's name, time and replay. Old leaders with no recording
+return a null replay. Ghost downloads never block racing, and a pending download
+cannot change the rival after an attempt starts. Paginated boards omit replays.
+
+Release checks include automated route/crowd validation across all 24 selections,
+completion/skip one-shot behavior, legacy PB and practice-run handling, failed
+and late downloads, angle wrapping, and malformed replay rejection. An isolated
+Upstash test with 60-second-expiring QA keys verified slower/improved submissions,
+duplicate consumption, car-specific leaders and missing legacy recordings.
+Browser previews checked 844×390 landscape and 393×852 portrait. In the forest
+finish view, atmosphere added 32 visible draw calls and 7,976 triangles versus
+hiding that group (794/107,492 vs 762/99,516); this is a scene-cost comparison,
+not a physical iPhone FPS measurement. Physical controller/iPhone testing remains
+manual. No QA preview buttons are included in the release.

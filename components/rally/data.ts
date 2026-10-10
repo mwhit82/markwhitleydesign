@@ -44,7 +44,7 @@ export const cars = [
     shape: "hatch",
   },
 ] as const;
-export type Mode = "garage" | "countdown" | "race" | "paused" | "finished";
+export type Mode = "garage" | "countdown" | "race" | "paused" | "finished" | "celebrating";
 export const formatTime = (value: number) =>
   `${Math.floor(value / 60)
     .toString()

@@ -1,0 +1,42 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {readFile} from 'node:fs/promises';
+import {resolve,dirname} from 'node:path';
+import ts from 'typescript';
+import * as T from 'three';
+const cache=new Map();
+async function moduleUrl(path){
+ if(cache.has(path))return cache.get(path);
+ let code=ts.transpileModule(await readFile(path,'utf8'),{compilerOptions:{module:ts.ModuleKind.ESNext,target:ts.ScriptTarget.ES2022}}).outputText;
+ for(const match of [...code.matchAll(/from ["']([^"']+)["']/g)]){
+  const spec=match[1],url=spec.startsWith('.')?await moduleUrl(resolve(dirname(path),spec+'.ts')):import.meta.resolve(spec);
+  code=code.replace(match[0],`from '${url}'`);
+ }
+ const url='data:text/javascript;base64,'+Buffer.from(code).toString('base64');cache.set(path,url);return url;
+}
+const {RallyWorld}=await import(await moduleUrl(resolve('components/rally/world.ts')));
+const {replayKey}=await import(await moduleUrl(resolve('components/rally/replay.ts')));
+const memory=new Map();
+globalThis.localStorage={getItem:k=>memory.get(k)||null,setItem:(k,v)=>memory.set(k,v)};
+function fixture(best=null,clean=true){
+ const w=Object.create(RallyWorld.prototype);let finishes=0;
+ Object.assign(w,{mode:'race',time:60,trace:[[0,0,0],[60,1,1]],replaySamples:[[0,0,0,0],[60,1,1,0]],cleanRun:clean,best,selected:0,selection:{stage:'forest',weather:'clear',reverse:false},vehicle:new T.Group(),velocity:new T.Vector3(),angle:0,arrivalFrom:new T.Vector3(),keys:new Set(),root:new T.Group(),ghostGeneration:0,ghostSource:'personal',disposed:false,ghostCar:null,ghostAbort:null,ghostReplay:null,callbacks:{mode(){},best(){},finish(){finishes++},ghost(s){w.status=s}},atmosphere:{layout:{center:new T.Vector3(2,0,2),angle:1},celebrate(){},reset(){}}});
+ w.finishCount=()=>finishes;return w;
+}
+test('completion freezes recording once; skip does not resubmit; clean PB replacement and legacy times',async()=>{
+ memory.clear();const w=fixture();w.completeRun();const replay=JSON.parse(memory.get(replayKey(w.selection,0)));
+ assert.equal(w.finishCount(),1);assert.equal(w.mode,'celebrating');assert.equal(w.time,60);assert.equal(replay.samples.at(-1)[0],60);assert.equal(replay.samples.length,2);
+ w.completeRun();w.skipCelebration();w.skipCelebration();assert.equal(w.finishCount(),1);assert.equal(w.time,60);assert.equal(w.mode,'finished');
+ const slower=fixture(55);slower.completeRun();assert.equal(slower.best,55);assert.equal(memory.get(replayKey(w.selection,0)),JSON.stringify(replay));
+ memory.clear();const legacy=fixture(55);legacy.mode='garage';await legacy.prepareGhost();assert.match(legacy.status,/new best/);assert.equal(legacy.best,55);
+ const practice=fixture(null,false);practice.completeRun();assert.equal(practice.best,null);assert.equal(memory.size,0);
+});
+test('failed ghost download never changes race availability; downloaded rival is fixed once start begins',async()=>{
+ const original=globalThis.fetch;
+ try{
+  globalThis.fetch=async()=>{throw Error('offline')};const w=fixture();w.mode='garage';w.ghostSource='leader';await w.prepareGhost();assert.match(w.status,/unavailable/);assert.equal(w.mode,'garage');
+  let resolveFetch;globalThis.fetch=()=>new Promise(r=>resolveFetch=r);const pending=w.prepareGhost();w.mode='countdown';w.ghostGeneration++;
+  resolveFetch({ok:true,json:async()=>({name:'Late rival',replay:{version:1,car:0,selection:w.selection,time:60,samples:[[0,0,0,0],[60,1,1,0]]}})});
+  await pending;assert.equal(w.ghostReplay,null);
+ }finally{globalThis.fetch=original;}
+});
