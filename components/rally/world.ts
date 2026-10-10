@@ -108,6 +108,7 @@ export class RallyWorld {
     window.addEventListener("keyup", this.keyup);
     window.addEventListener("blur", this.blur);
     document.addEventListener("visibilitychange", this.visibility);
+    this.prepareAudio();
     this.frame = requestAnimationFrame(this.tick);
   }
   material(color: string) {
@@ -431,6 +432,21 @@ export class RallyWorld {
       throw error;
     }
   }
+  prepareAudio() {
+    if (this.audio) return;
+    if (!this.audio) {
+      this.audio = new Audio("/rally/engine.wav");
+      this.audio.loop = true;
+      this.audio.preload = "auto";
+      // Keep the native media decoder at its default rate for smooth mobile playback.
+      this.audio.addEventListener("error", () => {
+        this.muted = true;
+        if (!this.disposed) this.callbacks.audio?.(true);
+      });
+    }
+    // Fetch ahead of the first sound tap without starting playback.
+    this.audio.load();
+  }
   async ensureAudio() {
     if (
       this.muted ||
@@ -451,16 +467,8 @@ export class RallyWorld {
         /* Standard media playback still works without this API. */
       }
     }
-    if (!this.audio) {
-      this.audio = new Audio("/rally/engine.wav");
-      this.audio.loop = true;
-      this.audio.preload = "auto";
-      // Keep the native media decoder at its default rate for smooth mobile playback.
-      this.audio.addEventListener("error", () => {
-        this.muted = true;
-        if (!this.disposed) this.callbacks.audio?.(true);
-      });
-    }
+    this.prepareAudio();
+    if (!this.audio) return;
     this.audio.muted = false;
     if (!this.audio.paused) return;
     // play() runs synchronously within the user's tap; only its result is awaited.
