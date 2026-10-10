@@ -29,7 +29,9 @@ export function soundMix(drive: DriveSound, mode: Mode, car: number) {
 }
 
 type Layer = { source: AudioBufferSourceNode; gain: GainNode };
+const voiceNames = [...[1,2,3,4,5].flatMap(n=>[`${n}-left`,`${n}-right`]),"crest","hairpin-left","hairpin-right","finish"];
 const assets = [
+  ...voiceNames.flatMap(n=>n==="finish"?[`voice-${n}`]:[`voice-${n}`,`voice-into-${n}`]),
   ...Array.from({ length: 5 }, (_, i) => [
     `recorded-car-${i}-idle`,
     `recorded-car-${i}-load`,
@@ -51,6 +53,7 @@ export class RallyAudio {
   private crowdLoop:Layer|null=null;
   private cheers:Layer[]=[];
   private finishStarted=false;
+  private voiceLayers:Layer[]=[];
   private uiLayer:Layer|null=null;
   private finishUntil=0;
   private finishGain=.12;private finishDuration=3;
@@ -88,7 +91,7 @@ export class RallyAudio {
           signal: this.abort.signal,
         });
         if (!response.ok) throw new Error("Audio asset unavailable");
-        return [name, await response.arrayBuffer()] as const;}catch(error){if(name.startsWith('crowd-')||name.startsWith('ui-'))return null;throw error;}
+        return [name, await response.arrayBuffer()] as const;}catch(error){if(name.startsWith('crowd-')||name.startsWith('ui-')||name.startsWith('voice-'))return null;throw error;}
       }),
     )
       .then((entries) => new Map(entries.filter((entry):entry is readonly [string,ArrayBuffer]=>entry!==null)))
@@ -103,7 +106,7 @@ export class RallyAudio {
     await Promise.all(
       [...encoded].map(async ([name, data]) => {
         if (this.buffers.has(name)) return;
-        try {const buffer = await context.decodeAudioData(data.slice(0));this.buffers.set(name, buffer);}catch(error){if(!name.startsWith("crowd-")&&!name.startsWith("ui-"))throw error;}
+        try {const buffer = await context.decodeAudioData(data.slice(0));this.buffers.set(name, buffer);}catch(error){if(!name.startsWith("crowd-")&&!name.startsWith("ui-")&&!name.startsWith("voice-"))throw error;}
       }),
     );
   }
@@ -214,9 +217,20 @@ export class RallyAudio {
     layer.source.onended=()=>{layer.source.disconnect();layer.gain.disconnect();this.cheers=this.cheers.filter(item=>item!==layer);};
   }
   private clearCheers(){for(const layer of this.cheers){layer.source.stop();layer.source.disconnect();layer.gain.disconnect();}this.cheers=[];}
+  stopVoice(){for(const l of this.voiceLayers){l.source.onended=null;try{l.source.stop();}catch{}l.source.disconnect();l.gain.disconnect();}this.voiceLayers=[];}
+  speak(clips:string[]){
+    if(!this.playing||!this.context||!this.master||this.mode!=="race"||this.voiceLayers.length)return;
+    let at=this.context.currentTime;
+    for(const [i,clip] of clips.slice(0,2).entries()){
+      const name=`voice-${i&&clip!=="finish"?"into-":""}${clip}`,buffer=this.buffers.get(name);if(!buffer)continue;
+      const source=this.context.createBufferSource(),gain=this.context.createGain();source.buffer=buffer;gain.gain.value=.85;source.connect(gain);gain.connect(this.master);
+      const layer={source,gain};this.voiceLayers.push(layer);source.onended=()=>{source.disconnect();gain.disconnect();this.voiceLayers=this.voiceLayers.filter(l=>l!==layer);};source.start(at);at+=buffer.duration+.13;
+    }
+  }
   setMode(mode: Mode) {
     if(mode===this.mode)return;
     this.mode=mode;
+    if(mode!=="race")this.stopVoice();
     if(mode==='garage'||mode==='countdown'){
       this.clearCheers();this.finishStarted=false;this.finishUntil=0;this.finishGain=.12;this.finishDuration=3;this.nextCheer=(this.context?.currentTime??0)+7;
     }
@@ -248,6 +262,7 @@ export class RallyAudio {
     if(celebration)for(const layer of this.cheers)layer.gain.gain.setTargetAtTime(this.finishGain*Math.max(0,Math.min(1,(this.finishUntil-time)/2)),time,.3);
   }
   pause() {
+    this.stopVoice();
     this.generation++;
     this.playing = false;
     if (this.interval !== null) window.clearInterval(this.interval);

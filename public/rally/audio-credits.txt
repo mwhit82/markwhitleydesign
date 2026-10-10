@@ -66,3 +66,11 @@ normalisation and small tonal variations. Separate idle/load/lift layers.
 These are representative rally/kart recordings, not exact named-car matches.
 Original source previews are retained in scripts/audio-source.
 Rebuild with scripts/prepare-rally-engines-v26.py (numpy and soundfile).
+
+V2.6.1 co-driver: Rally Co-Driver Pacenote Cues by SentientMattress
+https://freesound.org/people/SentientMattress/sounds/833028/
+Creative Commons Attribution 4.0: https://creativecommons.org/licenses/by/4.0/
+Source: author's high-quality MP3 preview. Edits: individual phrase trimming,
+220–3400 Hz gentle radio EQ, peak/RMS normalisation, 12ms edge fades,
+mono 22050 Hz PCM delivery. No generative AI, voice cloning or synthesis.
+Original voice remains the author's; this credit does not imply endorsement.

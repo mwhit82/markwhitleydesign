@@ -1,3 +1,4 @@
+import {paceNotes,PaceScheduler} from "./codriver";
 import * as T from "three";
 import {roadRelief} from "./road-relief";
 import {StageScenery,elevationPose,rampHeight} from "./scenery";
@@ -14,6 +15,7 @@ import { lapCount, initialStage, stageDefinition, stagePoints, checkpointIndices
 import { Atmosphere } from "./atmosphere";
 import { type Replay, type GhostSource, matchingReplay, replayKey, replayPose, headingBetween, checkpointSplits } from "./replay";
 type Callbacks = {
+  subtitle?: (text:string)=>void;
   stats: (s: {
     time: number;
     speed: number;
@@ -38,10 +40,21 @@ type Callbacks = {
   ghostVisibility?: (visible:boolean) => void;
 };
 export class RallyWorld {
+  codriverEnabled=true;
+  private pace:PaceScheduler|null=null;
+  private routeDistances:number[]=[];
+  private subtitleUntil=0;
+  private subtitleText="";
+  private showSubtitle(text:string){if(text!==this.subtitleText){this.subtitleText=text;this.callbacks.subtitle?.(text);}}
+  private paceDistance(){const index=Math.max(0,Math.min(650,this.routeProgress(this.vehicle.position))),i=Math.floor(index);return (this.routeDistances[i]??0)+((this.routeDistances[Math.min(650,i+1)]??0)-(this.routeDistances[i]??0))*(index-i);}
+  toggleCodriver(){this.codriverEnabled=!this.codriverEnabled;try{localStorage.setItem("rally-codriver",String(this.codriverEnabled));}catch{}this.audio?.stopVoice();this.showSubtitle("");this.pace?.resync(this.paceDistance());}
   controls:ControlSettings={...defaultControls};
   touchSteer=0;touchHeld=false;touchActive=false;
   private haptics=new RallyHaptics();
   private scenery!:StageScenery;
+  private roadSurface:T.Mesh|null=null;
+  private surfaceRay=new T.Raycaster(new T.Vector3(),new T.Vector3(0,-1,0));
+  private playbackHeight(x:number,z:number,desired:number){this.surfaceRay.ray.origin.set(x,20,z);const hit=this.roadSurface?this.surfaceRay.intersectObject(this.roadSurface,false)[0]:null;return Math.max(desired,(hit?.point.y??0)+.04);}
   private lastRallyCar=0;
   private surfaceEffects!:SurfaceEffects;
   private mud:T.InstancedMesh|null=null;
@@ -153,6 +166,7 @@ export class RallyWorld {
     window.addEventListener("keyup", this.keyup);
     window.addEventListener("blur", this.blur);
     document.addEventListener("visibilitychange", this.visibility);
+    try{this.codriverEnabled=localStorage.getItem("rally-codriver")!=="false";}catch{}
     this.prepareAudio();
     this.frame = requestAnimationFrame(this.tick);
   }
@@ -262,9 +276,11 @@ export class RallyWorld {
         roughness: weather === "rain" ? 0.35 : 1,
       }),
     );
+    road.renderOrder = -10; // Transparent road first, then decals/weather and ghosts.
     road.rotation.x = -Math.PI / 2;
     road.position.y = 0.04;
     road.receiveShadow = true;
+    this.roadSurface=road;road.updateMatrixWorld(true);
     this.root.add(road);
     this.scenery=new StageScenery(this.selection,this.points,(x,z)=>this.atmosphere.reserved(x,z));this.root.add(this.scenery.group);
     this.surfaceEffects=new SurfaceEffects(this.selection,this.points,this.atmosphere.reduced);this.root.add(this.surfaceEffects.group);
@@ -555,7 +571,7 @@ export class RallyWorld {
       this.ghostReplay=replay;
       this.ghostCar=this.vehicle.clone(true);
       this.ghostCar.getObjectByName("car-mud")?.removeFromParent();this.ghostCar.getObjectByName("car-snow")?.removeFromParent();
-      this.ghostCar.traverse(obj=>{if(obj instanceof T.Mesh){obj.geometry=obj.geometry.clone();const material=(obj.material as T.MeshStandardMaterial).clone();material.transparent=true;material.opacity=.3;material.depthWrite=false;material.color.lerp(new T.Color("#b6f7ed"),.4);obj.material=material;obj.castShadow=false;obj.receiveShadow=false;}});
+      this.ghostCar.traverse(obj=>{if(obj instanceof T.Mesh){obj.renderOrder=3;obj.geometry=obj.geometry.clone();const material=(obj.material as T.MeshStandardMaterial).clone();material.transparent=true;material.opacity=.3;material.depthWrite=false;material.depthTest=true;material.color.lerp(new T.Color("#b6f7ed"),.4);obj.material=material;obj.castShadow=false;obj.receiveShadow=false;}});
       const lights:T.Object3D[]=[];this.ghostCar.traverse(obj=>{if(obj instanceof T.Light)lights.push(obj);});lights.forEach(light=>light.removeFromParent());
       this.ghostCar.visible=false;this.root.add(this.ghostCar);this.callbacks.ghost?.(label);
     }catch{if(generation===this.ghostGeneration)this.callbacks.ghost?.("Ghost unavailable · racing still works");}
@@ -589,6 +605,8 @@ export class RallyWorld {
   }
   setMode(mode: Mode) {
     this.keys.clear();this.touchSteer=0;this.touchHeld=false;this.touchActive=false;this.haptics.stop();
+    if(mode!=="race")this.showSubtitle("");
+    if(mode==="race"&&this.mode==="paused")this.pace?.resync(this.paceDistance());
     this.mode = mode;
     this.audio?.setMode(mode);
     this.callbacks.mode(mode);
@@ -611,12 +629,14 @@ export class RallyWorld {
     this.velocity.set(0, 0, 0);
     this.rpm = 950;
     this.limited = false;
+    this.audio?.stopVoice();this.showSubtitle("");this.pace?.resync(this.paceDistance());
   }
   uiCue(kind:"select"|"start"|"restart"="select"){if(!this.muted)this.audio?.cue(kind);}
   start() {
     this.uiCue(this.mode==="garage"?"start":"restart");
     this.setMode("countdown");
     this.clearFeedback();
+    this.pace=new PaceScheduler(paceNotes(this.selection));this.routeDistances=[0];for(let i=1;i<this.points.length;i++)this.routeDistances.push(this.routeDistances[i-1]+this.points[i].distanceTo(this.points[i-1]));
     this.checkpoint = 0;
     this.time = 0;this.recoveryPenalty=0;this.lap=1;this.lapTimes=[];this.circuitFinishArmed=false;
     this.countdown = 3;
@@ -928,13 +948,18 @@ export class RallyWorld {
     if(this.mode==="finished"&&this.replayEnabled&&this.resultReplay){
       this.replayClock=(this.replayClock+dt)%this.resultReplay.time;
       const pose=replayPose(this.resultReplay,this.replayClock);
-      if(pose){const profile=this.selection.stage==='kart'?{y:0,pitch:0,roll:0}:elevationPose(this.routeProgress(pose),pose.speed,this.atmosphere.reduced);this.vehicle.position.set(pose.x,profile.y,pose.z);this.vehicle.rotation.set(profile.pitch,pose.angle,profile.roll);}
+      if(pose){const profile=this.selection.stage==='kart'?{y:0,pitch:0,roll:0}:elevationPose(this.routeProgress(pose),pose.speed,this.atmosphere.reduced);const shoulder=T.MathUtils.clamp((8-this.nearest(pose.x,pose.z).distance)/2.4,0,1);this.vehicle.position.set(pose.x,this.playbackHeight(pose.x,pose.z,profile.y*shoulder+.08),pose.z);this.vehicle.rotation.set(profile.pitch,pose.angle,profile.roll);}
     }
     if(this.mode==="race"&&this.selection.stage!=="kart"){const profile=elevationPose(this.routeProgress(this.vehicle.position),this.velocity.length(),this.atmosphere.reduced),shoulder=T.MathUtils.clamp((7.8-this.nearest(this.vehicle.position.x,this.vehicle.position.z).distance)/2.2,0,1);this.vehicle.position.y+=profile.y*shoulder;this.vehicle.rotation.x=profile.pitch;this.vehicle.rotation.z+=profile.roll;}
     if(this.ghostCar){
       const pose=this.ghostReplay && (this.mode==="race"||this.mode==="paused")?replayPose(this.ghostReplay,this.time):null;
       this.ghostCar.visible=Boolean(pose && this.ghostVisible);
-      if(pose){const profile=this.selection.stage==="kart"?{y:0,pitch:0,roll:0}:elevationPose(this.routeProgress(pose),pose.speed,this.atmosphere.reduced);const shoulder=T.MathUtils.clamp((7.8-this.nearest(pose.x,pose.z).distance)/2.2,0,1);this.ghostCar.position.set(pose.x,profile.y*shoulder+.08,pose.z);this.ghostCar.rotation.set(profile.pitch,pose.angle,profile.roll);}
+      if(pose){const profile=this.selection.stage==="kart"?{y:0,pitch:0,roll:0}:elevationPose(this.routeProgress(pose),pose.speed,this.atmosphere.reduced);const shoulder=T.MathUtils.clamp((8-this.nearest(pose.x,pose.z).distance)/2.4,0,1);this.ghostCar.position.set(pose.x,this.playbackHeight(pose.x,pose.z,profile.y*shoulder+.08),pose.z);this.ghostCar.rotation.set(profile.pitch,pose.angle,profile.roll);}
+    }
+    if(this.mode==="race"&&this.codriverEnabled){
+      const note=this.pace?.update(this.paceDistance(),this.velocity.length(),this.time);
+      if(note){this.showSubtitle(note.text);this.subtitleUntil=this.time+Math.max(2.5,note.clips.length*1.7);if(!this.muted)this.audio?.speak(note.clips);}
+      if(this.time>=this.subtitleUntil)this.showSubtitle("");
     }
     if(this.notifications.tick(dt,this.mode==="paused"))this.callbacks.checkpoints?.([...this.notifications.items]);
     this.scenery.update(this.mode==="paused"?0:dt,this.atmosphere.reduced);

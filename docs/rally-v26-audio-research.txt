@@ -22,3 +22,20 @@ Schedule calls 2–3 seconds before each bend based on route distance and speed,
 never nearest-point jumps; one voice source, no repeated calls, pause/resume and
 recovery resynchronisation, subtitles and remembered toggle. Kart mode has no
 co-driver. No live speech generation or network requests while driving.
+
+V2.6.1 update — 11 October 2026
+Original co-driver recording verified: SentientMattress, Rally Co-Driver Pacenote
+Cues, https://freesound.org/people/SentientMattress/sounds/833028/ (CC BY 4.0).
+Conventional trimming/EQ only; no generative processing. See audio credits.
+27 preloaded clips, 24 explicit route-direction note lists, speed-based lead,
+subtitles and remembered toggle now implemented. The earlier deferral is resolved.
+
+Verification: 46 regression tests; correct left/right geometry for every authored
+anchor, scheduling/deduplication/recovery, unavailable voice assets, bounded voice
+sources and cached decode, plus existing leaderboard/replay/route checks.
+Browser checks cover desktop, portrait phone, landscape phone and tablet layouts,
+including a temporary ghost/subtitle fixture (removed before release).
+No additional draw calls from this update. Playback uses a bounded raycast against
+the existing road mesh; audio adds 27 short cached buffers and at most two scheduled
+non-overlapping voice sources. Physical iPhone performance/audio and PS5 rumble
+remain unverified; browser viewport simulation does not validate device hardware.

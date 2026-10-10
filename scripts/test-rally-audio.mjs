@@ -113,7 +113,7 @@ test("bounded audio graph: no native media rate mutations, cached decoding, paus
     }
     decodeAudioData() {
       decodes++;
-      return Promise.resolve({});
+      return Promise.resolve({duration:1});
     }
     resume() {
       this.state = "running";
@@ -158,7 +158,7 @@ test("bounded audio graph: no native media rate mutations, cached decoding, paus
   try {
     assert.equal(mediaPlays, 0, "preloading must not autoplay");
     await audio.enable();
-    assert.equal(decodes, 22);
+    assert.equal(decodes, 49);
     assert.equal(sources, 5);
     assert.deepEqual(periods, [50]);
     const previous = automation;
@@ -177,15 +177,19 @@ test("bounded audio graph: no native media rate mutations, cached decoding, paus
       8,
       "one fixed-rate update schedules eight parameters",
     );
+    audio.setMode("race");audio.speak(["1-left","2-right"]);
+    assert.equal(audio.voiceLayers.length,2);
+    const voiceSources=sources;audio.speak(["crest"]);assert.equal(sources,voiceSources,"never overlap calls");
+    audio.stopVoice();assert.equal(audio.voiceLayers.length,0);
     audio.setCar(2);
-    assert.equal(decodes, 22);
-    assert.equal(sources, 9);
+    assert.equal(decodes, 49);
+    assert.equal(sources, 11);
     audio.setMode("paused");
     assert.equal(timers.size, 0);
     assert.ok(mediaPauses > 0);
     audio.setMode("race");
     await audio.enable();
-    assert.equal(decodes, 22);
+    assert.equal(decodes, 49);
     assert.equal(timers.size, 1);
     audio.cue('select');const selectedCue=audio.uiLayer;audio.cue('start');assert.notEqual(audio.uiLayer,selectedCue);audio.cue('restart');assert.ok(audio.uiLayer);
     audio.setMode('celebrating');const finishSources=sources;audio.setMode('celebrating');assert.equal(sources,finishSources);
@@ -197,9 +201,9 @@ test("bounded audio graph: no native media rate mutations, cached decoding, paus
     audio.dispose();
     assert.equal(timers.size, 0);
     assert.equal(closed, 1);
-    globalThis.fetch=async url=>({ok:!String(url).includes('crowd-'),arrayBuffer:async()=>new ArrayBuffer(8)});
-    const fallback=new RallyAudio(()=>assert.fail('optional crowd assets must not stop engine audio'));
-    await fallback.enable();assert.equal(fallback.layers.length,4);assert.equal(fallback.crowdLoop,null);fallback.dispose();
+    globalThis.fetch=async url=>({ok:!String(url).includes('crowd-')&&!String(url).includes('voice-'),arrayBuffer:async()=>new ArrayBuffer(8)});
+    const fallback=new RallyAudio(()=>assert.fail('optional crowd/voice assets must not stop engine audio'));
+    await fallback.enable();assert.equal(fallback.layers.length,4);assert.equal(fallback.crowdLoop,null);fallback.setMode("race");fallback.speak(["1-left"]);assert.equal(fallback.voiceLayers.length,0);fallback.dispose();
   } finally {
     if (!closed) audio.dispose();
     for (const [key, descriptor] of saved) {

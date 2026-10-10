@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 
 import {TouchWheel} from "./touch-wheel";
-import {defaultControls,readControls,type ControlSettings} from "./controls";
+import {defaultControls,readControls,currentHaptics,testHaptics,type HapticCapability,type ControlSettings} from "./controls";
 import {Standings} from "./standings";
 import { cars, formatTime, type Mode } from "./data";
 import styles from "./rally.module.css";
@@ -15,6 +15,12 @@ export function RallyGame() {
   const host = useRef<HTMLDivElement>(null);
   const game = useRef<HTMLDivElement>(null);
   const hadNativeFullscreen = useRef(false);
+  const [codriver,setCodriver]=useState(true);
+  const [subtitle,setSubtitle]=useState("");
+  const [hapticSupport,setHapticSupport]=useState<HapticCapability>('unavailable');
+  const [hapticMessage,setHapticMessage]=useState("");
+  const toggleCodriver=()=>{api.current?.toggleCodriver();setCodriver(api.current?.codriverEnabled??true);};
+  useEffect(()=>{const refresh=()=>setHapticSupport(currentHaptics());refresh();const timer=window.setInterval(refresh,1000);return ()=>window.clearInterval(timer);},[]);
   const [expanded, setExpanded] = useState(false);
   const [installHelp, setInstallHelp] = useState(false);
   const [standalone, setStandalone] = useState(false);
@@ -82,6 +88,7 @@ export function RallyGame() {
       .then(({ RallyWorld }) => {
         if (disposed || !host.current) return;
         api.current = new RallyWorld(host.current, {
+          subtitle:setSubtitle,
           stats: setStats,
           start: () => {
             setLeaderboard(false);setResult(null);
@@ -105,6 +112,7 @@ export function RallyGame() {
         });
         try{api.current.controls=readControls(JSON.parse(localStorage.getItem("rally-controls")||"null"));}catch{}
         setGhostSource(api.current.ghostSource);setSelection({...api.current.selection});
+        setCodriver(api.current.codriverEnabled);
         setMuted(api.current.muted);setReplayEnabled(api.current.replayEnabled);
         setReady(true);
       })
@@ -272,7 +280,7 @@ export function RallyGame() {
     <div className={styles.page}>
       <div className={styles.heading}>
         <div>
-          <p className={styles.eyebrow}>MARK WHITLEY / POCKET RALLY V2.6</p>
+          <p className={styles.eyebrow}>MARK WHITLEY / POCKET RALLY V2.6.1</p>
           <h1>
             POCKET<span>RALLY.</span>
           </h1>
@@ -411,6 +419,7 @@ export function RallyGame() {
                 {selection.stage==='kart'?<div className={styles.circuitSummary}><small>CIRCUIT / DISTANCE</small><strong>{Math.round(routeLength(selection)*lapCount(selection))} m</strong><span>Closed loop · {lapCount(selection)} laps</span></div>:<button onClick={e=>openOptions('time',e.currentTarget)}><small>TIME OF DAY</small><strong>{timeNames[timeOfDay(selection)]}</strong><HudIcon name="next"/></button>}
                 <button onClick={e=>openOptions('direction',e.currentTarget)}><small>ROUTE</small><strong>{selection.reverse?'Reverse':'Forward'}</strong><span><HudIcon name="next"/></span></button>
                 <button onClick={e=>openOptions('ghost',e.currentTarget)}><small>GHOST</small><strong>{ghostSource==='off'?'Off':ghostSource==='personal'?'My best':'Leaderboard'}</strong><span><HudIcon name="next"/></span></button>
+                <button aria-pressed={codriver} disabled={selection.stage==='kart'} onClick={toggleCodriver}><small>CO-DRIVER</small><strong>{selection.stage==='kart'?'Rally only':codriver?'On':'Off'}</strong></button>
                 <button aria-pressed={screenWeather} onClick={toggleScreenWeather}><small><HudIcon name="screen"/> SCREEN WEATHER</small><strong>{screenWeather?"On":"Off"}</strong></button>
               </div>
               <small className={styles.ghostStatus} role="status">{ghostStatus!=="Ghost off"&&ghostStatus!=="My best"?ghostStatus:""}</small>
@@ -487,6 +496,7 @@ export function RallyGame() {
             <div className={styles.pauseSettings}>
                 <button disabled={audioBusy} aria-pressed={!muted} onClick={toggleSound}><HudIcon name={muted?'muted':'sound'}/>{muted?'Sound off':'Sound on'}</button>
                 <button disabled={ghostSource==='off'} aria-pressed={ghostShown&&ghostSource!=='off'} onClick={()=>api.current?.toggleGhost()}><HudIcon name="ghost"/>Ghost {ghostShown&&ghostSource!=='off'?'on':'off'}</button>
+                <button aria-pressed={codriver} disabled={selection.stage==='kart'} onClick={toggleCodriver}>Co-driver {codriver?'on':'off'}</button>
                 <button aria-pressed={screenWeather} onClick={toggleScreenWeather}><HudIcon name="screen"/>Screen weather {screenWeather?"on":"off"}</button>
                 <button onClick={toggleFullscreen}><HudIcon name={expanded?'contract':'expand'}/>{expanded?'Exit view':'Fullscreen'}</button>
               </div>
@@ -521,6 +531,7 @@ export function RallyGame() {
             <div><strong>{n.outcome==='missed'?'MISSED CHECKPOINT':'CHECKPOINT'} {String(n.checkpoints[0]).padStart(2,'0')}{n.checkpoints.length>1?`–${String(n.checkpoints.at(-1)).padStart(2,'0')}`:n.outcome==='accepted'?'/18':''}</strong><small>{n.outcome==='missed'?'Practice run':formatTime(n.time)}</small>{n.delta!==undefined&&<small className={n.delta<=0?styles.ahead:styles.behind}>≈ {n.delta<=0?'−':'+'}{Math.abs(n.delta).toFixed(2)} {n.delta<=0?'ahead':'behind'}</small>}</div>
           </div>)}
         </div>}
+        {mode==='race'&&subtitle&&<div className={styles.codriverSubtitle} role="status"><small>CO-DRIVER</small>{subtitle}</div>}
         {optionPanel && <div className={styles.optionScrim}><div className={styles.optionPanel} role="dialog" aria-modal="true" aria-label={optionTitle} data-rally-menu="true">
           <header><div><span className={styles.tag}>SERVICE PARK / SELECT</span><h2>{optionTitle}</h2></div><button aria-label="Close options" onClick={closeOptions}>×</button></header>
           <div className={styles.optionList}>{options.map(o=><button key={o.value} aria-pressed={o.selected} data-menu-default={o.selected||undefined} onClick={()=>selectOption(o.value)}><span>{o.label}<small>{o.detail}</small></span><b>{o.selected?'✓':<HudIcon name="right"/>}</b></button>)}</div>
@@ -530,7 +541,8 @@ export function RallyGame() {
           <div className={styles.optionList}>{(['arrows','wheel'] as const).map(steering=><button key={steering} aria-pressed={controls.steering===steering} onClick={()=>setControls(c=>({...c,steering}))}>{steering==='arrows'?'Arrow buttons':'◉ Steering wheel'}<b>{controls.steering===steering?'✓':''}</b></button>)}</div>
           <label className={styles.controlRange}>Wheel sensitivity <strong>{controls.sensitivity.toFixed(1)}×</strong><input type="range" min="0.5" max="1.5" step="0.1" value={controls.sensitivity} onChange={e=>setControls(c=>({...c,sensitivity:Number(e.target.value)}))}/></label>
           <p>Drag around the wheel rim to turn. Release to centre. Use your other thumb for the pedals.</p>
-          <button className={styles.menuButton} aria-pressed={controls.haptics} onClick={()=>setControls(c=>({...c,haptics:!c.haptics}))}>Haptic feedback: {controls.haptics?'On':'Off'}</button>
+          <button className={styles.menuButton} disabled={hapticSupport==='unavailable'} aria-pressed={controls.haptics} onClick={()=>setControls(c=>({...c,haptics:!c.haptics}))}>{hapticSupport==='controller'?'Controller rumble':hapticSupport==='device'?'Device vibration':'Haptics unavailable'}: {controls.haptics?'On':'Off'}</button>
+          <button className={styles.menuButton} disabled={hapticSupport==='unavailable'} onClick={()=>void testHaptics().then(setHapticMessage)}>Test feedback</button><p role="status">{hapticMessage}</p>
           <p className={styles.hint}>Rumble requires a supported controller/browser. Handset vibration is available only where the browser supports it; iPhone and iPad web vibration is not supported.</p>
           <button className={styles.menuButton} onClick={()=>setControls({...defaultControls})}>Reset controls to defaults</button><small>Restores arrows, normal sensitivity and haptics off. Records stay saved.</small>
         </div></div>}

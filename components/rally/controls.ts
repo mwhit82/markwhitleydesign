@@ -32,3 +32,20 @@ export class RallyHaptics {
   this.strength=0;this.next=0;
  }
 }
+
+export type HapticCapability='controller'|'device'|'unavailable';
+export function hapticCapability(pads:readonly (Gamepad|null)[],vibrate:boolean):HapticCapability{
+ return pads.some(p=>p?.vibrationActuator?.playEffect)?'controller':vibrate?'device':'unavailable';
+}
+export function currentHaptics():HapticCapability{
+ if(typeof navigator==='undefined')return 'unavailable';
+ try{return hapticCapability(Array.from(navigator.getGamepads?.()??[]),typeof navigator.vibrate==='function');}catch{return 'unavailable';}
+}
+export async function testHaptics():Promise<string>{
+ try{
+  const pad=Array.from(navigator.getGamepads?.()??[]).find(p=>p?.vibrationActuator?.playEffect);
+  if(pad?.vibrationActuator){const result=await pad.vibrationActuator.playEffect('dual-rumble',{duration:180,strongMagnitude:.3,weakMagnitude:.4,startDelay:0});return result==='complete'?'Feedback sent to controller.':'Controller feedback was interrupted.';}
+  if(typeof navigator.vibrate==='function')return navigator.vibrate(40)?'Vibration requested — did you feel it?':'This browser rejected vibration.';
+ }catch{return 'Feedback unavailable on this connection.';}
+ return 'Device vibration is unavailable in this browser. A supported controller may provide rumble.';
+}
