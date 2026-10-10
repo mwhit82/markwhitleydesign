@@ -373,6 +373,8 @@ export class RallyWorld {
   setMode(mode: Mode) {
     this.keys.clear();
     this.mode = mode;
+    // Audio transport changes only on game events, never on animation frames.
+    if (mode === "paused" || mode === "finished") this.audio?.pause();
     this.callbacks.mode(mode);
   }
   resetPosition() {
@@ -398,6 +400,10 @@ export class RallyWorld {
     this.setMode("garage");
     this.checkpoint = 0;
     this.resetPosition();
+    void this.ensureAudio().catch(() => {
+      this.muted = true;
+      this.callbacks.audio?.(true);
+    });
   }
   pause() {
     if (this.mode === "paused") {
@@ -426,7 +432,14 @@ export class RallyWorld {
     }
   }
   async ensureAudio() {
-    if (this.muted || this.disposed) return;
+    if (
+      this.muted ||
+      this.disposed ||
+      document.hidden ||
+      this.mode === "paused" ||
+      this.mode === "finished"
+    )
+      return;
     // Media playback avoids the ambient Web Audio channel's iOS silent-switch behaviour.
     const session = (
       navigator as Navigator & { audioSession?: { type: string } }
@@ -442,7 +455,7 @@ export class RallyWorld {
       this.audio = new Audio("/rally/engine.wav");
       this.audio.loop = true;
       this.audio.preload = "auto";
-      this.audio.preservesPitch = false;
+      // Keep the native media decoder at its default rate for smooth mobile playback.
       this.audio.addEventListener("error", () => {
         this.muted = true;
         if (!this.disposed) this.callbacks.audio?.(true);
@@ -674,17 +687,6 @@ export class RallyWorld {
     );
     this.camera.lookAt(target);
     this.resizeCamera();
-    if (this.audio) {
-      this.audio.muted =
-        this.muted ||
-        document.hidden ||
-        this.mode === "paused" ||
-        this.mode === "finished";
-      const pitch =
-        this.mode === "race" ? 0.8 + this.velocity.length() / 18 : 0.8;
-      if (Math.abs(this.audio.playbackRate - pitch) > 0.03)
-        this.audio.playbackRate = pitch;
-    }
     if (now - this.report > 70) {
       this.report = now;
       this.callbacks.stats({
