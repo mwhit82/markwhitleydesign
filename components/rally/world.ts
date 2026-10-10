@@ -2,10 +2,13 @@ import * as T from "three";
 import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
 import { cars, type Mode } from "./data";
 import { RallyAudio } from "./audio";
+import { handling, engine } from "./handling";
 type Callbacks = {
   stats: (s: {
     time: number;
     speed: number;
+    rpm: number;
+    limited: boolean;
     progress: number;
     count: number;
   }) => void;
@@ -34,6 +37,8 @@ export class RallyWorld {
   previousButtons: boolean[] = [];
   velocity = new T.Vector3();
   angle = 0;
+  rpm = 950;
+  limited = false;
   frame = 0;
   last = 0;
   report = 0;
@@ -45,6 +50,7 @@ export class RallyWorld {
   disposed = false;
   dust: T.Mesh[] = [];
   dustCursor = 0;
+  dustClock = 0;
   constructor(
     public host: HTMLDivElement,
     public callbacks: Callbacks,
@@ -396,6 +402,8 @@ export class RallyWorld {
     this.angle = Math.atan2(next.x - p.x, next.z - p.z);
     this.vehicle.rotation.y = this.angle;
     this.velocity.set(0, 0, 0);
+    this.rpm = 950;
+    this.limited = false;
   }
   start() {
     this.checkpoint = 0;
@@ -555,6 +563,8 @@ export class RallyWorld {
       this.audio.drive.speed = this.velocity.length();
       this.audio.drive.throttle = throttle;
       this.audio.drive.brake = brake;
+      this.audio.drive.rpm = this.rpm;
+      this.audio.drive.limited = this.limited;
       this.audio.drive.sliding =
         hand || (Math.abs(steer) > 0.6 && this.velocity.length() > 8);
     }
@@ -575,7 +585,10 @@ export class RallyWorld {
         this.vehicle.position.x,
         this.vehicle.position.z,
       );
-      const grip = hand ? 1.8 : c.grip;
+      const tuning = handling(speed, steer, c.grip, hand, road.distance > 5.6);
+      const motor = engine(speed, throttle, this.rpm, this.limited, dt);
+      this.rpm = motor.rpm;
+      this.limited = motor.limited;
       this.angle -=
         steer *
         c.steer *
@@ -583,13 +596,13 @@ export class RallyWorld {
         Math.sign(speed || 1) *
         dt;
       const longitudinal = forward.clone().multiplyScalar(speed);
-      this.velocity.lerp(longitudinal, Math.min(1, grip * dt));
-      const acceleration = throttle * c.power - brake * (speed > 1 ? 25 : 8);
+      this.velocity.lerp(longitudinal, 1 - Math.exp(-tuning.grip * dt));
+      const acceleration = (this.limited ? 0 : throttle * c.power) - brake * (speed > 1 ? 25 : 8);
       this.velocity.addScaledVector(forward, acceleration * dt);
       this.velocity.multiplyScalar(
-        Math.exp(-(road.distance > 5.6 ? 1.9 : hand ? 0.7 : 0.38) * dt),
+        Math.exp(-tuning.drag * dt),
       );
-      if (this.velocity.length() > 24) this.velocity.setLength(24);
+      if (this.velocity.length() > 25) this.velocity.setLength(25);
       this.vehicle.position.addScaledVector(this.velocity, dt);
       for (const obstacle of this.obstacles) {
         const dx = this.vehicle.position.x - obstacle.x,
@@ -644,18 +657,28 @@ export class RallyWorld {
         }
       }
       if (Math.abs(speed) > 4) {
-        const dust = this.dust[this.dustCursor++ % this.dust.length];
-        dust.position.copy(this.vehicle.position).addScaledVector(forward, -2);
-        dust.position.y = 0.5;
-        dust.scale.setScalar(1);
-        (dust.material as T.MeshStandardMaterial).opacity = 0.45;
+        const sliding = hand || Math.abs(steer) > 0.5;
+        this.dustClock += dt;
+        if (this.dustClock >= 1 / 24) {
+          this.dustClock %= 1 / 24;
+          const dust = this.dust[this.dustCursor++ % this.dust.length];
+          dust.position.copy(this.vehicle.position).addScaledVector(forward, -2);
+          const side = (Math.random() - 0.5) * (sliding ? 3 : 1.8);
+          dust.position.x += Math.cos(this.angle) * side;
+          dust.position.z -= Math.sin(this.angle) * side;
+          dust.position.y = 0.6;
+          dust.scale.set(sliding ? 2.5 : 1.8, 1.4, 2);
+          (dust.material as T.MeshStandardMaterial).opacity = sliding ? 0.65 : 0.5;
+          dust.visible = true;
+        }
       }
     }
     this.dust.forEach((d) => {
       const m = d.material as T.MeshStandardMaterial;
-      m.opacity = Math.max(0, m.opacity - dt * 0.6);
-      d.scale.addScalar(dt);
-      d.position.y += dt * 0.4;
+      m.opacity = Math.max(0, m.opacity - dt * 0.35);
+      d.visible = m.opacity > 0;
+      d.scale.addScalar(dt * 1.8);
+      d.position.y += dt * 0.65;
     });
     const target = this.vehicle.position.clone();
     let desired: T.Vector3;
@@ -680,6 +703,8 @@ export class RallyWorld {
       this.callbacks.stats({
         time: this.time,
         speed: Math.round(this.velocity.length() * 4),
+        rpm: Math.round(this.rpm / 50) * 50,
+        limited: this.limited,
         progress: this.checkpoint / this.checkpoints.length,
         count: Math.ceil(this.countdown),
       });

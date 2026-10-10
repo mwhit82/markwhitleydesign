@@ -5,6 +5,8 @@ export type DriveSound = {
   throttle: number;
   brake: number;
   sliding: boolean;
+  rpm?: number;
+  limited?: boolean;
 };
 export function soundMix(drive: DriveSound, mode: Mode, car: number) {
   const speed = mode === "race" ? Math.abs(drive.speed) : 0;
@@ -14,9 +16,9 @@ export function soundMix(drive: DriveSound, mode: Mode, car: number) {
   return {
     rate:
       personality *
-      Math.min(2.2, 0.72 + speed * 0.043 + throttle * 0.42 - brake * 0.1),
+      Math.min(2.2, drive.rpm !== undefined && mode === "race" ? 0.72 + (drive.rpm - 950) / 4400 : 0.72 + speed * 0.043 + throttle * 0.42 - brake * 0.1),
     idle: 0.24 - throttle * 0.12,
-    load: 0.035 + throttle * 0.48 + Math.min(speed / 24, 1) * 0.055,
+    load: 0.035 + throttle * (drive.limited ? 0.08 : 0.48) + Math.min(speed / 24, 1) * 0.055,
     gravel:
       mode === "race"
         ? Math.min(speed / 12, 1) *

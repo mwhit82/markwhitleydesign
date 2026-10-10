@@ -22,6 +22,8 @@ export function RallyGame() {
   const [stats, setStats] = useState({
     time: 0,
     speed: 0,
+    rpm: 950,
+    limited: false,
     progress: 0,
     count: 3,
   });
@@ -162,7 +164,7 @@ export function RallyGame() {
     <div className={styles.page}>
       <div className={styles.heading}>
         <div>
-          <p className={styles.eyebrow}>MARK WHITLEY / POCKET RALLY V1.3.1</p>
+          <p className={styles.eyebrow}>MARK WHITLEY / POCKET RALLY V1.4</p>
           <h1>
             POCKET<span>RALLY.</span>
           </h1>
@@ -308,6 +310,10 @@ export function RallyGame() {
             <div className={styles.speed}>
               <strong>{stats.speed}</strong>
               <small>KM/H</small>
+              <div className={styles.revs} role="meter" aria-label="Engine revs" aria-valuemin={0} aria-valuemax={7400} aria-valuenow={stats.rpm}>
+                <div style={{ width: `${stats.rpm / 7400 * 100}%` }} />
+              </div>
+              <small>{stats.limited ? "LIMIT" : `${stats.rpm.toLocaleString()} RPM`}</small>
             </div>
             <div className={styles.progress}>
               <div style={{ width: `${stats.progress * 100}%` }} />
