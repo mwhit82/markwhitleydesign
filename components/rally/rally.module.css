@@ -330,7 +330,262 @@
   }
 }
 
-.touchControls { display: none; position: absolute; bottom: 18px; left: 12px; right: 12px; justify-content: space-between; gap: 6px; touch-action: none; }
-.touchControls button { min-width: 44px; min-height: 48px; border-radius: 9px; padding: 8px; color: #233c32; background: #f2edddec; font-size: 12px; font-weight: 800; touch-action: none; user-select: none; -webkit-user-select: none; }
-.touchControls button:active { background: #e3ad49; }
-@media (pointer: coarse), (max-width: 650px) { .touchControls { display: flex; } .pause { bottom: 86px; } .speed { bottom: 86px; } }
+/* Keep top-level actions accessible above countdowns and pause screens. */
+.topbar {
+  z-index: 40;
+  top: max(12px, env(safe-area-inset-top));
+  left: max(12px, env(safe-area-inset-left));
+  right: max(12px, env(safe-area-inset-right));
+}
+.topbar button {
+  min-height: 46px;
+  min-width: 82px;
+  padding: 10px 14px;
+  touch-action: manipulation;
+}
+.count {
+  pointer-events: none;
+  z-index: 15;
+}
+.overlay {
+  z-index: 20;
+  padding-top: 74px;
+}
+.game.expanded,
+.game:fullscreen {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  width: 100%;
+  height: 100vh;
+  height: 100dvh;
+  min-height: 0;
+  max-height: none;
+  border-radius: 0;
+}
+.notice {
+  position: absolute;
+  z-index: 45;
+  left: 50%;
+  top: 68px;
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: 90%;
+  background: #233c32f2;
+  color: #fff5de;
+  padding: 12px 16px;
+  border-radius: 8px;
+  font-size: 12px;
+  pointer-events: none;
+  text-align: center;
+}
+.rotateHint {
+  display: none;
+}
+.touchControls {
+  display: none;
+  position: absolute;
+  z-index: 10;
+  bottom: max(18px, env(safe-area-inset-bottom));
+  left: max(14px, env(safe-area-inset-left));
+  right: max(14px, env(safe-area-inset-right));
+  justify-content: space-between;
+  gap: 12px;
+  pointer-events: none;
+}
+.steeringPad,
+.pedalPad {
+  display: flex;
+  gap: 8px;
+}
+.touchControls button {
+  width: 62px;
+  height: 72px;
+  border-radius: 16px;
+  padding: 8px;
+  color: #233c32;
+  background: #f2edddef;
+  box-shadow: 0 4px 0 #233c3255;
+  border: 1px solid #fff8;
+  font-size: 14px;
+  font-weight: 800;
+  touch-action: none;
+  pointer-events: auto;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+.steeringPad button {
+  font-size: 32px;
+}
+.pedalPad button:last-child {
+  background: #d95131;
+  color: #fff4df;
+}
+.touchControls button:active {
+  background: #e3ad49;
+  color: #233c32;
+  box-shadow: 0 1px 0 #233c3255;
+}
+.recover {
+  display: none;
+  position: absolute;
+  z-index: 10;
+  left: 110px;
+  bottom: 108px;
+  min-height: 44px;
+  padding: 10px;
+  border-radius: 8px;
+  background: #f2edddea;
+  color: #233c32;
+  font-size: 12px;
+  touch-action: manipulation;
+}
+@media (pointer: coarse), (max-width: 650px) {
+  .touchControls {
+    display: flex;
+  }
+  .recover {
+    display: block;
+  }
+  .pause {
+    bottom: 108px;
+    left: 14px;
+    min-height: 44px;
+    touch-action: manipulation;
+  }
+  .speed {
+    bottom: 106px;
+    right: 18px;
+  }
+  .topbar button {
+    font-size: 12px;
+    margin-left: 5px;
+  }
+  .topbar > span {
+    max-width: 130px;
+    font-size: 10px;
+  }
+}
+@media (orientation: portrait) and (pointer: coarse) {
+  .rotateHint {
+    display: block;
+    position: absolute;
+    top: 72px;
+    left: 14px;
+    right: 14px;
+    border-radius: 8px;
+    padding: 10px 12px;
+    background: #f2edddeb;
+    color: #233c32;
+    font-size: 12px;
+    line-height: 1.5;
+    pointer-events: none;
+  }
+  .garageCopy {
+    top: 25%;
+  }
+}
+@media (orientation: landscape) and (pointer: coarse),
+  (orientation: landscape) and (max-height: 550px) {
+  .game {
+    height: calc(100dvh - 24px);
+    min-height: 300px;
+  }
+  .game.expanded,
+  .game:fullscreen {
+    height: 100dvh;
+    min-height: 0;
+  }
+  .touchControls button {
+    width: clamp(72px, 10vw, 100px);
+    height: clamp(72px, 20dvh, 96px);
+    font-size: 17px;
+  }
+  .steeringPad button {
+    font-size: 38px;
+  }
+  .touchControls {
+    bottom: max(14px, env(safe-area-inset-bottom));
+  }
+  .pause,
+  .recover {
+    bottom: calc(clamp(72px, 20dvh, 96px) + 26px);
+  }
+  .speed {
+    bottom: calc(clamp(72px, 20dvh, 96px) + 24px);
+  }
+  .speed strong {
+    font-size: 36px;
+  }
+  .timer {
+    top: 68px;
+    left: 14px;
+    padding: 8px 12px;
+  }
+  .timer strong {
+    font-size: 25px;
+  }
+  .timer span {
+    display: none;
+  }
+  .garage {
+    width: min(360px, 46%);
+    left: auto;
+    right: max(16px, env(safe-area-inset-right));
+    bottom: 14px;
+    transform: none;
+    padding: 12px 16px;
+  }
+  .garageCopy {
+    top: 26%;
+    left: 5%;
+  }
+  .garageCopy h2 {
+    font-size: 34px;
+    margin: 8px 0;
+  }
+  .garageCopy p {
+    display: none;
+  }
+  .garage .start {
+    margin-top: 10px;
+  }
+  .garage .hint {
+    font-size: 9px;
+  }
+  .carSelect h3 {
+    font-size: 17px;
+  }
+  .overlay {
+    gap: 8px;
+    padding-bottom: 12px;
+  }
+  .overlay h2 {
+    font-size: 38px;
+  }
+  .overlay .start {
+    margin-top: 4px;
+  }
+}
+@media (max-width: 370px) {
+  .touchControls {
+    left: 8px;
+    right: 8px;
+    gap: 8px;
+  }
+  .touchControls button {
+    width: 54px;
+  }
+  .steeringPad,
+  .pedalPad {
+    gap: 5px;
+  }
+  .topbar button {
+    min-width: 70px;
+    padding: 8px;
+  }
+  .topbar > span {
+    max-width: 96px;
+  }
+}

@@ -5,6 +5,11 @@ import { cars, formatTime, type Mode } from "./data";
 import styles from "./rally.module.css";
 export function RallyGame() {
   const host = useRef<HTMLDivElement>(null);
+  const game = useRef<HTMLDivElement>(null);
+  const hadNativeFullscreen = useRef(false);
+  const [expanded, setExpanded] = useState(false);
+  const [audioBusy, setAudioBusy] = useState(false);
+  const [notice, setNotice] = useState("");
   const api = useRef<import("./world").RallyWorld | null>(null);
   const [selected, setSelected] = useState(0);
   const [mode, setMode] = useState<Mode>("garage");
@@ -44,14 +49,105 @@ export function RallyGame() {
       api.current = null;
     };
   }, []);
+  useEffect(() => {
+    const changed = () => {
+      if (document.fullscreenElement === game.current) {
+        hadNativeFullscreen.current = true;
+        setExpanded(true);
+      } else if (hadNativeFullscreen.current) {
+        hadNativeFullscreen.current = false;
+        setExpanded(false);
+      }
+    };
+    document.addEventListener("fullscreenchange", changed);
+    return () => document.removeEventListener("fullscreenchange", changed);
+  }, []);
+  useEffect(() => {
+    if (!expanded) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const escape = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && !document.fullscreenElement)
+        setExpanded(false);
+    };
+    window.addEventListener("keydown", escape);
+    return () => {
+      document.body.style.overflow = previous;
+      window.removeEventListener("keydown", escape);
+    };
+  }, [expanded]);
+  useEffect(() => {
+    if (!notice) return;
+    const timer = window.setTimeout(() => setNotice(""), 6500);
+    return () => window.clearTimeout(timer);
+  }, [notice]);
+  const toggleFullscreen = async () => {
+    if (expanded) {
+      if (document.fullscreenElement) {
+        try {
+          await document.exitFullscreen();
+        } catch {
+          setNotice("Use your browser’s fullscreen exit control.");
+          return;
+        }
+      }
+      setExpanded(false);
+      return;
+    }
+    // Expanded layout is also the fallback on browsers without native fullscreen.
+    setExpanded(true);
+    if (game.current?.requestFullscreen && document.fullscreenEnabled) {
+      try {
+        await game.current.requestFullscreen();
+        return;
+      } catch {
+        /* Keep the expanded layout. */
+      }
+    }
+    setNotice("Expanded game view. Your browser’s bars may stay visible.");
+  };
+  const toggleSound = async () => {
+    if (!api.current) return;
+    setAudioBusy(true);
+    const next = !muted;
+    try {
+      await api.current.sound(next);
+      setMuted(next);
+      setNotice(
+        next
+          ? "Sound muted."
+          : "Engine sound on. Adjust your device volume to suit.",
+      );
+    } catch {
+      setMuted(true);
+      setNotice("Sound could not start. Tap Sound again to retry.");
+    } finally {
+      setAudioBusy(false);
+    }
+  };
+  const touchButton = (key: string, label: string, name: string) => (
+    <button
+      key={key}
+      aria-label={name}
+      onContextMenu={(event) => event.preventDefault()}
+      onPointerDown={(event) => {
+        event.preventDefault();
+        event.currentTarget.setPointerCapture(event.pointerId);
+        api.current?.keys.add(key);
+      }}
+      onPointerUp={() => api.current?.keys.delete(key)}
+      onPointerCancel={() => api.current?.keys.delete(key)}
+      onLostPointerCapture={() => api.current?.keys.delete(key)}
+    >
+      {label}
+    </button>
+  );
   const car = cars[selected];
   return (
     <div className={styles.page}>
       <div className={styles.heading}>
         <div>
-          <p className={styles.eyebrow}>
-            MARK WHITLEY / PLAYABLE EXPERIMENT 01
-          </p>
+          <p className={styles.eyebrow}>MARK WHITLEY / POCKET RALLY V1.1</p>
           <h1>
             POCKET<span>RALLY.</span>
           </h1>
@@ -61,7 +157,10 @@ export function RallyGame() {
           <span>SS01 · GRAVEL · CLEAR</span>
         </div>
       </div>
-      <div className={styles.game}>
+      <div
+        ref={game}
+        className={`${styles.game} ${expanded ? styles.expanded : ""}`}
+      >
         <div
           ref={host}
           className={styles.canvas}
@@ -73,24 +172,27 @@ export function RallyGame() {
           </span>
           <div>
             <button
-              onClick={() => {
-                api.current?.sound(!muted);
-                setMuted(!muted);
-              }}
+              disabled={!ready || audioBusy}
+              aria-pressed={!muted}
+              onClick={toggleSound}
             >
-              {muted ? "Sound off" : "Sound on"}
+              {audioBusy ? "Starting sound…" : muted ? "Sound off" : "Sound on"}
             </button>
-            <button
-              onClick={() => {
-                const el = host.current?.parentElement;
-                if (document.fullscreenElement) void document.exitFullscreen();
-                else void el?.requestFullscreen?.();
-              }}
-            >
-              Fullscreen
+            <button aria-pressed={expanded} onClick={toggleFullscreen}>
+              {expanded ? "Exit fullscreen" : "Fullscreen"}
             </button>
           </div>
         </div>
+        {notice && (
+          <div className={styles.notice} role="status">
+            {notice}
+          </div>
+        )}
+        {mode === "garage" && (
+          <div className={styles.rotateHint}>
+            ↻ Rotate to landscape for a wider track and bigger controls.
+          </div>
+        )}
         {!ready && (
           <div className={styles.overlay}>
             <h2>{error || "Sculpting the stage…"}</h2>
@@ -158,10 +260,26 @@ export function RallyGame() {
             <div className={styles.progress}>
               <div style={{ width: `${stats.progress * 100}%` }} />
             </div>
-            <div className={styles.touchControls} aria-label="Touch driving controls">
-              {([['KeyA', '←'], ['KeyD', '→'], ['Space', 'Slide'], ['KeyS', 'Brake'], ['KeyW', 'Go']] as const).map(([key, label]) => <button key={key} aria-label={label === '←' ? 'Steer left' : label === '→' ? 'Steer right' : label} onPointerDown={event => { event.preventDefault(); event.currentTarget.setPointerCapture(event.pointerId); api.current?.keys.add(key); }} onPointerUp={() => api.current?.keys.delete(key)} onPointerCancel={() => api.current?.keys.delete(key)} onLostPointerCapture={() => api.current?.keys.delete(key)}>{label}</button>)}
-              <button onClick={() => api.current?.resetPosition()}>Reset</button>
+            <div
+              className={styles.touchControls}
+              aria-label="Touch driving controls"
+            >
+              <div className={styles.steeringPad}>
+                {touchButton("KeyA", "←", "Steer left")}
+                {touchButton("KeyD", "→", "Steer right")}
+              </div>
+              <div className={styles.pedalPad}>
+                {touchButton("Space", "Slide", "Handbrake")}
+                {touchButton("KeyS", "Brake", "Brake")}
+                {touchButton("KeyW", "Go", "Accelerate")}
+              </div>
             </div>
+            <button
+              className={styles.recover}
+              onClick={() => api.current?.resetPosition()}
+            >
+              Reset car
+            </button>
             <button
               className={styles.pause}
               onClick={() => api.current?.pause()}
@@ -224,8 +342,9 @@ export function RallyGame() {
             Cross handbrake · Triangle recover · Options pause
           </p>
           <small>
-            Connect by USB or Bluetooth, then press a controller button. Desktop
-            recommended. Times are saved on this device.
+            On phone or iPad, rotate to landscape and tap Fullscreen for the
+            best view. For a controller, connect by USB or Bluetooth and press a
+            button. Times are saved on this device.
           </small>
         </div>
         <Link href="/playground">Back to Playground ↗</Link>

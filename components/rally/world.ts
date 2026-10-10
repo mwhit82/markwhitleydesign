@@ -391,7 +391,9 @@ export class RallyWorld {
     this.countdown = 3;
     this.resetPosition();
     this.setMode("countdown");
-    this.ensureAudio();
+    void this.ensureAudio().catch(() => {
+      this.muted = true;
+    });
   }
   garage() {
     this.setMode("garage");
@@ -403,12 +405,23 @@ export class RallyWorld {
     else if (this.mode === "race" || this.mode === "countdown")
       this.setMode("paused");
   }
-  sound(muted: boolean) {
+  async sound(muted: boolean) {
     this.muted = muted;
-    this.ensureAudio();
+    if (muted) {
+      if (this.gain && this.audio)
+        this.gain.gain.setTargetAtTime(0, this.audio.currentTime, 0.025);
+      return;
+    }
+    try {
+      await this.ensureAudio();
+    } catch (error) {
+      this.muted = true;
+      throw error;
+    }
   }
-  ensureAudio() {
-    if (!this.audio && !this.muted) {
+  async ensureAudio() {
+    if (this.muted) return;
+    if (!this.audio) {
       this.audio = new AudioContext();
       this.oscillator = this.audio.createOscillator();
       this.gain = this.audio.createGain();
@@ -418,7 +431,9 @@ export class RallyWorld {
       this.gain.connect(this.audio.destination);
       this.oscillator.start();
     }
-    if (this.audio?.state === "suspended") void this.audio.resume();
+    // Called directly from the sound button so mobile browsers can unlock audio.
+    if (this.audio.state !== "running") await this.audio.resume();
+    if (this.audio.state !== "running") throw new Error("Audio is not ready");
   }
   keydown = (event: KeyboardEvent) => {
     if (
@@ -519,7 +534,7 @@ export class RallyWorld {
         this.vehicle.position.z,
       );
       const grip = hand ? 1.8 : c.grip;
-      this.angle +=
+      this.angle -=
         steer *
         c.steer *
         Math.min(Math.abs(speed) / 7, 1) *
@@ -620,12 +635,18 @@ export class RallyWorld {
     this.resizeCamera();
     if (this.gain && this.audio && this.oscillator) {
       this.gain.gain.setTargetAtTime(
-        !this.muted && this.mode === "race" ? 0.025 : 0,
+        !this.muted && !document.hidden
+          ? this.mode === "race"
+            ? 0.065
+            : this.mode === "garage" || this.mode === "countdown"
+              ? 0.035
+              : 0
+          : 0,
         this.audio.currentTime,
         0.1,
       );
       this.oscillator.frequency.setTargetAtTime(
-        40 + this.velocity.length() * 6,
+        this.mode === "race" ? 65 + this.velocity.length() * 6 : 65,
         this.audio.currentTime,
         0.1,
       );
