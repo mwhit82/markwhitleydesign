@@ -16,11 +16,12 @@ async function moduleUrl(path){
 }
 const {RallyWorld}=await import(await moduleUrl(resolve('components/rally/world.ts')));
 const {replayKey}=await import(await moduleUrl(resolve('components/rally/replay.ts')));
+const {CheckpointNotifications}=await import(await moduleUrl(resolve("components/rally/checkpoints.ts")));
 const memory=new Map();
 globalThis.localStorage={getItem:k=>memory.get(k)||null,setItem:(k,v)=>memory.set(k,v)};
 function fixture(best=null,clean=true){
  const w=Object.create(RallyWorld.prototype);let finishes=0;
- Object.assign(w,{mode:'race',time:60,trace:[[0,0,0],[60,1,1]],replaySamples:[[0,0,0,0],[60,1,1,0]],cleanRun:clean,best,selected:0,selection:{stage:'forest',weather:'clear',reverse:false},vehicle:new T.Group(),velocity:new T.Vector3(),angle:0,arrivalFrom:new T.Vector3(),keys:new Set(),root:new T.Group(),ghostGeneration:0,ghostSource:'personal',disposed:false,ghostCar:null,ghostAbort:null,ghostReplay:null,callbacks:{mode(){},best(){},finish(){finishes++},ghost(s){w.status=s}},atmosphere:{layout:{center:new T.Vector3(2,0,2),angle:1},celebrate(){},reset(){}}});
+ Object.assign(w,{mode:'race',reasons:[],notifications:new CheckpointNotifications(),time:60,trace:[[0,0,0],[60,1,1]],replaySamples:[[0,0,0,0],[60,1,1,0]],cleanRun:clean,best,selected:0,selection:{stage:'forest',weather:'clear',reverse:false},vehicle:new T.Group(),velocity:new T.Vector3(),angle:0,arrivalFrom:new T.Vector3(),keys:new Set(),root:new T.Group(),ghostGeneration:0,ghostSource:'personal',disposed:false,ghostCar:null,ghostAbort:null,ghostReplay:null,callbacks:{mode(){},best(){},finish(){finishes++},ghost(s){w.status=s}},atmosphere:{layout:{center:new T.Vector3(2,0,2),angle:1},celebrate(){},reset(){}}});
  w.finishCount=()=>finishes;return w;
 }
 test('completion freezes recording once; skip does not resubmit; clean PB replacement and legacy times',async()=>{
@@ -39,4 +40,10 @@ test('failed ghost download never changes race availability; downloaded rival is
   resolveFetch({ok:true,json:async()=>({name:'Late rival',replay:{version:1,car:0,selection:w.selection,time:60,samples:[[0,0,0,0],[60,1,1,0]]}})});
   await pending;assert.equal(w.ghostReplay,null);
  }finally{globalThis.fetch=original;}
+});
+test('missed gates and recovery explicitly block PB/replay; pausing preserves countdown',()=>{
+ memory.clear();const w=fixture();w.markPractice('missed-checkpoint');w.markPractice('missed-checkpoint');w.markPractice('car-recovered');
+ let outcome;w.callbacks.finish=(time,trace,replay,eligibility)=>{outcome=eligibility;assert.equal(trace.length,0);assert.equal(replay,undefined);};
+ w.completeRun();assert.equal(w.best,null);assert.deepEqual(outcome,{eligible:false,reasons:['missed-checkpoint','car-recovered']});assert.equal(memory.size,0);
+ const countdown=fixture();countdown.muted=true;countdown.mode='countdown';countdown.countdown=2;countdown.pause();assert.equal(countdown.mode,'paused');countdown.pause();assert.equal(countdown.mode,'countdown');assert.equal(countdown.countdown,2);
 });

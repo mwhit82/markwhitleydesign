@@ -1,3 +1,4 @@
+import {segmentDistance} from '../../components/rally/checkpoints';
 import { matchingReplay } from "../../components/rally/replay";
 import { checkpointIndices, stagePoints, validSelection, type StageSelection } from '../../components/rally/stages';
 export function validName(name: unknown): name is string { return typeof name==='string' && /^[\p{L}\p{N} _.-]{2,20}$/u.test(name.trim()); }
@@ -16,7 +17,7 @@ export function validateRun(selection: StageSelection, time: unknown, trace: unk
       if(dt<0 || dt>.6 || Math.hypot(x-previous[1],z-previous[2])>27*dt+1.2) return false;
     } else if(t>.1 || Math.hypot(x-points[0].x,z-points[0].z)>3) return false;
     const target=points[checkpointIndices[checkpoint]];
-    if(target && Math.hypot(x-target.x,z-target.z)<10) checkpoint++;
+    if(target && (Math.hypot(x-target.x,z-target.z)<10 || (previous && segmentDistance({x:previous[1],z:previous[2]},{x,z},target)<10))) checkpoint++;
     previous=row;
   }
   return checkpoint===checkpointIndices.length && previous!==null && Math.abs(previous[0]-time)<.1;

@@ -1,721 +1,180 @@
-.page {
-  color: #eee9d9;
-  padding: 20px 0 32px;
+.page {color:#f4ead4;padding:20px 0 32px;}
+.heading {display:flex;justify-content:space-between;align-items:end;margin-bottom:22px;color:var(--foreground);}
+.eyebrow,.tag {font-size:10px;font-weight:850;letter-spacing:1.8px;}
+.heading h1 {font-size:clamp(38px,6vw,76px);line-height:1;font-weight:950;letter-spacing:-4px;font-style:italic;margin-top:12px;}
+.heading h1 span {color:#df5838;}
+.stageInfo {display:grid;text-align:right;gap:6px;font-size:12px;letter-spacing:1px;}
+.stageInfo span {font-size:10px;opacity:.65;}
+.game {--ink:#25342f;--cream:#f4ead4;--orange:#dc5835;--edge:#ffffff26;--safe-top:max(12px,env(safe-area-inset-top));--safe-right:max(12px,env(safe-area-inset-right));--safe-left:max(12px,env(safe-area-inset-left));--safe-bottom:max(16px,env(safe-area-inset-bottom));position:relative;isolation:isolate;height:min(740px,78vh);min-height:560px;background:#b4b89a;border-radius:8px;overflow:hidden;box-shadow:0 20px 55px #0002;}
+.game,.game *,.page button {-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;}
+.game button {cursor:pointer;touch-action:manipulation;transition:background .12s,transform .12s;}
+.game button:focus-visible,.game input:focus-visible,.game select:focus-visible {outline:3px solid #e9b85f;outline-offset:3px;}
+.game button:disabled {opacity:.45;cursor:default;}
+.game button:active {transform:translateY(2px);}
+.canvas {position:absolute;inset:0;}
+.canvas canvas {display:block;width:100%;height:100%;}
+.game.expanded,.game:fullscreen {position:fixed;inset:0;z-index:1000;width:100%;height:100dvh;min-height:0;max-height:none;border-radius:0;}
+.topbar {position:absolute;z-index:40;top:var(--safe-top);right:var(--safe-right);display:flex;gap:6px;}
+.topbar button {display:grid;place-items:center;width:46px;height:46px;border:1px solid var(--edge);border-bottom:3px solid #0c1b17;background:var(--ink);color:var(--cream);border-radius:5px;}
+.topbar button[aria-pressed=true] {color:#edc37a;border-top-color:#edc37a;}
+.topbar button:hover {background:#384b41;}
+.timer {position:absolute;top:var(--safe-top);left:var(--safe-left);width:176px;padding:11px 14px 9px;display:grid;gap:2px;background:var(--ink);border:1px solid var(--edge);border-left:3px solid var(--orange);border-radius:3px;box-shadow:0 3px 0 #13251c35;color:var(--cream);font-variant-numeric:tabular-nums;}
+.timer small {font-size:9px;letter-spacing:2px;color:#cfcaaf;}
+.timer strong {font-size:34px;font-weight:900;letter-spacing:-1.3px;line-height:1.16;}
+.timer span {display:flex;justify-content:space-between;font-size:9px;letter-spacing:1px;color:#c9c9b5;}
+.timer span b {font-weight:650;letter-spacing:0;}
+.progress {height:3px;width:100%;margin-top:7px;background:#f4ead42a;overflow:hidden;}
+.progress > div {height:100%;background:#eab667;transition:width .15s;}
+.practice {font-style:normal;font-size:9px;letter-spacing:.6px;color:#ffca79;margin-top:5px;}
+.speed {position:absolute;bottom:var(--safe-bottom);right:var(--safe-right);display:grid;grid-template-columns:auto auto;column-gap:8px;align-items:end;min-width:126px;padding:9px 12px;background:var(--ink);color:var(--cream);border-radius:3px;border:1px solid var(--edge);font-variant-numeric:tabular-nums;}
+.speed strong {font-size:37px;font-weight:900;line-height:1;letter-spacing:-1px;}
+.speed small {font-size:9px;letter-spacing:1px;line-height:1.5;}
+.speed > small:last-child {grid-column:1/-1;text-align:right;font-size:8px;color:#d8d3bb;}
+.revs {grid-column:1/-1;width:100%;height:5px;margin:6px 0 3px;background:#f4ead42a;overflow:hidden;}
+.revs > div {height:100%;background:linear-gradient(90deg,#b8cb98 0%,#e4bd61 70%,#ee643f 90%);transition:width 70ms linear;}
+.checkpointStack {position:absolute;z-index:16;right:var(--safe-right);top:calc(var(--safe-top) + 64px);width:224px;display:grid;gap:7px;pointer-events:none;}
+.checkpointToast {display:flex;align-items:center;gap:10px;padding:11px 12px;background:#f4ead4f5;color:#243c30;border-left:4px solid #568164;box-shadow:0 4px 0 #1d302320;border-radius:3px;animation:checkpointInOut linear both;}
+.checkpointToast strong {display:block;font-size:10px;letter-spacing:.6px;font-weight:900;}
+.checkpointToast small {display:block;font-size:12px;font-variant-numeric:tabular-nums;margin-top:3px;}
+.checkpointSymbol {display:grid;place-items:center;font-size:20px;font-weight:900;width:24px;flex-shrink:0;}
+.missedToast {background:#f4c676;border-left-color:#854d20;color:#382b1f;}
+.checkpointStack[data-paused=true] {visibility:hidden;}
+.checkpointStack[data-paused=true] .checkpointToast {animation-play-state:paused;}
+@keyframes checkpointInOut {0%{opacity:0;transform:translateX(16px)}10%,85%{opacity:1;transform:translateX(0)}100%{opacity:0;transform:translateX(0)}}
+.touchControls {display:none;position:absolute;z-index:10;bottom:var(--safe-bottom);left:var(--safe-left);right:var(--safe-right);justify-content:space-between;gap:12px;pointer-events:none;}
+.steeringPad,.pedalPad {display:flex;gap:8px;align-items:end;}
+.touchControls button {width:72px;height:76px;display:grid;place-items:center;padding:4px;border-radius:9px;border:1px solid #fff5;border-bottom:5px solid #14231be0;background:#f4ead4ed;color:#27382f;box-shadow:0 3px 12px #15281b25;font-size:13px;font-weight:900;touch-action:none;pointer-events:auto;}
+.steeringPad button {font-size:32px;}
+.pedalPad button:last-child {background:var(--orange);color:#fff5df;}
+.touchControls button[data-held=true],.touchControls button:active {background:#edbd69;color:#24372b;border-bottom-width:2px;transform:translateY(3px);}
+.recover {position:absolute;z-index:10;left:var(--safe-left);bottom:var(--safe-bottom);min-height:44px;padding:8px 11px;display:flex;align-items:center;gap:8px;border:1px solid var(--edge);border-radius:4px;background:var(--ink);color:var(--cream);font-size:11px;}
+.recover svg {width:17px;height:17px;}
+.count {position:absolute;inset:0;display:grid;place-content:center;font-size:130px;font-weight:950;font-style:italic;color:#fff1d2;text-shadow:0 6px 0 #25382e;pointer-events:none;z-index:15;}
+.garageCopy {position:absolute;left:5%;top:14%;color:#223a2c;pointer-events:none;text-shadow:0 1px 0 #ffefc433;}
+.garageCopy h2 {font-size:clamp(32px,5vw,62px);line-height:.97;font-weight:950;letter-spacing:-2px;margin:18px 0;font-style:italic;}
+.garageCopy p {font-size:13px;line-height:1.6;max-width:240px;}
+.garage {position:absolute;right:var(--safe-right);bottom:var(--safe-bottom);width:min(400px,44%);max-height:calc(100% - 80px);overflow:auto;padding:18px;background:var(--ink);border:1px solid #f4ead430;border-top:4px solid var(--orange);border-radius:4px;box-shadow:0 8px 0 #17271d25;color:var(--cream);}
+.menuEyebrow {display:flex;justify-content:space-between;border-bottom:1px solid #f4ead42a;padding-bottom:10px;margin-bottom:12px;font-size:9px;font-weight:800;letter-spacing:1.5px;color:#d2cfb8;}
+.carSelect {display:flex;align-items:center;justify-content:space-between;gap:8px;text-align:center;}
+.carSelect h3 {font-size:23px;font-weight:900;letter-spacing:-.6px;margin:4px 0;}
+.carSelect p {font-size:11px;color:#c5cab5;}
+.carSelect button {width:44px;min-height:44px;flex-shrink:0;background:#f4ead412;border:1px solid #f4ead42a;border-radius:4px;font-size:24px;}
+.carSelect .eyebrow {font-size:8px;color:#d4b779;}
+.stageChoices {display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:18px;}
+.stageChoices button {position:relative;min-height:66px;padding:10px;text-align:left;background:#f4ead409;border:1px solid #f4ead435;border-radius:3px;}
+.stageChoices button:hover {background:#f4ead419;}
+.stageChoices small {display:block;font-size:8px;letter-spacing:1.5px;color:#b8c0a9;}
+.stageChoices strong {display:block;font-size:13px;font-weight:800;margin-top:4px;}
+.stageChoices span {position:absolute;top:9px;right:9px;font-size:9px;color:#d8b672;}
+.ghostStatus {display:block;min-height:24px;font-size:10px;color:#c6cbb8;margin-top:9px;line-height:1.4;}
+.start {display:flex;align-items:center;justify-content:space-between;min-height:48px;background:var(--orange);color:#fff3d9;font-size:12px;font-weight:900;letter-spacing:1.4px;padding:12px 18px;border:1px solid #ffb08c50;border-bottom:3px solid #873821;border-radius:3px;width:100%;margin-top:12px;}
+.start:hover {background:#ea6743;}
+.garageLinks {display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:center;}
+.garageLinks a {display:flex;align-items:center;justify-content:flex-end;min-height:44px;font-size:10px;color:#c6cbb8;}
+.boardButton {min-height:44px;width:100%;font-size:11px;text-align:left;letter-spacing:.4px;border-bottom:1px solid #f4ead42a;color:#e0c28b;}
+.hint {font-size:9px;text-align:center;margin-top:10px;color:#c1c7b3;line-height:1.5;}
+.overlay {position:absolute;inset:0;z-index:30;display:flex;flex-direction:column;justify-content:center;align-items:center;background:#15251edb;gap:14px;padding:72px 20px 20px;text-align:center;overflow:auto;}
+.overlay h2 {font-size:clamp(38px,6vw,65px);font-weight:950;letter-spacing:-2px;line-height:1.1;}
+.pauseCard {width:min(360px,100%);text-align:left;}
+.pauseCard h2 {margin:8px 0;font-style:italic;}
+.pauseCard h2 span {color:var(--orange);}
+.pauseCard p {font-size:12px;color:#bfc6b3;margin-bottom:18px;}
+.menuButton {width:100%;min-height:48px;margin-top:8px;display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border:1px solid #f4ead438;background:#f4ead40b;font-size:13px;font-weight:750;border-radius:3px;}
+.menuButton small {font-size:10px;font-weight:400;color:#c6cbb8;}
+.pauseSettings {display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:18px;}
+.pauseSettings button {display:flex;flex-direction:column;align-items:center;gap:7px;min-height:62px;padding:9px 4px;border:1px solid #f4ead438;border-radius:3px;font-size:10px;}
+.pauseSettings button[aria-pressed=true] {color:#edc37a;}
+.finishResults {inset:auto var(--safe-right) var(--safe-bottom) auto;width:min(340px,44%);max-height:calc(100% - 80px);padding:20px;gap:11px;border:1px solid var(--edge);border-top:4px solid var(--orange);border-radius:4px;background:var(--ink);color:var(--cream);}
+.finishResults h2 {font-size:44px;letter-spacing:-2px;font-variant-numeric:tabular-nums;}
+.finishResults p {font-size:12px;line-height:1.4;}
+.finishResults > button {min-height:44px;width:100%;font-size:12px;border:1px solid #f4ead432;padding:8px;border-radius:3px;}
+.finishResults .start {margin-top:0;padding:12px 16px;}
+.practiceReason {color:#f4c676;}
+.arrival {position:absolute;z-index:30;bottom:var(--safe-bottom);left:50%;transform:translateX(-50%);background:var(--ink);color:var(--cream);border-left:4px solid var(--orange);border-radius:3px;padding:12px 18px;text-align:center;display:grid;gap:8px;width:max-content;max-width:90%;font-size:13px;}
+.arrival button {min-height:44px;font-size:12px;color:#edc37a;}
+.notice {position:absolute;z-index:65;left:50%;top:70px;transform:translateX(-50%);width:max-content;max-width:90%;background:var(--ink);color:var(--cream);border-left:3px solid #edc37a;padding:10px 14px;border-radius:3px;font-size:12px;pointer-events:none;text-align:center;}
+.optionScrim {position:absolute;inset:0;z-index:75;display:grid;place-items:center;padding:16px;background:#15251ed9;}
+.optionPanel {width:min(460px,100%);max-height:100%;overflow:auto;background:var(--ink);color:var(--cream);padding:20px;border:1px solid #f4ead438;border-top:4px solid var(--orange);border-radius:4px;}
+.optionPanel header {display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:18px;}
+.optionPanel h2 {font-size:26px;font-weight:900;letter-spacing:-.7px;}
+.optionPanel header button {min-width:44px;min-height:44px;border:1px solid #f4ead438;font-size:24px;border-radius:3px;}
+.optionList {display:grid;gap:8px;}
+.optionList button {display:flex;justify-content:space-between;align-items:center;gap:12px;min-height:60px;padding:12px 14px;border:1px solid #f4ead438;border-radius:3px;text-align:left;font-size:15px;font-weight:750;}
+.optionList button small {display:block;font-size:11px;line-height:1.4;font-weight:400;color:#c7ccb9;margin-top:3px;}
+.optionList button[aria-pressed=true] {background:#e1b56a;color:#27372d;border-color:#e1b56a;}
+.optionList button[aria-pressed=true] small {color:#34483c;}
+.leaderboard {position:absolute;inset:0;z-index:70;background:var(--ink);color:var(--cream);padding:24px;display:flex;flex-direction:column;gap:14px;overflow:auto;}
+.leaderboard header {display:flex;justify-content:space-between;gap:12px;align-items:start;border-bottom:1px solid #f4ead42a;padding-bottom:12px;}
+.leaderboard h2 {font-size:28px;font-weight:900;letter-spacing:-1px;}
+.leaderboard p,.leaderboard small {font-size:12px;}
+.leaderboard button {min-height:44px;padding:9px 12px;border:1px solid #f4ead438;border-bottom:3px solid #10231a;border-radius:3px;background:#3b4c40;color:var(--cream);font-size:12px;font-weight:750;}
+.leaderboard form {display:grid;grid-template-columns:1fr auto;gap:8px;align-items:end;}
+.leaderboard form small {grid-column:1/-1;color:#c3cab6;}
+.leaderboard form button {background:var(--orange);}
+.leaderboard label {display:grid;gap:5px;font-size:10px;font-weight:750;letter-spacing:.5px;}
+.leaderboard select,.leaderboard input {width:100%;min-height:44px;padding:8px 12px;color:var(--cream);background:#172b21;border:1px solid #f4ead438;border-radius:3px;font-size:13px;}
+.leaderboard input {-webkit-user-select:text;user-select:text;}
+.boardRows {min-height:100px;overflow:auto;flex:1;overscroll-behavior:contain;}
+.boardRows li,.myRank > div {display:grid;grid-template-columns:45px 1fr auto;gap:10px;align-items:center;padding:12px 8px;border-bottom:1px solid #f4ead425;font-size:14px;font-variant-numeric:tabular-nums;}
+.boardRows small,.myRank small {display:block;font-size:10px;opacity:.8;}
+.myRow,.myRank {background:#e1b56a;color:#26392d;border-radius:3px;}
+.myRank {padding:8px;flex-shrink:0;}
+.installHelp {position:absolute;z-index:80;inset:0;background:var(--ink);color:var(--cream);display:flex;flex-direction:column;justify-content:center;align-items:center;gap:14px;padding:24px;overflow:auto;}
+.installHelp h2 {font-size:clamp(23px,4vw,36px);font-weight:850;text-align:center;}
+.installHelp p,.installHelp ol {max-width:430px;font-size:14px;line-height:1.6;}
+.installHelp ol {list-style:decimal;padding-left:24px;}
+.installHelp li {margin:8px 0;}
+.installHelp .start {max-width:360px;flex-shrink:0;}
+.installLink {padding:8px 0;}
+.rotateHint {display:none;}
+.below {display:flex;justify-content:space-between;gap:30px;margin-top:25px;color:var(--foreground);}
+.below p {font-size:12px;line-height:1.7;margin-top:9px;opacity:.8;}
+.below small {display:block;font-size:11px;opacity:.65;margin-top:10px;}
+.below a {white-space:nowrap;font-size:12px;}
+@media (pointer:coarse),(max-width:650px),(orientation:landscape) and (max-height:550px) {
+ .touchControls {display:flex;}
+ .recover {bottom:calc(var(--safe-bottom) + 88px);}
+ .speed {bottom:calc(var(--safe-bottom) + 88px);}
+}
+@media (max-width:650px) {
+ .stageInfo {display:none;}.heading h1 {letter-spacing:-2px;}.below {flex-direction:column;}
+ .topbar {gap:4px;}.topbar button {width:44px;height:44px;}
+ .timer {width:150px;padding:8px 10px;}.timer strong {font-size:28px;}.timer small {font-size:8px;}
+ .checkpointStack {top:calc(var(--safe-top) + 122px);width:210px;}.checkpointToast {padding:9px 10px;}
+ .garageCopy {display:none;}.garage {left:var(--safe-left);right:var(--safe-right);width:auto;padding:15px;max-height:calc(100% - 82px);}
+ .garage .stageChoices {margin-top:14px;}.touchControls button {width:64px;height:72px;}
+ .carSelect h3 {font-size:21px;}.optionPanel {padding:16px;}.leaderboard {padding:16px;}
+}
+@media (orientation:portrait) {
+ .finishResults {left:var(--safe-left);right:var(--safe-right);bottom:var(--safe-bottom);width:auto;max-height:44%;padding:14px;gap:8px;}
+ .finishResults h2 {font-size:36px;}
+}
+@media (orientation:portrait) and (pointer:coarse) {
+ .rotateHint {display:block;position:absolute;top:calc(var(--safe-top) + 58px);left:var(--safe-left);right:var(--safe-right);color:#23382d;background:#f4ead4ed;border-left:3px solid var(--orange);padding:9px 12px;font-size:11px;pointer-events:none;}
+ .garage {max-height:calc(100% - 138px);}
 }
-.heading {
-  display: flex;
-  justify-content: space-between;
-  align-items: end;
-  margin-bottom: 22px;
-  color: var(--foreground);
-}
-.eyebrow {
-  font-size: 10px;
-  letter-spacing: 2px;
-  font-weight: 700;
-}
-.heading h1 {
-  font-size: clamp(38px, 6vw, 76px);
-  line-height: 1;
-  letter-spacing: -5px;
-  font-weight: 950;
-  margin-top: 12px;
-  font-style: italic;
-}
-.heading h1 span {
-  color: #dc5a37;
-}
-.stageInfo {
-  display: grid;
-  text-align: right;
-  gap: 6px;
-  font-size: 12px;
-  letter-spacing: 2px;
-}
-.stageInfo span {
-  font-size: 10px;
-  opacity: 0.6;
-}
-.game {
-  position: relative;
-  height: min(740px, 78vh);
-  min-height: 560px;
-  background: #c6bf9f;
-  border-radius: 12px;
-  overflow: hidden;
-  box-shadow: 0 24px 60px #0003;
-}
-/* Held controls must not select nearby HUD text or open iOS callouts. */
-.game,
-.game *,
-.page button {
-  -webkit-user-select: none;
-  user-select: none;
-  -webkit-touch-callout: none;
-}
-.game:fullscreen {
-  height: 100vh;
-  border-radius: 0;
-}
-.canvas {
-  position: absolute;
-  inset: 0;
-}
-.canvas canvas {
-  display: block;
-  width: 100%;
-  height: 100%;
-}
-.topbar {
-  position: absolute;
-  left: 24px;
-  right: 24px;
-  top: 18px;
-  display: flex;
-  justify-content: space-between;
-  font-size: 11px;
-  color: #263d34;
-  align-items: center;
-}
-.topbar > span {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  background: #eee9d9cf;
-  padding: 7px 10px;
-  border-radius: 20px;
-}
-.topbar i {
-  width: 6px;
-  height: 6px;
-  background: #40815e;
-  border-radius: 100%;
-}
-.topbar button {
-  background: #eee9d9cf;
-  margin-left: 8px;
-  padding: 7px 10px;
-  border-radius: 20px;
-}
-.garageCopy {
-  position: absolute;
-  left: 5%;
-  top: 17%;
-  color: #233c32;
-  pointer-events: none;
-}
-.tag {
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 2px;
-}
-.garageCopy h2 {
-  font-size: clamp(32px, 5vw, 60px);
-  line-height: 1.02;
-  font-weight: 900;
-  letter-spacing: -2px;
-  margin: 18px 0;
-}
-.garageCopy p {
-  font-size: 14px;
-  line-height: 1.6;
-  opacity: 0.8;
-}
-.garage {
-  position: absolute;
-  bottom: 24px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: min(480px, 90%);
-  background: #f2edddef;
-  color: #233c32;
-  padding: 18px 22px;
-  border-radius: 9px;
-  box-shadow: 0 8px 30px #24352d25;
-}
-.carSelect {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  text-align: center;
-}
-.carSelect h3 {
-  font-size: 20px;
-  font-weight: 850;
-  letter-spacing: -0.6px;
-  margin: 5px 0;
-}
-.carSelect p {
-  font-size: 12px;
-  opacity: 0.65;
-}
-.carSelect button {
-  font-size: 24px;
-  padding: 10px;
-}
-.start {
-  display: flex !important;
-  justify-content: space-between;
-  align-items: center;
-  background: #d95131 !important;
-  color: #fff6e4 !important;
-  font-size: 12px !important;
-  font-weight: 800;
-  letter-spacing: 1.5px;
-  padding: 15px 22px !important;
-  border-radius: 4px !important;
-  width: 100%;
-  margin-top: 18px;
-}
-.hint {
-  font-size: 10px;
-  text-align: center;
-  margin-top: 10px;
-  opacity: 0.6;
-}
-.timer {
-  position: absolute;
-  top: 80px;
-  left: 25px;
-  color: #243b32;
-  background: #f2edddea;
-  border-radius: 6px;
-  padding: 15px 22px;
-  display: grid;
-}
-.timer small {
-  font-size: 9px;
-  letter-spacing: 2px;
-}
-.timer strong {
-  font-size: 38px;
-  font-variant-numeric: tabular-nums;
-  font-weight: 900;
-  letter-spacing: -2px;
-}
-.timer span {
-  font-size: 10px;
-  opacity: 0.6;
-}
-.speed {
-  position: absolute;
-  bottom: 36px;
-  right: 30px;
-  display: grid;
-  text-align: right;
-  color: #233c32;
-}
-.speed strong {
-  font-size: 65px;
-  font-weight: 900;
-  line-height: 1;
-}
-.speed small {
-  font-size: 11px;
-  letter-spacing: 3px;
-}
-.revs {
-  width: 110px;
-  height: 8px;
-  margin: 8px 0 5px auto;
-  overflow: hidden;
-  border-radius: 3px;
-  background: #233c3240;
-}
-.revs > div {
-  height: 100%;
-  background: linear-gradient(90deg, #40815e 0%, #e3ad49 70%, #d95131 90%);
-  transition: width 70ms linear;
-}
-.pause {
-  position: absolute;
-  bottom: 32px;
-  left: 25px;
-  background: #f2edddeb;
-  padding: 10px 18px;
-  border-radius: 4px;
-  color: #233c32;
-  font-size: 12px;
-}
-.progress {
-  position: absolute;
-  bottom: 0;
-  height: 5px;
-  width: 100%;
-  background: #263b3430;
-}
-.progress > div {
-  height: 100%;
-  background: #d95131;
-  transition: width 0.2s;
-}
-.count {
-  position: absolute;
-  inset: 0;
-  display: grid;
-  place-content: center;
-  font-size: 130px;
-  font-weight: 950;
-  color: #fff6df;
-  text-shadow: 0 5px 0 #254033;
-}
-.overlay {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  background: #1c332de0;
-  backdrop-filter: blur(8px);
-  gap: 16px;
-  padding: 28px;
-  text-align: center;
-}
-.overlay h2 {
-  font-size: clamp(38px, 6vw, 74px);
-  font-weight: 900;
-  letter-spacing: -3px;
-}
-.overlay .start {
-  max-width: 290px;
-}
-.overlay > button:not(.start) {
-  font-size: 13px;
-  text-decoration: underline;
-  text-underline-offset: 5px;
-  padding: 7px;
-}
-.below {
-  display: flex;
-  justify-content: space-between;
-  gap: 30px;
-  margin-top: 25px;
-  color: var(--foreground);
-}
-.below p {
-  font-size: 12px;
-  line-height: 1.7;
-  margin-top: 9px;
-  opacity: 0.8;
-}
-.below small {
-  display: block;
-  font-size: 11px;
-  opacity: 0.5;
-  margin-top: 10px;
-}
-.below a {
-  white-space: nowrap;
-  font-size: 12px;
-}
-.page button {
-  cursor: pointer;
-}
-.page button:focus-visible {
-  outline: 3px solid #ecb632;
-  outline-offset: 4px;
-}
-@media (max-width: 650px) {
-  .stageInfo {
-    display: none;
-  }
-  .heading h1 {
-    letter-spacing: -2px;
-  }
-  .garageCopy {
-    top: 14%;
-  }
-  .garageCopy h2 {
-    font-size: 35px;
-  }
-  .garageCopy p {
-    display: none;
-  }
-  .game {
-    min-height: 600px;
-  }
-  .below {
-    flex-direction: column;
-  }
-  .topbar {
-    left: 12px;
-    right: 12px;
-  }
-  .topbar button {
-    font-size: 10px;
-  }
-  .carSelect h3 {
-    font-size: 17px;
-  }
-}
-
-/* Keep top-level actions accessible above countdowns and pause screens. */
-.topbar {
-  z-index: 40;
-  top: max(12px, env(safe-area-inset-top));
-  left: max(12px, env(safe-area-inset-left));
-  right: max(12px, env(safe-area-inset-right));
-}
-.topbar button {
-  min-height: 46px;
-  min-width: 82px;
-  padding: 10px 14px;
-  touch-action: manipulation;
-}
-.count {
-  pointer-events: none;
-  z-index: 15;
-}
-.overlay {
-  z-index: 20;
-  padding-top: 74px;
-}
-.game.expanded,
-.game:fullscreen {
-  position: fixed;
-  inset: 0;
-  z-index: 1000;
-  width: 100%;
-  height: 100vh;
-  height: 100dvh;
-  min-height: 0;
-  max-height: none;
-  border-radius: 0;
-}
-.notice {
-  position: absolute;
-  z-index: 45;
-  left: 50%;
-  top: 68px;
-  transform: translateX(-50%);
-  width: max-content;
-  max-width: 90%;
-  background: #233c32f2;
-  color: #fff5de;
-  padding: 12px 16px;
-  border-radius: 8px;
-  font-size: 12px;
-  pointer-events: none;
-  text-align: center;
-}
-.rotateHint {
-  display: none;
-}
-.touchControls {
-  display: none;
-  position: absolute;
-  z-index: 10;
-  bottom: max(18px, env(safe-area-inset-bottom));
-  left: max(14px, env(safe-area-inset-left));
-  right: max(14px, env(safe-area-inset-right));
-  justify-content: space-between;
-  gap: 12px;
-  pointer-events: none;
-}
-.steeringPad,
-.pedalPad {
-  display: flex;
-  gap: 8px;
-}
-.touchControls button {
-  width: 62px;
-  height: 72px;
-  border-radius: 16px;
-  padding: 8px;
-  color: #233c32;
-  background: #f2edddef;
-  box-shadow: 0 4px 0 #233c3255;
-  border: 1px solid #fff8;
-  font-size: 14px;
-  font-weight: 800;
-  touch-action: none;
-  pointer-events: auto;
-  user-select: none;
-  -webkit-user-select: none;
-  -webkit-touch-callout: none;
-}
-.steeringPad button {
-  font-size: 32px;
-}
-.pedalPad button:last-child {
-  background: #d95131;
-  color: #fff4df;
-}
-.touchControls button:active {
-  background: #e3ad49;
-  color: #233c32;
-  box-shadow: 0 1px 0 #233c3255;
-}
-.recover {
-  display: none;
-  position: absolute;
-  z-index: 10;
-  left: 110px;
-  bottom: 108px;
-  min-height: 44px;
-  padding: 10px;
-  border-radius: 8px;
-  background: #f2edddea;
-  color: #233c32;
-  font-size: 12px;
-  touch-action: manipulation;
-}
-@media (pointer: coarse), (max-width: 650px) {
-  .touchControls {
-    display: flex;
-  }
-  .recover {
-    display: block;
-  }
-  .pause {
-    bottom: 108px;
-    left: 14px;
-    min-height: 44px;
-    touch-action: manipulation;
-  }
-  .speed {
-    bottom: 106px;
-    right: 18px;
-  }
-  .topbar button {
-    font-size: 12px;
-    margin-left: 5px;
-  }
-  .topbar > span {
-    max-width: 130px;
-    font-size: 10px;
-  }
-}
-@media (orientation: portrait) and (pointer: coarse) {
-  .rotateHint {
-    display: block;
-    position: absolute;
-    top: 72px;
-    left: 14px;
-    right: 14px;
-    border-radius: 8px;
-    padding: 10px 12px;
-    background: #f2edddeb;
-    color: #233c32;
-    font-size: 12px;
-    line-height: 1.5;
-    pointer-events: none;
-  }
-  .garageCopy {
-    top: 25%;
-  }
-}
-@media (orientation: landscape) and (pointer: coarse),
-  (orientation: landscape) and (max-height: 550px) {
-  .game {
-    height: calc(100dvh - 24px);
-    min-height: 300px;
-  }
-  .game.expanded,
-  .game:fullscreen {
-    height: 100dvh;
-    min-height: 0;
-  }
-  .touchControls button {
-    width: clamp(72px, 10vw, 100px);
-    height: clamp(72px, 20dvh, 96px);
-    font-size: 17px;
-  }
-  .steeringPad button {
-    font-size: 38px;
-  }
-  .touchControls {
-    bottom: max(14px, env(safe-area-inset-bottom));
-  }
-  .pause,
-  .recover {
-    bottom: calc(clamp(72px, 20dvh, 96px) + 26px);
-  }
-  .speed {
-    bottom: calc(clamp(72px, 20dvh, 96px) + 24px);
-  }
-  .speed strong {
-    font-size: 36px;
-  }
-  .timer {
-    top: 68px;
-    left: 14px;
-    padding: 8px 12px;
-  }
-  .timer strong {
-    font-size: 25px;
-  }
-  .timer span {
-    display: none;
-  }
-  .garage {
-    width: min(360px, 46%);
-    left: auto;
-    right: max(16px, env(safe-area-inset-right));
-    bottom: 14px;
-    transform: none;
-    padding: 12px 16px;
-  }
-  .garageCopy {
-    top: 26%;
-    left: 5%;
-  }
-  .garageCopy h2 {
-    font-size: 34px;
-    margin: 8px 0;
-  }
-  .garageCopy p {
-    display: none;
-  }
-  .garage .start {
-    margin-top: 10px;
-  }
-  .garage .hint {
-    font-size: 9px;
-  }
-  .carSelect h3 {
-    font-size: 17px;
-  }
-  .overlay {
-    gap: 8px;
-    padding-bottom: 12px;
-  }
-  .overlay h2 {
-    font-size: 38px;
-  }
-  .overlay .start {
-    margin-top: 4px;
-  }
-}
-@media (max-width: 370px) {
-  .touchControls {
-    left: 8px;
-    right: 8px;
-    gap: 8px;
-  }
-  .touchControls button {
-    width: 54px;
-  }
-  .steeringPad,
-  .pedalPad {
-    gap: 5px;
-  }
-  .topbar button {
-    min-width: 70px;
-    padding: 8px;
-  }
-  .topbar > span {
-    max-width: 96px;
-  }
-}
-
-.installHelp {
-  position: absolute;
-  z-index: 60;
-  inset: 0;
-  background: #233c32fa;
-  color: #fff2d8;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  gap: 14px;
-  padding: max(24px, env(safe-area-inset-top))
-    max(24px, env(safe-area-inset-right)) max(24px, env(safe-area-inset-bottom))
-    max(24px, env(safe-area-inset-left));
-  overflow: auto;
-}
-.installHelp h2 {
-  font-size: clamp(23px, 4vw, 36px);
-  font-weight: 850;
-  text-align: center;
-}
-.installHelp p,
-.installHelp ol {
-  max-width: 430px;
-  font-size: 14px;
-  line-height: 1.6;
-}
-.installHelp ol {
-  list-style: decimal;
-  padding-left: 24px;
-}
-.installHelp li {
-  margin: 8px 0;
-}
-.installHelp .start {
-  max-width: 360px;
-  flex-shrink: 0;
-}
-.installLink {
-  text-decoration: underline;
-  text-underline-offset: 4px;
-  padding: 8px 0;
-}
-@media (orientation: landscape) and (max-height: 500px) {
-  .installHelp {
-    gap: 6px;
-    justify-content: flex-start;
-  }
-  .installHelp h2 {
-    font-size: 23px;
-  }
-  .installHelp p,
-  .installHelp ol {
-    font-size: 12px;
-  }
-  .installHelp li {
-    margin: 3px 0;
-  }
-  .installHelp .start {
-    margin-top: 4px;
-  }
-}
-
-.stageChoices { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:14px; }
-.stageChoices label:first-child { grid-column:1 / -1; }
-.stageChoices label, .boardFilter, .leaderboard label { display:grid; gap:5px; font-size:11px; font-weight:700; }
-.stageChoices select, .leaderboard select, .leaderboard input { width:100%; min-height:42px; padding:8px; color:#233c32; background:#fff8e6; border:1px solid #233c3230; border-radius:5px; font-size:13px; }
-.boardButton { font-size:12px; padding:10px 0 0; text-decoration:underline; }
-.garage { max-height:calc(100% - 90px); overflow:auto; }
-.garageCopy { top:15%; }
-.leaderboard { position:absolute; inset:0; z-index:70; background:#f2eddc; color:#233c32; padding:24px; display:flex; flex-direction:column; gap:14px; overflow:auto; }
-.leaderboard header { display:flex; justify-content:space-between; gap:12px; align-items:start; }
-.leaderboard h2 { font-size:26px; font-weight:900; }
-.leaderboard p, .leaderboard small { font-size:12px; }
-.leaderboard button { min-height:44px; padding:8px 12px; border-radius:6px; background:#233c32; color:#fff4df; }
-.leaderboard form { display:grid; grid-template-columns:1fr auto; gap:8px; align-items:end; }
-.leaderboard form small { grid-column:1 / -1; }
-.leaderboard input { -webkit-user-select:text; user-select:text; }
-.leaderboard button:disabled { opacity:.5; }
-.boardRows { min-height:100px; overflow:auto; flex:1; overscroll-behavior:contain; }
-.boardRows li, .myRank > div { display:grid; grid-template-columns:50px 1fr auto; gap:10px; align-items:center; padding:12px 8px; border-bottom:1px solid #233c3220; font-size:14px; }
-.boardRows small, .myRank small { display:block; opacity:.65; }
-.myRow, .myRank { background:#e5ba64; border-radius:6px; }
-.myRank { padding:8px; flex-shrink:0; }
-@media (orientation:portrait) and (max-width:650px) { .garageCopy { display:none; } .garage { bottom:16px; } }
 @media (orientation:landscape) and (max-height:550px) {
- .garage { width:58%; padding:10px 14px; }
- .stageChoices { grid-template-columns:1.4fr 1fr 1fr; gap:6px; margin-top:8px; }
- .stageChoices label:first-child { grid-column:auto; }
- .stageChoices select { min-height:36px; font-size:11px; padding:4px; }
- .garage .hint { display:none; }
- .garageCopy h2 { font-size:25px; }
- .leaderboard { padding:12px; gap:8px; }
- .leaderboard h2 { font-size:21px; }
+ .game {height:calc(100dvh - 24px);min-height:300px;}.game.expanded,.game:fullscreen {height:100dvh;min-height:0;}
+ .garage {width:47%;max-height:calc(100% - 72px);padding:12px;left:auto;}.menuEyebrow {margin-bottom:8px;padding-bottom:6px;}
+ .carSelect h3 {font-size:18px;}.carSelect p {display:none;}.garageCopy {display:block;top:25%;left:4%;}.garageCopy h2 {font-size:33px;}.garageCopy p {display:none;}
+ .stageChoices {grid-template-columns:repeat(4,1fr);gap:5px;margin-top:10px!important;}.stageChoices button {min-height:54px;padding:7px;}.stageChoices strong {font-size:10px;}.stageChoices span {display:none;}.stageChoices small {font-size:7px;letter-spacing:.6px;}
+ .ghostStatus {font-size:9px;min-height:15px;margin-top:7px;}.garage .hint {display:none;}.garage .start {margin-top:6px;}.garageLinks {display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:center;}
+.garageLinks a {display:flex;align-items:center;justify-content:flex-end;min-height:44px;font-size:10px;color:#c6cbb8;}
+.boardButton {min-height:32px;}
+ .timer {width:160px;padding:8px 12px;}.timer strong {font-size:29px;}
+ .checkpointStack {top:calc(var(--safe-top) + 60px);width:206px;}.checkpointToast {padding:8px 10px;}
+ .touchControls button {width:72px;height:72px;}.speed {left:50%;right:auto;transform:translateX(-50%);bottom:var(--safe-bottom);min-width:116px;}.speed strong {font-size:28px;}
+ .recover {bottom:calc(var(--safe-bottom) + 82px);}
+ .overlay {padding:65px 16px 12px;}.pauseCard {display:grid;grid-template-columns:1fr 1fr;gap:8px;width:min(620px,100%);}.pauseCard > .tag,.pauseCard h2,.pauseCard p {grid-column:1;}.pauseCard h2 {font-size:42px;margin:0;}.pauseCard p {margin:0;}.pauseCard > .start {grid-column:2;grid-row:1/3;margin:0;align-self:end;}.pauseCard > .menuButton {grid-column:2;margin:0;}.pauseSettings {grid-column:1/-1;margin-top:4px;}.pauseSettings button {min-height:48px;flex-direction:row;justify-content:center;}
+ .finishResults {padding:12px;gap:7px;}.finishResults h2 {font-size:32px;}.finishResults p {font-size:10px;}.finishResults > button {min-height:40px;}
+ .optionPanel {padding:12px 16px;}.optionPanel header {margin-bottom:10px;}.optionList {grid-template-columns:1fr 1fr;}.optionList button {min-height:64px;}.optionPanel h2 {font-size:23px;}
+ .installHelp {justify-content:flex-start;gap:6px;padding:16px;}.installHelp p,.installHelp ol {font-size:12px;}.installHelp li {margin:3px 0;}.leaderboard {padding:12px;gap:8px;}
 }
-.ghostChoice {display:grid;gap:5px;margin-top:10px;font-size:11px;font-weight:700;}
-.ghostChoice select {min-height:38px;background:#fff8e6;color:#233c32;border-radius:5px;padding:6px;}
-.ghostChoice small {font-size:10px;opacity:.75;}
-.ghostToggle {position:absolute;z-index:42;right:14px;top:72px;padding:10px;border-radius:8px;background:#f2eddde8;color:#233c32;font-size:12px;min-height:44px;}
-.arrival {position:absolute;z-index:30;bottom:24px;left:50%;transform:translateX(-50%);background:#f2edddec;color:#233c32;border-radius:8px;padding:14px;text-align:center;display:grid;gap:10px;}
-.arrival button {min-height:44px;text-decoration:underline;}
-@media (orientation:landscape) and (max-height:550px){.ghostChoice {grid-template-columns:70px 1fr;margin-top:6px;align-items:center;}.ghostChoice small {grid-column:1/-1;}.garage {max-height:calc(100% - 75px);} }
-
-.finishResults { inset:auto 16px 16px auto; width:min(340px,44%); max-height:calc(100% - 90px); overflow-y:auto; border-radius:12px; padding:18px; gap:9px; backdrop-filter:none; background:#f2edddef; color:#233c32; }
-.finishResults h2 {font-size:40px;letter-spacing:-2px;}
-.finishResults p {font-size:12px;}
-.finishResults .start {margin-top:4px;}
-@media (orientation:portrait) { .finishResults {left:12px;right:12px;bottom:12px;width:auto;max-height:42%;padding:14px;} }
+@media (max-width:370px) {
+ .timer {width:131px;}.timer strong {font-size:25px;}.topbar {display:grid;grid-template-columns:44px 44px;}.checkpointStack {top:calc(var(--safe-top) + 130px);width:202px;}
+ .pedalPad {display:grid;grid-template-columns:64px 64px;}.pedalPad button:first-child {grid-column:1/-1;width:100%;height:44px;}.touchControls {gap:8px;}.steeringPad,.pedalPad {gap:6px;}
+ .speed {bottom:calc(var(--safe-bottom) + 136px);}.recover {bottom:calc(var(--safe-bottom) + 82px);}
+}
+@media (prefers-reduced-motion:reduce) {
+ .game button,.revs > div,.progress > div {transition:none;}.checkpointToast {animation:none;}
+}

@@ -121,3 +121,33 @@ finish view, atmosphere added 32 visible draw calls and 7,976 triangles versus
 hiding that group (794/107,492 vs 762/99,516); this is a scene-cost comparison,
 not a physical iPhone FPS measurement. Physical controller/iPhone testing remains
 manual. No QA preview buttons are included in the release.
+
+
+### Reliable finishes and rally instruments (V2.2)
+
+Swept checkpoint detection retains the seven-unit acceptance radius and existing
+ranked timing. Crossing a later gate marks skipped checkpoints once; a forward
+finish crossing always completes the attempt. Missing checkpoints, recovery or
+the ten-minute limit make results practice-only, with explicit reasons. These
+runs cannot overwrite personal bests, replays or public records. The existing
+server trace checks now also consider segments between adjacent samples.
+
+The charcoal/cream/orange HUD includes two prioritised checkpoint notifications,
+compact timing and RPM instruments, and peripheral touch controls. Pause freezes
+notifications and preserves countdown/race state. Main menu ends the attempt and
+returns to the garage without clearing settings or records. Garage selections,
+pause, results and leaderboards share the new styling; keyboard and controller
+menus use the same focus/activation actions. Start and finish bars have labels.
+
+Design references: [Rush Rally Origins](https://apps.apple.com/gb/app/rush-rally-origins/id1557502285),
+[Rush Rally 3](https://play.google.com/store/apps/details?id=brownmonster.app.game.rushrally3),
+[Horizon Chase 2](https://apps.apple.com/us/app/horizon-chase-2/id1534920947) and
+[Asphalt Legends](https://apps.apple.com/us/app/asphalt-legends-racing-game/id805603214).
+
+Automated coverage includes all 24 selections with centreline and wide-offset
+paths, frame gaps, backward gates, Alpine shortcut finishes, event deduplication,
+notification priority/pause/expiry, result eligibility and countdown resumption.
+The HUD adds no 3D instruments or animated blur; gate labels add four static
+planes (eight triangles), with at most four extra draw calls. A desktop Node
+microbenchmark averaged 0.00032 ms per checkpoint update; this is not an iPhone
+frame-rate measurement. Physical iPhone and controller verification remains manual.
