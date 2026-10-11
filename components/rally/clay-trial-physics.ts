@@ -13,8 +13,10 @@ export class TrialDrive{
  step(dt:number,input:number,t:TrialTerrain){
   if(dt<=0)return;dt=Math.min(.05,dt);input=Math.sign(input);
   const remaining=Math.max(0,t.laneLimit+input*this.position);
-  const target=input*Math.min(12/3.6,Math.sqrt(2*3*remaining)),rate=input?2.5:3.8;this.speed+=(target-this.speed)*(1-Math.exp(-rate*dt));
+  const target=input*Math.min(28/3.6,Math.sqrt(2*7*remaining)),rate=input?4.2:4.8;this.speed+=(target-this.speed)*(1-Math.exp(-rate*dt));
   const inside=new Set<number>();let entry=false;t.puddles.forEach((p,i)=>{if(puddleRadius(p,0,this.position)<1){inside.add(i);if(!this.wet.has(i))entry=true;}});if(entry&&this.dragTime<=0)this.dragTime=.3;this.wet=inside;const drag=Math.min(dt,this.dragTime);this.speed*=Math.exp(Math.log(.94)*drag/.3);this.dragTime=Math.max(0,this.dragTime-dt);
+  const brakingDistance=Math.max(0,t.laneLimit+Math.sign(this.speed)*this.position);
+  this.speed=Math.sign(this.speed)*Math.min(Math.abs(this.speed),Math.sqrt(14*brakingDistance));
   const previous=this.position;this.position=Math.max(-t.laneLimit,Math.min(t.laneLimit,this.position-this.speed*dt));if(Math.abs(this.position)===t.laneLimit)this.speed=0;this.distance+=previous-this.position;
  }
  wheelHeights(t:TrialTerrain){return [-1,1].flatMap(side=>[-1,1].map(axle=>terrainHeight(t,side*t.trackWidth/2,this.position+axle*t.wheelbase/2)));}

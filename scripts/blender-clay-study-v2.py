@@ -28,12 +28,14 @@ def ellipsoid(name,loc,scale,m,parent=None):
  bpy.ops.mesh.primitive_uv_sphere_add(segments=12,ring_count=8,location=loc);o=bpy.context.object;o.name=name;o.scale=scale;o.data.materials.append(m)
  if parent:o.parent=parent
  return smooth(o)
-blue=mat('Petrol blue clay',(.045,.22,.31),.7);rubber=mat('Soft rubber',(.025,.029,.034),.92);glass=mat('Smoked glazing',(.065,.14,.18),.2,.15);cream=mat('Ivory clay',(.88,.86,.73));red=mat('Tail lens',(.55,.018,.012),.22);silver=mat('Satin alloy',(.42,.47,.49),.38,.65);green=mat('Sage foliage',(.16,.29,.095));bark=mat('Clay bark',(.16,.105,.065));ochre=mat('Clay ochre',(.68,.43,.1));mud=mat('Dried mud deposits',(.20,.12,.06),.98)
+blue=mat('Rally blue clay',(.008,.028,.34),.48);rubber=mat('Soft rubber',(.025,.029,.034),.92);glass=mat('Smoked glazing',(.008,.018,.028),.46,0);cream=mat('Ivory clay',(.88,.86,.73));red=mat('Tail lens',(.55,.018,.012),.22);silver=mat('Satin alloy',(.42,.47,.49),.38,.65);green=mat('Sage foliage',(.16,.29,.095));bark=mat('Clay bark',(.16,.105,.065));ochre=mat('Clay ochre',(.68,.43,.1));mud=mat('Dried mud deposits',(.20,.12,.06),.98)
+glass.node_tree.nodes['Principled BSDF'].inputs['Specular IOR Level'].default_value=.15
+gold=mat('Rally gold',(.95,.62,.035),.42,.28)
 # A single continuous section-loft shell: boot, cabin and bonnet share topology.
-sections=[(-2.14,.84,1.03,.57),(-2.04,.99,1.08,.66),(-1.65,1.04,1.12,.73),(-1.2,1.03,1.30,.75),(-.72,1.01,1.85,.75),(-.48,1.00,1.91,.76),(.33,1.00,1.91,.76),(.52,1.02,1.83,.76),(1.12,1.045,1.22,.81),(1.62,1.035,1.16,.87),(1.98,.98,1.08,.83),(2.13,.87,1.02,.7)]
+sections=[(-2.28,.94,1.0,.83),(-2.2,1.05,1.07,.92),(-1.75,1.09,1.20,.94),(-1.4,1.08,1.23,.92),(-1.03,1.055,1.57,.75),(-.8,1.04,1.68,.76),(-.6,1.04,1.7,.77),(.23,1.04,1.7,.77),(.40,1.055,1.62,.78),(.94,1.10,1.27,.96),(1.35,1.12,1.26,1.0),(1.86,1.10,1.17,.98),(2.18,1.06,1.04,.98),(2.28,.99,.98,.94)]
 verts=[]
 for y,w,roof,rw in sections:
- for x,z in [(-w*.89,.46),(-w,.67),(-w,1.01),(-rw,roof-.09),(-rw*.82,roof), (0,roof+.025),(rw*.82,roof),(rw,roof-.09),(w,1.01),(w,.67),(w*.89,.46),(0,.43)]:verts.append((x,y,z))
+ for x,z in [(-w*.94,.38),(-w,.63),(-w,1.00),(-rw,roof-.09),(-rw*.82,roof), (0,roof+.025),(rw*.82,roof),(rw,roof-.09),(w,1.00),(w,.63),(w*.94,.38),(0,.36)]:verts.append((x,y,z))
 n=12;faces=[]
 for i in range(len(sections)-1):
  for j in range(n):faces.append((i*n+j,i*n+(j+1)%n,(i+1)*n+(j+1)%n,(i+1)*n+j))
@@ -42,8 +44,9 @@ body=mesh('sculpted_body',verts,faces,blue,car);bpy.context.view_layer.objects.a
 mod=body.modifiers.new('Sculpted continuity','SUBSURF');mod.levels=2;bpy.ops.object.modifier_apply(modifier=mod.name)
 # Open arches are cut into the continuous body, rather than wheels stuck on its sides.
 for y in [-1.325,1.325]:
- bpy.ops.mesh.primitive_cylinder_add(vertices=48,radius=.56,depth=3,location=(0,y,.51),rotation=(0,math.pi/2,0));cutter=bpy.context.object;bpy.context.view_layer.objects.active=body
- mod=body.modifiers.new('Wheel arch','BOOLEAN');mod.operation='DIFFERENCE';mod.object=cutter;mod.solver='EXACT';bpy.ops.object.modifier_apply(modifier=mod.name);bpy.data.objects.remove(cutter,do_unlink=True)
+ for side in [-1,1]:
+  bpy.ops.mesh.primitive_cylinder_add(vertices=48,radius=.605,depth=.72,location=(side*1.13,y,.55),rotation=(0,math.pi/2,0));cutter=bpy.context.object;bpy.context.view_layer.objects.active=body
+  mod=body.modifiers.new('Wheel arch','BOOLEAN');mod.operation='DIFFERENCE';mod.object=cutter;mod.solver='EXACT';bpy.ops.object.modifier_apply(modifier=mod.name);bpy.data.objects.remove(cutter,do_unlink=True)
 bevel(body,.018,2)
 # Sloping inset glass, body-coloured pillars and cohesive saloon proportions.
 def pane(name,corners,side=0):
@@ -59,30 +62,62 @@ def pane(name,corners,side=0):
    k=j*(steps+1)+i;faces.append((k,k+1,k+steps+2,k+steps+1))
  o=mesh(name,vertices,faces,glass,car);o.data.materials[0].use_nodes=True
  smooth(o)
-pane('front_glass',[(-.57,.55,1.77),(.57,.55,1.77),(.7,1.01,1.27),(-.7,1.01,1.27)])
-pane('rear_glass',[(-.59,-.77,1.77),(.59,-.77,1.77),(.67,-1.14,1.31),(-.67,-1.14,1.31)])
+pane('front_glass',[(-.66,.39,1.60),(.66,.39,1.60),(.85,.92,1.17),(-.85,.92,1.17)])
+pane('rear_glass',[(-.65,-.94,1.59),(.65,-.94,1.59),(.83,-1.37,1.17),(-.83,-1.37,1.17)])
 for side in [-1,1]:
- for y0,y1,top0,top1 in [(-1.03,-.26,1.39,1.70),(-.18,.77,1.70,1.39)]:
-  pane('side_glass',[(side*.86,y0,1.2),(side*.86,y1,1.2),(side*.77,y1,top1),(side*.77,y0,top0)],side)
- box('mirror',(side*1.12,.74,1.32),(.25,.28,.17),blue,car,.06)
- box('door_handle',(side*1.02,-.38,1.05),(.035,.18,.04),silver,car,.01)
- box('sill',(side*.98,0,.5),(.12,1.7,.12),blue,car,.035)
+ pane('rear_side_glass',[(side*.9,-1.27,1.08),(side*.9,-.38,1.08),(side*.77,-.38,1.56),(side*.77,-.99,1.52)],side)
+ pane('front_side_glass',[(side*.9,-.29,1.08),(side*.9,.8,1.08),(side*.77,.32,1.56),(side*.77,-.29,1.56)],side)
+ box('mirror',(side*1.15,.68,1.20),(.25,.28,.17),blue,car,.06)
+ box('door_handle',(side*1.08,-.40,.98),(.035,.18,.04),silver,car,.01)
+ box('sill',(side*1.04,0,.43),(.12,1.7,.12),blue,car,.035)
  for axle,y in [('front',1.325),('rear',-1.325)]:
-  name='wheel_'+axle+('_left' if side<0 else '_right');wheel=bpy.data.objects.new(name,None);scene.collection.objects.link(wheel);wheel.parent=car;wheel.location=(side*.97,y,.47)
-  bpy.ops.mesh.primitive_torus_add(major_radius=.355,minor_radius=.115,major_segments=32,minor_segments=10,location=(0,0,0),rotation=(0,math.pi/2,0));o=bpy.context.object;o.name=name+'_tyre';o.data.materials.append(rubber);o.parent=wheel;o.location=(0,0,0);smooth(o)
-  bpy.ops.mesh.primitive_cylinder_add(vertices=20,radius=.255,depth=.14,location=(0,0,0),rotation=(0,math.pi/2,0));o=bpy.context.object;o.name=name+'_hub';o.data.materials.append(silver);o.parent=wheel;o.location=(side*.08,0,0);bevel(o,.015,2)
-  for k in range(6):
-   a=k*math.pi/3;spoke=box(name+'_spoke',(0,0,0),(.03,.045,.42),cream,None,.015);spoke.parent=wheel;spoke.location=(side*.16,0,0);spoke.rotation_euler.x=a
+  name='wheel_'+axle+('_left' if side<0 else '_right');wheel=bpy.data.objects.new(name,None);scene.collection.objects.link(wheel);wheel.parent=car;wheel.location=(side*1.03,y,.55)
+  bpy.ops.mesh.primitive_torus_add(major_radius=.415,minor_radius=.135,major_segments=32,minor_segments=10,location=(0,0,0),rotation=(0,math.pi/2,0));o=bpy.context.object;o.name=name+'_tyre';o.data.materials.append(rubber);o.parent=wheel;o.location=(0,0,0);o.scale.x=1.15;smooth(o)
+  bpy.ops.mesh.primitive_cylinder_add(vertices=20,radius=.34,depth=.14,location=(0,0,0),rotation=(0,math.pi/2,0));o=bpy.context.object;o.name=name+'_hub';o.data.materials.append(rubber);o.parent=wheel;o.location=(side*.08,0,0);bevel(o,.015,2)
+  for k in range(8):
+   a=k*math.pi/4;spoke=box(name+'_spoke',(0,0,0),(.035,.048,.69),gold,None,.015);spoke.parent=wheel;spoke.location=(side*.16,0,0);spoke.rotation_euler.x=a
+  bpy.ops.mesh.primitive_torus_add(major_radius=.355,minor_radius=.035,major_segments=32,minor_segments=8,rotation=(0,math.pi/2,0));rim=bpy.context.object;rim.name=name+'_gold_rim';rim.parent=wheel;rim.location=(side*.16,0,0);rim.data.materials.append(gold);smooth(rim)
   mount=bpy.data.objects.new('suspension_'+name,None);scene.collection.objects.link(mount);mount.parent=car;mount.location=wheel.location
 for side in [-1,1]:
- box('headlamp_'+str(side),(side*.64,2.14,.91),(.49,.07,.2),cream,car,.035)
- box('taillamp_'+str(side),(side*.69,-2.075,.91),(.4,.065,.2),red,car,.03)
- box('reverse_lamp_'+str(side),(side*.39,-2.085,.89),(.16,.065,.13),cream,car,.025)
- box('spoiler_mount',(side*.65,-1.74,1.28),(.085,.22,.34),blue,car,.025)
-box('rally_spoiler',(0,-1.79,1.47),(1.98,.43,.11),blue,car,.045)
-box('grille',(0,2.16,.72),(1.18,.03,.17),rubber,car,.025)
-box('bonnet_scoop',(0,1.23,1.24),(.55,.36,.08),blue,car,.03)
-box('scoop_inlet',(0,1.415,1.242),(.40,.022,.035),rubber,car,.008)
+ box('headlamp_'+str(side),(side*.70,2.235,.91),(.57,.065,.19),cream,car,.035)
+ box('taillamp_'+str(side),(side*.73,-2.235,.89),(.4,.065,.2),red,car,.03)
+ box('reverse_lamp_'+str(side),(side*.42,-2.24,.87),(.16,.065,.13),cream,car,.025)
+ box('spoiler_mount',(side*.77,-1.91,1.25),(.085,.22,.34),blue,car,.025)
+box('rally_spoiler',(0,-1.94,1.48),(2.14,.43,.11),blue,car,.045)
+box('upper_grille',(0,2.282,.9),(.72,.04,.18),rubber,car,.025)
+box('lower_intake',(0,2.255,.55),(1.18,.05,.22),rubber,car,.035)
+box('front_lip',(0,2.14,.37),(1.88,.24,.06),blue,car,.025)
+for side in [-1,1]:
+ ellipsoid('fog_recess',(side*.82,2.20,.57),(.20,.055,.18),rubber,car)
+ ellipsoid('fog_lens',(side*.82,2.25,.57),(.12,.022,.12),cream,car)
+box('bonnet_scoop',(0,1.32,1.31),(.64,.45,.11),blue,car,.03)
+box('scoop_inlet',(0,1.54,1.32),(.50,.025,.055),rubber,car,.008)
+# Gold rally graphics are projected onto the sculpted clay rather than floating panels.
+def decal(name,coords,material,side=0):
+ vertices=[]
+ for q in coords:
+  q=Vector(q);origin=Vector((side*3,q.y,q.z)) if side else Vector((q.x,q.y,4));direction=Vector((-side,0,0)) if side else Vector((0,0,-1));hit,pos,norm,_=body.ray_cast(origin,direction)
+  vertices.append(tuple(pos+norm*.018 if hit else q))
+ o=mesh(name,vertices,[tuple(range(len(vertices)))],material,car)
+ # Decals remain visible from either side of the projected polygon.
+ return o
+def star(cx,cy,s):
+ return [(cx+math.cos(i*math.pi/4)*s*(1 if i%2==0 else .24),cy+math.sin(i*math.pi/4)*s*(1 if i%2==0 else .24)) for i in range(8)]
+for side in [-1,1]:
+ for cy,cz,sz in [(-.53,.83,.29),(-.04,.89,.13),(.23,.78,.10),(-.01,.63,.10),(-.36,.56,.10),(-.76,.54,.10)]:
+  decal('gold_star',[(side*1.1,y,z) for y,z in star(cy,cz,sz)],gold,side)
+ # Broad crescent sweep behind the star motif.
+ coords=[]
+ for i in range(17):
+  a=-1.2+i*2.4/16;coords.append((side*1.1,-.55-math.cos(a)*.72,.77+math.sin(a)*.29))
+ for i in range(16,-1,-1):
+  a=-1.2+i*2.4/16;coords.append((side*1.1,-.47-math.cos(a)*.63,.77+math.sin(a)*.22))
+ decal('gold_sweep',coords,gold,side)
+ # Conventional Blender text, converted to mesh; no downloaded branding artwork.
+ bpy.ops.object.text_add(location=(side*1.109,-.13,.61));o=bpy.context.object;o.name='SUBARU_wordmark';o.data.body='SUBARU';o.data.size=.15;o.data.extrude=.001;o.data.align_x='CENTER';o.rotation_euler=(math.pi/2,0,side*math.pi/2);o.data.materials.append(gold);o.parent=car;bpy.ops.object.convert(target='MESH')
+# Bonnet stars and a small grille badge.
+for x,y,sz in [(-.22,1.8,.19),(.13,1.83,.08),(.34,1.75,.07),(.12,1.65,.07)]:decal('bonnet_star',[(xx,yy,1.13) for xx,yy in star(x,y,sz)],gold)
+box('grille_badge',(0,2.309,.91),(.19,.013,.075),gold,car,.024)
 # Terrain height is the identical function used beneath the four wheels in Three.js.
 def height(x,z):
  h=.025*math.sin(x*.8+z*.35)+.018*math.cos(z*1.4)+.012*math.sin(x*3+z*2)-.038*math.exp(-((abs(x)-t['trackWidth']/2)/.22)**2)

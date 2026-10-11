@@ -30,3 +30,17 @@ Physical iPhone/iPad testing remains outstanding.
 
 Only trial components, assets and source are changed. Production game models, racing,
 records, leaderboard, ghosts and multiplayer are unchanged.
+
+V2.1 refinement
+Lower, wider saloon body; slim headlights, upper grille, fog lamps and bonnet scoop;
+trapezoidal side glazing; larger tyres and eight-spoke gold rims; rally-blue clay,
+gold star/sweep graphics and SUBARU lettering. This remains a stylised interpretation.
+Reference: https://www.wrc.com/en/misc/subaru-impreza
+
+Default orthographic isometric camera, freely orbitable, with an Isometric view reset.
+28 km/h speed cap, sharper acceleration and braking-distance speed limit at lane ends.
+Shared 512px planar reflection captures actual scene objects at up to 15 Hz.
+Wave normals respond to wheel/rain ripple events; larger outward wheel spray.
+Reflection targets are disposed on unmount. Wet effects remain bounded.
+Updated assets approximately 3.60 MB. Physical iPhone/iPad checks still outstanding.
+Seven focused tests now include reflection throttling and render-state restoration.
