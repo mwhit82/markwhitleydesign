@@ -1,3 +1,4 @@
+import {boardWindow,readBoardWindow,periodBoardKey} from '../../../../lib/rally/period';
 import { configured, player, redis, rateLimit, sameOrigin } from '../../../../lib/rally/store';
 import { boardKey, validSelection, type StageSelection } from '../../../../components/rally/stages';
 import { validName, validateRun, validCar, replayAgrees } from '../../../../lib/rally/validation';
@@ -8,10 +9,13 @@ export async function GET(request:Request) {
   if(!configured()) return unavailable();
   try {
     const q=new URL(request.url).searchParams;
+    const window=readBoardWindow(q);
+    if(!window)return Response.json({error:'Invalid leaderboard period'},{status:400});
+    if(q.has('week')&&q.get('week')!==window.week)return Response.json({error:'A new week has started. Refreshing the board.'},{status:409});
     const selection={...(q.has('laps')?{laps:Number(q.get('laps'))}:{}),...(q.has('circuitVersion')?{circuitVersion:Number(q.get('circuitVersion'))}:{}),stage:q.get('stage'),weather:q.get('weather'),reverse:q.get('reverse')==='true',timeOfDay:q.get('timeOfDay')??'midday',track:q.has('track')?Number(q.get('track')):1};
     const offset=Number(q.get('offset')||0),car=q.get('car');
     if(!validSelection(selection)||!Number.isInteger(offset)||offset<0||offset>100000 || (car!==null&&!validCar(Number(car),selection))) return Response.json({error:'Invalid board'},{status:400});
-    const board=`rally:${boardKey(selection)}${car===null?'':`:car${car}`}`;
+    const board=periodBoardKey(`rally:${boardKey(selection)}${car===null?'':`:car${car}`}`,window);
     const id=await player();
     const [rows,total,rank]=await Promise.all([redis<string[]>('ZRANGE',board,offset,offset+19,'WITHSCORES'),redis<number>('ZCARD',board),id?redis<number|null>('ZRANK',board,id):null]);
     const ids=rows.filter((_,i)=>i%2===0);
@@ -22,18 +26,18 @@ export async function GET(request:Request) {
       const [info,score]=await Promise.all([redis<string|null>('HGET',`${board}:info`,id),redis<string>('ZSCORE',board,id)]);
       me={...JSON.parse(info||'{}'),rank:rank+1,time:Number(score)/1000,mine:true};
     }
-    return Response.json({entries,total,me,more:offset+20<total},{headers:{'Cache-Control':'no-store'}});
+    return Response.json({entries,total,me,more:offset+20<total,window},{headers:{'Cache-Control':'no-store'}});
   } catch {return Response.json({error:'Leaderboard temporarily unavailable. Try again shortly.'},{status:503});}
 }
 const saveScript=`
 if not redis.call('GET',KEYS[1]) then return 0 end
 redis.call('DEL',KEYS[1])
-for i=2,3 do
+for i=2,#KEYS do
  local old=redis.call('ZSCORE',KEYS[i],ARGV[1])
  if not old or tonumber(ARGV[2])<tonumber(old) then
   redis.call('ZADD',KEYS[i],ARGV[2],ARGV[1])
   redis.call('HSET',KEYS[i]..':info',ARGV[1],ARGV[3])
-  if ARGV[4]~='' then redis.call('HSET',KEYS[i]..':replays',ARGV[1],ARGV[4]) else redis.call('HDEL',KEYS[i]..':replays',ARGV[1]) end
+  if i<=3 and ARGV[4]~='' then redis.call('HSET',KEYS[i]..':replays',ARGV[1],ARGV[4]) else redis.call('HDEL',KEYS[i]..':replays',ARGV[1]) end
  end
 end
 return 1`;
@@ -53,8 +57,9 @@ export async function POST(request:Request) {
     if(stored.player!==id || !validateRun(stored.selection,time,trace,(Date.now()-stored.started)/1000)) return Response.json({error:'This run could not be verified. Complete a new stage without resetting the car.'},{status:400});
     if(replay!==undefined && !replayAgrees(replay,stored.selection,stored.car,time,trace))return Response.json({error:'Replay does not match this run.'},{status:400});
     const board=`rally:${boardKey(stored.selection)}`;
-    const saved=await redis<number>('EVAL',saveScript,3,`rally:run:${run}`,board,`${board}:car${stored.car}`,id,Math.round(time*1000),JSON.stringify({name:name.trim(),car:stored.car}),replay ? JSON.stringify(replay) : "");
+    const window=boardWindow('weekly',new Date(stored.started));
+    const saved=await redis<number>('EVAL',saveScript,5,`rally:run:${run}`,board,`${board}:car${stored.car}`,periodBoardKey(board,window),periodBoardKey(`${board}:car${stored.car}`,window),id,Math.round(time*1000),JSON.stringify({name:name.trim(),car:stored.car}),replay ? JSON.stringify(replay) : "");
     if(!saved) return Response.json({error:'Run already submitted.'},{status:409});
-    return Response.json({saved:true});
+    return Response.json({saved:true,week:window.week});
   } catch {return Response.json({error:'Could not submit the time. Please try again.'},{status:503});}
 }

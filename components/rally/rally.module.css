@@ -312,3 +312,9 @@
  .overlay:has(.pauseCard) {justify-content:flex-start;padding:var(--safe-top) var(--safe-right) var(--safe-bottom) var(--safe-left);}
  .pauseCard {flex-shrink:0;margin:auto;max-height:none;overflow:visible;}
 }
+
+.boardPeriod {display:grid;gap:7px;}
+.boardPeriod > div {display:flex;gap:6px;}
+.boardPeriod button {min-height:44px;flex:1;padding:8px 16px;border:1px solid #738572;background:#293931;color:var(--cream);border-radius:4px;font-weight:800;}
+.boardPeriod button[aria-pressed=true] {background:#edc37a;color:#23332f;border-color:#edc37a;}
+.boardPeriod > small {color:#d0cab5;font-size:11px;line-height:1.5;}

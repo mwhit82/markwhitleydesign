@@ -1,13 +1,16 @@
 "use client";
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { cars, formatTime } from './data';
 import { isCircuit, lapCount, boardKey, trackName, weatherNames, timeOfDay, timeNames, type StageSelection } from './stages';
 import styles from './rally.module.css';
 import {reasonText, type Eligibility} from "./checkpoints";
 import type { Replay } from "./replay";
+import {BoardPeriodPicker,useBoardPeriod} from './board-period';
 export type RaceResult = Eligibility & {time:number;penalty?:number;trace:number[][];replay?:Replay;run:Promise<string|null>};
 type Entry = {rank:number;name:string;time:number;car:number;mine:boolean};
 export function Leaderboard({selection,result,onClose}:{selection:StageSelection;result:RaceResult|null;onClose:()=>void}) {
+  const {period,setPeriod,window,setWindow,rollover}=useBoardPeriod();
+  const generation=useRef(0);
   const [entries,setEntries]=useState<Entry[]>([]);
   const [me,setMe]=useState<Entry|null>(null);
   const [more,setMore]=useState(false);
@@ -21,23 +24,30 @@ export function Leaderboard({selection,result,onClose}:{selection:StageSelection
   const [revision,setRevision]=useState(0);
   const key=boardKey(selection);
   useEffect(()=>{try {setName(localStorage.getItem('rally-name')||'');} catch {}},[]);
-  const query=new URLSearchParams({stage:selection.stage,weather:selection.weather,reverse:String(selection.reverse),timeOfDay:timeOfDay(selection),track:String(selection.track??1),...(isCircuit(selection)?{laps:String(selection.laps??3),circuitVersion:'2'}:{}),...(filter?{car:filter}:{})}).toString();
+  const query=new URLSearchParams({period,stage:selection.stage,weather:selection.weather,reverse:String(selection.reverse),timeOfDay:timeOfDay(selection),track:String(selection.track??1),...(isCircuit(selection)?{laps:String(selection.laps??3),circuitVersion:'2'}:{}),...(filter?{car:filter}:{})}).toString();
   useEffect(()=>{
+    const version=++generation.current;
     const abort=new AbortController();
+    setWindow(null);
     setLoading(true); setError(''); setEntries([]); setMe(null); setMore(false);
     fetch(`/api/rally/leaderboard?${query}`,{signal:abort.signal}).then(async response=>{
       const data=await response.json(); if(!response.ok) throw new Error(data.error);
-      setEntries(data.entries);setMe(data.me);setMore(data.more);
+      if(version!==generation.current)return;
+      setEntries(data.entries);setMe(data.me);setMore(data.more);setWindow(data.window);
     }).catch(e=>{if(!abort.signal.aborted)setError(e.message || 'Could not load leaderboard.');}).finally(()=>{if(!abort.signal.aborted)setLoading(false);});
-    return ()=>abort.abort();
-  },[key,query,revision]);
+    return ()=>{abort.abort();generation.current=version+1;};
+  },[key,query,revision,rollover,setWindow]);
   const showMore=async()=>{
+    if(loading)return;
+    const version=generation.current;
     setLoading(true);setError('');
     try {
-      const response=await fetch(`/api/rally/leaderboard?${query}&offset=${entries.length}`);
-      const data=await response.json();if(!response.ok)throw new Error(data.error);
+      const response=await fetch(`/api/rally/leaderboard?${query}&offset=${entries.length}${period==='weekly'&&window?.week?`&week=${window.week}`:''}`);
+      const data=await response.json();if(version!==generation.current)return;
+      if(response.status===409){setRevision(r=>r+1);return;}
+      if(!response.ok)throw new Error(data.error);
       setEntries(current=>[...current,...data.entries]);setMe(data.me);setMore(data.more);
-    }catch(e){setError(e instanceof Error?e.message:'Could not load more times.');}finally{setLoading(false);}
+    }catch(e){if(version===generation.current)setError(e instanceof Error?e.message:'Could not load more times.');}finally{if(version===generation.current)setLoading(false);}
   };
   const submit=async(event:React.FormEvent)=>{
     event.preventDefault(); if(!result)return;
@@ -48,17 +58,18 @@ export function Leaderboard({selection,result,onClose}:{selection:StageSelection
       const response=await fetch('/api/rally/leaderboard',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...result,run,name:name.trim()})});
       const data=await response.json(); if(!response.ok)throw new Error(data.error);
       try{localStorage.setItem('rally-name',name.trim());}catch{}
-      setSubmitted(true);setMessage('Time submitted. Your fastest run appears below.');setRevision(r=>r+1);
+      setSubmitted(true);setMessage('Time submitted to the week your run started and to all time. Each board keeps your fastest run.');setRevision(r=>r+1);
     }catch(e){setMessage(e instanceof Error?e.message:'Could not submit time.');}finally{setBusy(false);}
   };
   const row=(entry:Entry)=><><b>#{entry.rank}</b><span>{entry.name}{entry.mine?' · You':''}<small>{cars[entry.car]?.name || 'Rally car'}</small></span><strong>{formatTime(entry.time)}</strong></>;
   return <div className={styles.leaderboard} data-rally-menu="true" role="dialog" aria-modal="true" aria-label="Stage leaderboard" onKeyDown={e=>{if(e.key==='Escape'){e.stopPropagation();onClose();}}}>
     <header><div><span className={styles.tag}>STAGE LEADERBOARD</span><h2>{trackName(selection)}</h2><p>{weatherNames[selection.weather]} · {timeNames[timeOfDay(selection)]} · {selection.reverse?'Reverse':'Forward'}{isCircuit(selection)?` · ${lapCount(selection)} laps`:''}</p></div><button autoFocus onClick={onClose} aria-label="Close leaderboard">Close ×</button></header>
+    <BoardPeriodPicker period={period} onChange={setPeriod} window={window}/>
     {result && !submitted && (result.eligible && result.trace.length ? <form onSubmit={submit}><label>Driver name<input value={name} onChange={e=>setName(e.target.value)} minLength={2} maxLength={20} required placeholder="Your name" autoComplete="nickname" /></label><button disabled={busy||loading||Boolean(error)} type="submit">{busy?'Submitting…':`Submit ${formatTime(result.time)}`}</button><small>Public name · best time per driver on this browser. Clearing cookies or switching devices creates a new driver.</small></form>:<p>{result.reasons.map(r=>reasonText[r]).join(" · ")}. Practice time: {formatTime(result.time)}. Complete a clean run to rank.</p>)}
     {message&&<p role="status">{message}</p>}
     <label className={styles.boardFilter}>Show<select value={filter} onChange={e=>setFilter(e.target.value)} disabled={loading}><option value="">All cars</option>{cars.map((c,i)=>(selection.stage==='kart'?i===8:i<8)&&<option value={i} key={c.name}>{c.name}</option>)}</select></label>
     {error&&<p role="status">{error} <button onClick={()=>setRevision(r=>r+1)}>Retry</button></p>}
-    <div className={styles.boardRows} tabIndex={0} aria-label="Ranked times"><ol>{entries.map(entry=><li key={entry.rank} className={entry.mine?styles.myRow:''}>{row(entry)}</li>)}</ol>{!loading&&!error&&!entries.length&&<p>No times yet. Set the first one.</p>}{loading&&<p role="status">Loading times…</p>}{more&&<button disabled={loading} onClick={showMore}>Show 20 more</button>}</div>
+    <div className={styles.boardRows} tabIndex={0} aria-label="Ranked times"><ol>{entries.map(entry=><li key={entry.rank} className={entry.mine?styles.myRow:''}>{row(entry)}</li>)}</ol>{!loading&&!error&&!entries.length&&<p>{period==='weekly'?'No times this week yet. Set the first one.':'No all-time records yet. Set the first one.'}</p>}{loading&&<p role="status">Loading times…</p>}{more&&<button disabled={loading} onClick={showMore}>Show 20 more</button>}</div>
     {me&&!entries.some(e=>e.mine)&&<div className={styles.myRank}><small>YOUR POSITION</small><div>{row(me)}</div></div>}
     {!me&&!loading&&!error&&<p>Complete and submit a run to see your position.</p>}
   </div>;
