@@ -328,7 +328,7 @@ export function RallyGame() {
           {(mode==='race'||mode==='countdown') && <button aria-label="Pause" title="Pause" onClick={()=>api.current?.pause()}><HudIcon name="pause"/></button>}
           <button disabled={!ready||audioBusy} aria-label={muted?'Enable sound':'Mute sound'} title={muted?'Enable sound':'Mute sound'} aria-pressed={!muted} onClick={toggleSound}><HudIcon name={muted?'muted':'sound'}/></button>
           <button aria-label={expanded?'Exit game view':'Fullscreen'} title={expanded?'Exit game view':'Fullscreen'} aria-pressed={expanded} onClick={toggleFullscreen}><HudIcon name={expanded?'contract':'expand'}/></button>
-          {(mode==='race'||mode==='countdown') && ghostSource!=='off' && <button aria-label={ghostShown?'Hide ghost':'Show ghost'} title="Ghost · G" aria-pressed={ghostShown} onClick={()=>api.current?.toggleGhost()}><HudIcon name="ghost"/></button>}
+          {!inRoom && (mode==='race'||mode==='countdown') && ghostSource!=='off' && <button aria-label={ghostShown?'Hide ghost':'Show ghost'} title="Ghost · G" aria-pressed={ghostShown} onClick={()=>api.current?.toggleGhost()}><HudIcon name="ghost"/></button>}
         </div>
         {installHelp && (
           <div
@@ -494,7 +494,7 @@ export function RallyGame() {
         )}
         {mode === "countdown" && (
           <div className={styles.count}>
-            {stats.count > 3 ? <span style={{fontSize:28}}>TO THE GRID</span> : stats.count > 0 ? stats.count : "GO!"}
+            {stats.count > 3 ? <span style={{fontSize:28}}>{selection.stage==='nyc'?'TO THE GRID':'GET READY'}</span> : stats.count > 0 ? stats.count : "GO!"}
           </div>
         )}
         {mode === "paused" && (

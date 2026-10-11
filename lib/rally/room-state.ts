@@ -3,6 +3,7 @@ import type {RaceRoom} from '../../components/rally/room-types';
 import {validateRun} from './validation';
 export function sweepRoom(r:RaceRoom,now:number){
  for(const m of r.members)if(now-m.seen>20000&&m.status!=='finished'&&m.status!=='retired')m.status='disconnected';
+ if(r.phase==='lobby')r.members=r.members.filter(m=>m.status!=='retired'&&m.status!=='disconnected');
  if(!r.members.some(m=>m.id===r.host&&m.status!=='disconnected'&&m.status!=='retired'))r.host=r.members.find(m=>m.status!=='disconnected'&&m.status!=='retired')?.id??r.host;
  if(r.phase==='racing'&&(r.members.every(m=>['finished','retired','disconnected'].includes(m.status))||now-r.startAt>600000))r.phase='results';
 }

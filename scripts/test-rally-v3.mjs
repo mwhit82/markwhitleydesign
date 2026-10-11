@@ -66,3 +66,11 @@ const {paceNotes}=await import(await moduleUrl(resolve('components/rally/codrive
 test('NYC pace calls match the route turn direction on both laps',()=>{
  for(const reverse of [false,true]){const s={stage:'nyc',weather:'clear',reverse,circuitVersion:2},points=S.stagePoints(s);for(const n of paceNotes(s)){const a=points[n.index-14],b=points[n.index],c=points[n.index+14],turn=(b.x-a.x)*(c.z-b.z)-(b.z-a.z)*(c.x-b.x);assert.equal(n.clips[0].endsWith('right'),turn>0,`${reverse}:${n.index}:${n.text}`);}}
 });
+const {environmentScenery}=await import(await moduleUrl(resolve('components/rally/v3-scenery.ts')));
+test('new static scenery uses bounded instance batches',()=>{
+ for(const stage of ['kart','nyc']){const s={stage,weather:'clear',reverse:false,circuitVersion:2},g=environmentScenery(s,S.stagePoints(s),()=>false);assert.ok(g.children.length<60);assert.ok(g.children.every(o=>o.isInstancedMesh));console.log(stage,'static batches',g.children.length);}
+});
+
+test('cockpit hides the body while keeping night headlights active',()=>{
+ const c=new DriverCamera(),v=new T.Group(),body=new T.Mesh(new T.BoxGeometry(),new T.MeshBasicMaterial()),lamp=new T.SpotLight(),base=new T.PerspectiveCamera();v.add(body,lamp);c.enabled=true;c.update(1,v,0,0,base,true,true,390,844,false);assert.equal(body.visible,false);assert.equal(lamp.visible,true);assert.equal(v.visible,true);c.update(1,v,0,0,base,false,true,390,844,false);assert.equal(body.visible,true);c.dispose();
+});

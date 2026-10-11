@@ -25,5 +25,8 @@ export function environmentScenery(s:StageSelection,points:T.Vector3[],reserved:
    const q=p.clone().addScaledVector(n,10);if(clear(q.x,q.z,8)){box(.25,6,.25,'#45504d',q.x,2.7,q.z);const lamp=box(2,.25,.8,'#f4dc9b',q.x,5.8,q.z);lamp.material.emissive.set('#f4dc9b');lamp.material.emissiveIntensity=1;}}
   for(const [x,z] of [[-74,-20],[76,25],[30,73]])if(clear(x,z,9)){box(2.5,.8,5,'#dcb941',x,.7,z);box(2,.7,2.5,'#c5a847',x,1.4,z);box(1.8,.4,2,'#465959',x,1.55,z+.1);}
  }
+ // Static pieces share instance batches, keeping the countryside cheaper than hundreds of separate draws.
+ const batches=new Map<string,T.Mesh[]>();for(const child of group.children){if(!(child instanceof T.Mesh))continue;const key=child.geometry.uuid+':'+(child.material as T.Material).uuid;const batch=batches.get(key)??[];batch.push(child);batches.set(key,batch);}
+ group.clear();for(const batch of batches.values()){const first=batch[0],mesh=new T.InstancedMesh(first.geometry,first.material,batch.length);batch.forEach((piece,i)=>{piece.updateMatrix();mesh.setMatrixAt(i,piece.matrix);});mesh.castShadow=batch.some(p=>p.castShadow);mesh.receiveShadow=batch.some(p=>p.receiveShadow);mesh.computeBoundingSphere();group.add(mesh);}
  return group;
 }

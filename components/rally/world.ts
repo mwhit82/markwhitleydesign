@@ -1044,7 +1044,7 @@ export class RallyWorld {
         rpm: Math.round(this.rpm / 50) * 50,
         limited: this.limited,
         progress: ((this.lap-1)+this.checkpoint / this.checkpoints.length)/lapCount(this.selection),
-        lapProgress:this.mode==='celebrating'||this.mode==='finished'?1:kartLapProgress(this.routeProgress(this.vehicle.position),this.checkpoint,this.checkpoints),
+        lapProgress:this.mode==='countdown'?0:this.mode==='celebrating'||this.mode==='finished'?1:kartLapProgress(this.routeProgress(this.vehicle.position),this.checkpoint,this.checkpoints),
         lap:this.lap,lastLap:this.lapTimes.at(-1)??0,
         count: Math.ceil(this.countdown),
       });
