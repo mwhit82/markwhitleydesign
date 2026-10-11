@@ -27,3 +27,14 @@ test('limiter cuts and restores power; lift-off drops revs', () => {
   const lift=engine(speed,0,rpm,true,.5);
   assert.ok(lift.rpm < rpm && !lift.limited);
 });
+
+test('faster kart accelerates sooner and sustains a higher bounded speed',()=>{
+ function simulate(power,kart){let speed=0,rpm=950,limited=false,atTwo=0,total=0;for(let i=0;i<1800;i++){
+ ({rpm,limited}=engine(speed,1,rpm,limited,1/60,kart));
+ speed=Math.min(kart?28:25,(speed+(limited?0:power/60))*Math.exp(-.12/60));if(i===119)atTwo=speed;if(i>=1200)total+=speed;
+ assert.ok(Number.isFinite(speed)&&speed<=28&&rpm<=7400);
+ }return {speed:total/600,atTwo};}
+ const old=simulate(12,false),next=simulate(14.4,true);
+ assert.ok(next.atTwo>old.atTwo*1.1);assert.ok(next.speed>old.speed*1.08);
+ assert.ok(28*.6<=27*.6+1.2,'existing server trace tolerance accepts new speed');
+});

@@ -280,7 +280,7 @@ export function RallyGame() {
     <div className={styles.page}>
       <div className={styles.heading}>
         <div>
-          <p className={styles.eyebrow}>MARK WHITLEY / POCKET RALLY V2.7.2</p>
+          <p className={styles.eyebrow}>MARK WHITLEY / POCKET RALLY V2.7.3</p>
           <h1>
             POCKET<span>RALLY.</span>
           </h1>

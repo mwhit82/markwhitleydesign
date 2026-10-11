@@ -6,8 +6,8 @@ export function handling(speed: number, steer: number, grip: number, hand: boole
   };
 }
 
-export function engine(speed: number, throttle: number, rpm: number, limited: boolean, dt: number) {
-  const target = Math.min(7400, 950 + Math.abs(speed) * 250 + throttle * 500);
+export function engine(speed: number, throttle: number, rpm: number, limited: boolean, dt: number, kart = false) {
+  const target = Math.min(7400, 950 + Math.abs(speed) * (kart ? 220 : 250) + throttle * 500);
   const next = rpm + (target - rpm) * (1 - Math.exp(-dt * 8));
   return { rpm: next, limited: throttle > 0 && (limited ? next > 6900 : next >= 7200) };
 }

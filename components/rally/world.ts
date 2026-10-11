@@ -856,7 +856,7 @@ export class RallyWorld {
         this.vehicle.position.z,
       );
       const tuning = handling(speed, steer, c.grip * surfaceGrip(this.selection), hand, road.distance > 5.6);
-      const motor = engine(speed, throttle, this.rpm, this.limited, dt);
+      const motor = engine(speed, throttle, this.rpm, this.limited, dt, c.shape === "kart");
       this.rpm = motor.rpm;
       this.limited = motor.limited;
       this.angle -=
@@ -867,12 +867,13 @@ export class RallyWorld {
         dt;
       const longitudinal = forward.clone().multiplyScalar(speed);
       this.velocity.lerp(longitudinal, 1 - Math.exp(-tuning.grip * dt));
-      const acceleration = (this.limited ? 0 : throttle * c.power) - brake * (speed > 1 ? 25 : 8);
+      const acceleration = (this.limited ? 0 : throttle * c.power) - brake * (speed > 1 ? (c.shape === "kart" ? 28 : 25) : 8);
       this.velocity.addScaledVector(forward, acceleration * dt);
       this.velocity.multiplyScalar(
         Math.exp(-tuning.drag * dt),
       );
-      if (this.velocity.length() > 25) this.velocity.setLength(25);
+      const maxSpeed=c.shape === "kart" ? 28 : 25;
+      if (this.velocity.length() > maxSpeed) this.velocity.setLength(maxSpeed);
       this.vehicle.position.addScaledVector(this.velocity, dt);
       for (const obstacle of this.obstacles) {
         const dx = this.vehicle.position.x - obstacle.x,
