@@ -1,0 +1,32 @@
+Blender trial V2 — 11 October 2026
+
+Separate preview: /playground/rally/clay-study
+Original comparison: /playground/rally/clay-study/original
+Editable source: art/rally/clay-study-v2.blend
+Regenerate: Blender background mode with scripts/blender-clay-study-v2.py
+Runtime assets: public/rally/trial/v2/{car.glb,environment.glb,terrain.json}
+
+The terrain JSON is the shared source for basins, bumps, wheel spacing and lane bounds.
+Blender and browser use the same analytic height field. Front is local -Z in glTF.
+Four wheel roots and six lamp meshes remain independent; static meshes batch by material.
+Ground colour, roughness and normals are packed into the environment GLB.
+
+Rendering: one shadowed directional light, two unshadowed spotlights, fixed environment reflection.
+Pools: 320 rain streaks (80 with reduced motion), 96 splash droplets and 32 ripples.
+Reduced motion suppresses splash droplets and automatic camera following.
+Water reflections are a static environment approximation, not real-time scene reflections.
+Suspension is a four-contact visual approximation, not a full vehicle physics simulation.
+
+Approximate asset download: 3.27 MB vs original roadside study 0.94 MB.
+Observed desktop Chrome: 65–68 draws, 162k rendered triangles including shadows,
+approximately 119–120 FPS on this Mac at the tested view. Not a mobile performance result.
+
+Verification: six focused tests plus 65 existing rally tests pass.
+Browser checks: forward/reverse keyboard and held pointer controls, release braking,
+reset, day/clear, day/rain, night/clear, night/rain, portrait 390x844,
+landscape 844x390 and tablet 820x1180 control layout.
+Input cancellation, blur/tab-hidden cleanup and reduced-motion paths inspected in code.
+Physical iPhone/iPad testing remains outstanding.
+
+Only trial components, assets and source are changed. Production game models, racing,
+records, leaderboard, ghosts and multiplayer are unchanged.
