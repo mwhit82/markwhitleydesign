@@ -17,7 +17,15 @@ export function FriendRaces({world,selection,car,ready,mode,onSetup,onActive}:{w
  useEffect(()=>{if(!hasRoom)return;const timer=setInterval(()=>refreshStandings(n=>n+1),1000);return()=>clearInterval(timer);},[hasRoom]);
  const callbacks=useRef({world,onSetup,onActive});callbacks.current={world,onSetup,onActive};
  const send=(payload:Record<string,unknown>)=>{if(socket.current?.readyState===WebSocket.OPEN)socket.current.send(JSON.stringify({version:1,...payload}));};
- const leave=()=>{send({type:'leave'});generation.current++;if(retry.current)clearTimeout(retry.current);socket.current?.close();session.current=null;pendingFinish.current=null;setRoom(null);setConnected(false);setLiveMenu(false);setOpen(false);attempt.current=-1;const w=callbacks.current.world();if(w){w.roomJoined=false;w.leaveLive();}callbacks.current.onActive(false);try{sessionStorage.removeItem('rally-room');}catch{}};
+ const leave=()=>{
+  const departing=socket.current,id=session.current?.id;
+  if(departing?.readyState===WebSocket.OPEN){
+   // Keep the function alive until Redis confirms retirement; closing immediately can cancel the write.
+   const close=()=>{clearTimeout(deadline);departing.removeEventListener('message',ack);departing.close();};
+   const ack=(event:MessageEvent)=>{try{const m=JSON.parse(event.data);if(m.type==='room'){const seat=m.room.members.find((p:{id:string;status:string})=>p.id===id);if(!seat||seat.status==='retired')close();}}catch{}};
+   const deadline=setTimeout(close,5000);departing.addEventListener('message',ack);send({type:'leave'});
+  }else departing?.close();
+  generation.current++;if(retry.current)clearTimeout(retry.current);socket.current=null;session.current=null;pendingFinish.current=null;setRoom(null);setConnected(false);setLiveMenu(false);setOpen(false);attempt.current=-1;const w=callbacks.current.world();if(w){w.roomJoined=false;w.leaveLive();}callbacks.current.onActive(false);try{sessionStorage.removeItem('rally-room');}catch{}};
  const connect=(entry:Session)=>{
   session.current=entry;const rev=++generation.current;setRoom(entry.room);setOpen(true);callbacks.current.onActive(true);const joined=callbacks.current.world();if(joined)joined.roomJoined=true;
   const boot=()=>{

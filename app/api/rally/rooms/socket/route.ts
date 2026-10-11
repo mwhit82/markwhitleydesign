@@ -25,7 +25,7 @@ export async function GET(request:Request){
      if(previous&&now-previous.sent<1000&&Math.hypot(p.x-previous.x,p.z-previous.z)>32*(now-previous.sent)/1000+3&&!m.recovered)return;
      previous={id:member,x:p.x,z:p.z,heading:p.heading,speed:p.speed,progress:p.progress,sent:now};await db.publish(`rally-room:${code}`,{type:'pose',pose:previous});return;
     }
-    if(busy||Date.now()-lastControl<150)return;busy=true;lastControl=Date.now();
+    if((busy||Date.now()-lastControl<150)&&m.type!=='leave')return;busy=true;lastControl=Date.now();
     try{await changeRoom(code,r=>{
      if(!authenticate(r,member,token))throw Error('Expired membership');roomAction(r,member,m,Date.now());
     });}finally{busy=false;}

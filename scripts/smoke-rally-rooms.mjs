@@ -35,5 +35,7 @@ try{
  await wait(()=>clients.every(c=>c.room.phase==='results'),'results');assert.ok(clients[0].room.members.every(m=>m.practice&&m.status==='finished'));
  const frozen=clients[0].room.members[0].time;send(clients[0],{type:'finish',attempt:1,time:1,trace:[],practice:true});await pause(350);assert.equal(clients[0].room.members[0].time,frozen);
  send(clients[0],{type:'again'});await wait(()=>clients.every(c=>c.room.phase==='lobby'),'rematch');await pause(250);send(clients[0],{type:'leave'});await wait(()=>clients[1].room.host===clients[1].entry.id,'host migration');
- console.log('PASS: four clients, capacity, countdown, movement, reconnect, version rejection, practice finish, deduplication, rematch and host migration');
+ clients[1].ws.close();await wait(()=>clients[2].room.host===clients[2].entry.id,'host disconnect expiry',26000);
+ await assert.rejects(()=>connect(clients[1].entry),/membership|expired/i);
+ console.log('PASS: four clients, capacity, countdown, movement, reconnect, expiry, version rejection, practice finish, deduplication, rematch and host migration');
 }finally{for(const c of clients){if(c.ws.readyState===1)send(c,{type:'leave'});setTimeout(()=>c.ws.close(),300);}}
