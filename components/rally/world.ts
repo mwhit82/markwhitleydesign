@@ -6,7 +6,7 @@ import {paceNotes,PaceScheduler} from "./codriver";
 import * as T from "three";
 import {roadRelief} from "./road-relief";
 import {StageScenery,elevationPose,rampHeight} from "./scenery";
-import {SurfaceEffects,createMud,createSnow} from "./surface-effects";
+import {SurfaceEffects,createMud,createSnow,createKartCoating} from "./surface-effects";
 import {RallyHaptics,defaultControls,type ControlSettings} from "./controls";
 import {lighting,WeatherParticles} from "./conditions";
 import {CheckpointEffects} from "./checkpoint-effects";
@@ -415,7 +415,7 @@ export class RallyWorld {
       const mesh = new T.Mesh(
         new T.IcosahedronGeometry(0.3, 0),
         new T.MeshStandardMaterial({
-          color: weather === "rain" ? "#adbdc4" : stage.dust,
+          color: weather === "rain" ? "#adbdc4" : weather === "snow" ? "#e7eeee" : stage.dust,
           transparent: true,
           opacity: 0,
           depthWrite: false,
@@ -554,8 +554,8 @@ export class RallyWorld {
     } catch {
       this.best = null;
     }
-    this.mud=this.selected===8?null:createMud(this.selection.stage==="alpine"?"#8b8b79":this.selection.stage==="desert"?"#a17c47":"#6b5035",[5,6,7].includes(this.selected)?3.65:this.selected===4?4.5:4.1);if(this.mud)this.vehicle.add(this.mud);
-    this.snow=this.selected===8?null:createSnow([5,6,7].includes(this.selected)?3.65:this.selected===4?4.5:4.1);if(this.snow)this.vehicle.add(this.snow);
+    this.mud=this.selected===8?createKartCoating(false):createMud(this.selection.stage==="alpine"?"#8b8b79":this.selection.stage==="desert"?"#a17c47":"#6b5035",[5,6,7].includes(this.selected)?3.65:this.selected===4?4.5:4.1);if(this.mud)this.vehicle.add(this.mud);
+    this.snow=this.selected===8?createKartCoating(true):createSnow([5,6,7].includes(this.selected)?3.65:this.selected===4?4.5:4.1);if(this.snow)this.vehicle.add(this.snow);
     this.callbacks.best(this.best);
     this.resetPosition();if(this.selection.stage==='nyc'&&this.mode==='garage')this.vehicle.position.copy(this.atmosphere.layout.center);
     void this.prepareGhost();
@@ -951,9 +951,9 @@ export class RallyWorld {
         if(this.lap<lapCount(this.selection)){this.lap++;this.checkpoint=0;this.circuitFinishArmed=false;this.checkpointEffects.reset();this.pace=new PaceScheduler(paceNotes(this.selection));}
         else this.completeRun();
       }
-      if (Math.abs(speed) > 4 && this.selection.stage!=="kart") {
+      if (Math.abs(speed) > 4 && (this.selection.stage!=="kart" || ["rain","snow"].includes(this.selection.weather))) {
         const sliding = hand || Math.abs(steer) > 0.5;
-        const tarmac = this.selection.stage === "mountain" && this.selection.weather !== "rain";
+        const tarmac = (this.selection.stage === "mountain" || this.selection.stage === "nyc") && this.selection.weather !== "rain";
         this.dustClock += dt;
         if (this.dustClock >= 1 / 24) {
           this.dustClock %= 1 / 24;

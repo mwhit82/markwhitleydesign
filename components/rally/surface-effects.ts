@@ -94,8 +94,8 @@ export function createMud(color:string,length=4.1){
 }
 
 export function surfaceAccumulation(s:StageSelection,dt:number,speed:number,mud:number,snow:number){
- if(dt<=0||speed<=1||s.stage==='kart')return {mud,snow};
- const snowy=s.stage==='alpine',wet=s.weather==='rain';
+ if(dt<=0||speed<=1||(s.stage==='kart'&&s.weather!=='rain'&&s.weather!=='snow'))return {mud,snow};
+ const snowy=s.stage==='alpine'||s.weather==='snow',wet=s.weather==='rain';
  return {mud:Math.min(1,mud+dt*speed*(snowy?.00012:s.stage==='mountain'?(wet?.0007:.00015):wet?.0025:.0015)),snow:Math.min(1,snow+dt*(snowy?(s.weather==='snow'?.018:.007):0))};
 }
 export function createSnow(length=4.1){
@@ -108,4 +108,10 @@ export function createSnow(length=4.1){
   else {const side=i%2?1:-1;o.position.set(side*1.09,.88+(i%3)*.12,(i%4<2?1:-1)*1.3);o.scale.set(.035,.14,.24);}
   o.rotation.set(0,rand()*3,0);o.updateMatrix();mesh.setMatrixAt(i,o.matrix);
  }return mesh;
+}
+
+/** Small deposits on kart nose and side pods; helmet, lamps and steering remain clear. */
+export function createKartCoating(snow:boolean){
+ const mesh=new T.InstancedMesh(new T.IcosahedronGeometry(1,0),new T.MeshStandardMaterial({color:snow?'#edf1e9':'#6b5840',roughness:1,transparent:true,opacity:0,depthWrite:false}),24);mesh.name=snow?'car-snow':'car-mud';const o=new T.Object3D();
+ for(let i=0;i<24;i++){if(i<12)o.position.set((i%4-1.5)*.32,.86,1+(Math.floor(i/4)-1)*.2);else o.position.set(i%2?.85:-.85,.94,((i-12)%6-2.5)*.24);o.scale.set(.14,.025,.12);o.updateMatrix();mesh.setMatrixAt(i,o.matrix);}return mesh;
 }
