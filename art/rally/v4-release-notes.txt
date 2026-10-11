@@ -1,0 +1,9 @@
+Pocket Rally V4
+
+Nine versioned GLBs, 0.31-0.60 MB each; editable production-v4.blend and Blender generator. Environment textures generated locally. Trial retained separately.
+
+76 regression tests and production build pass. Geometry and lighting checked across 408 configurations. Browser inspection covers all vehicles, six environments, NYC night rain/cockpit and phone/tablet/desktop layouts. Repeated selection retains stable texture counts. Shared-resource cleanup and stale/failed asset requests tested.
+
+Desktop forest race start: baseline 774 draws, 129842 triangles, 641 geometries, 7 textures; V4 314 draws, 201109 triangles, 223 geometries, 16 textures. Both about 120 fps. Final warm GPU samples: baseline 1.40 ms, V4 1.24-1.56 ms; earlier V4 samples reached 2.63 ms. Spot measurements do not establish the 15% target across devices/routes.
+
+Physical iPhone, iPad, controller and four-device race checks remain outstanding. No public API or record-key changes. Rollback baseline: 47dda12. Unrelated trial edits excluded.

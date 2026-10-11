@@ -12,7 +12,7 @@ export class DriverCamera{
  update(dt:number,vehicle:T.Group,angle:number,steer:number,base:T.Camera,active:boolean,reduced:boolean,w:number,h:number,kart:boolean){
   const wanted=active&&this.enabled;this.blend=reduced?(wanted?1:0):T.MathUtils.clamp(this.blend+(wanted?1:-1)*dt/.45,0,1);
   if(!this.blend){for(const [mesh,visible] of this.hidden)mesh.visible=visible;this.hidden.clear();vehicle.visible=true;return base;}
-  const eye=vehicle.position.clone().add(new T.Vector3(0,kart?1.72:1.85,.15).applyAxisAngle(new T.Vector3(0,1,0),angle));
+  const anchor=vehicle.getObjectByName('cockpit_anchor');const eye=anchor?anchor.getWorldPosition(new T.Vector3()):vehicle.position.clone().add(new T.Vector3(0,kart?1.72:1.85,.15).applyAxisAngle(new T.Vector3(0,1,0),angle));
   const destination=new T.Quaternion().setFromEuler(new T.Euler(0,angle+Math.PI,0));
   const t=this.blend*this.blend*(3-2*this.blend);this.camera.position.copy(base.position).lerp(eye,t);this.camera.quaternion.copy(base.quaternion).slerp(destination,t);
   this.camera.aspect=w/Math.max(h,1);this.camera.updateProjectionMatrix();this.cockpit.visible=this.blend>.96;this.cockpit.children[0].visible=!kart;this.wheel.rotation.z=steer*.6;vehicle.visible=true;if(this.blend>=.8){vehicle.traverse(o=>{if(o instanceof T.Mesh&&!this.hidden.has(o)){this.hidden.set(o,o.visible);o.visible=false;}});}else{for(const [mesh,visible] of this.hidden)mesh.visible=visible;this.hidden.clear();}

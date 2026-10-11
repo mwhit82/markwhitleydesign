@@ -1,3 +1,4 @@
+import {RoundedBoxGeometry} from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
 import {internationalFlags} from './rally-effects';
 import {kartFinishLayout} from "./kart-venue";
 import type {StageSelection} from "./stages";
@@ -53,7 +54,7 @@ export class Atmosphere {
   const {center,angle}=this.layout;
   const mat=(color:string)=>new T.MeshStandardMaterial({color,roughness:.9});
   const box=(w:number,h:number,d:number,color:string,x:number,y:number,z:number,parent=this.group)=>{
-   const mesh=new T.Mesh(new T.BoxGeometry(w,h,d),mat(color));mesh.position.set(x,y,z);mesh.receiveShadow=true;parent.add(mesh);return mesh;
+   const mesh=new T.Mesh(new RoundedBoxGeometry(w,h,d,1,Math.min(.15,w*.15,h*.15,d*.15)),mat(color));mesh.position.set(x,y,z);mesh.receiveShadow=true;parent.add(mesh);return mesh;
   };
   const tent=new T.Group();tent.position.copy(center);tent.rotation.y=angle;this.group.add(tent);
   box(17,.12,18,kart||city?'#4e555b':'#cfbd92',0,.02,0,tent);
@@ -73,9 +74,9 @@ export class Atmosphere {
   }
   // Shared geometry/material and instancing keep crowd and confetti draw calls bounded.
   this.people=new T.InstancedMesh(new T.SphereGeometry(.5,7,5),mat('#f2d3ad'),72*3);
-  this.arms=new T.InstancedMesh(new T.BoxGeometry(.2,.7,.22),mat('#416b85'),144);
+  this.arms=new T.InstancedMesh(new T.CapsuleGeometry(.11,.48,2,5),mat('#416b85'),144);
   this.flashes=new T.InstancedMesh(new T.SphereGeometry(.2,5,3),new T.MeshBasicMaterial({color:'#fffbdc'}),24);
-  const camera=this.cameras=new T.InstancedMesh(new T.BoxGeometry(.48,.32,.28),mat('#343d3b'),24);
+  const camera=this.cameras=new T.InstancedMesh(new RoundedBoxGeometry(.48,.32,.28,1,.045),mat('#343d3b'),24);
   const colors=['#dd593c','#3478a0','#e5b93f','#677f53','#a572a1','#eee9d8'];
   let count=0,photoCount=0;
   for(const [section,index] of [90,210,340,480,560,600,640,640,640,640,640,640].entries()) {

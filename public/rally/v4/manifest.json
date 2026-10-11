@@ -1,0 +1,52 @@
+{
+  "version": 4,
+  "forward": "+Z",
+  "cars": [
+    {
+      "id": 0,
+      "file": "car-0.glb",
+      "bytes": 594412
+    },
+    {
+      "id": 1,
+      "file": "car-1.glb",
+      "bytes": 326112
+    },
+    {
+      "id": 2,
+      "file": "car-2.glb",
+      "bytes": 325056
+    },
+    {
+      "id": 3,
+      "file": "car-3.glb",
+      "bytes": 326816
+    },
+    {
+      "id": 4,
+      "file": "car-4.glb",
+      "bytes": 323240
+    },
+    {
+      "id": 5,
+      "file": "car-5.glb",
+      "bytes": 323868
+    },
+    {
+      "id": 6,
+      "file": "car-6.glb",
+      "bytes": 323860
+    },
+    {
+      "id": 7,
+      "file": "car-7.glb",
+      "bytes": 323864
+    },
+    {
+      "id": 8,
+      "file": "car-8.glb",
+      "bytes": 308396
+    }
+  ],
+  "environment": "instanced procedural clay with shared generated textures"
+}

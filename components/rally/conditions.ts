@@ -3,7 +3,7 @@ import {timeOfDay,type StageSelection} from './stages';
 export function lighting(selection:StageSelection){
  const day=timeOfDay(selection),wet=selection.weather==='rain'||selection.weather==='snow',fog=selection.weather==='fog'||selection.weather==='haze';
  const presets={
-  midday:{sky:'#c6d7d5',fill:'#fff0d1',sun:'#fff0d3',ground:'#597968',ambient:2.6,power:3.2,position:[-35,75,25],lamps:0},
+  midday:{sky:'#c6d7d5',fill:'#ffe2bc',sun:'#ffd3a0',ground:'#597968',ambient:1.5,power:3.2,position:[-45,50,25],lamps:0},
   sunrise:{sky:'#eab9ba',fill:'#ffe7dd',sun:'#ffbf8b',ground:'#747ba0',ambient:2,power:2.4,position:[-65,27,-40],lamps:25},
   sunset:{sky:'#d79878',fill:'#ffe7d0',sun:'#ff9a51',ground:'#6b6684',ambient:1.9,power:2.6,position:[65,24,30],lamps:30},
   night:{sky:'#101d35',fill:'#9cbbe9',sun:'#9cbbe9',ground:'#283d62',ambient:.65,power:.5,position:[-35,75,25],lamps:65},

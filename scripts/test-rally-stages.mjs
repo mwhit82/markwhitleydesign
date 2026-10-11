@@ -3,7 +3,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import ts from 'typescript';
-const compile=s=>ts.transpileModule(s,{compilerOptions:{module:ts.ModuleKind.ESNext,target:ts.ScriptTarget.ES2020}}).outputText;
+const compile=s=>ts.transpileModule(s,{compilerOptions:{module:ts.ModuleKind.ESNext,target:ts.ScriptTarget.ES2020}}).outputText.replace("from 'three/examples/jsm/geometries/RoundedBoxGeometry.js'",`from '${import.meta.resolve('three/examples/jsm/geometries/RoundedBoxGeometry.js')}'`);
 const uri=s=>`data:text/javascript;base64,${Buffer.from(s).toString('base64')}`;
 const stageCode=compile(await readFile(new URL('../components/rally/stages.ts',import.meta.url),'utf8')).replace("from 'three'",`from '${import.meta.resolve('three')}'`);
 const stageUri=uri(stageCode);

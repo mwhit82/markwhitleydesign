@@ -49,6 +49,10 @@ export function RallyGame() {
   const [error, setError] = useState("");
   const [muted, setMuted] = useState(false);
   const [replayEnabled,setReplayEnabled]=useState(true);
+  const [graphics,setGraphics]=useState<'auto'|'high'|'low'>('auto');
+  const [miniatureFocus,setMiniatureFocus]=useState(true);
+  const changeGraphics=()=>{const next=graphics==='auto'?'high':graphics==='high'?'low':'auto';setGraphics(next);api.current?.setGraphics(next,miniatureFocus);};
+  const changeFocus=()=>{setMiniatureFocus(!miniatureFocus);api.current?.setGraphics(graphics,!miniatureFocus);};
   const [screenWeather,setScreenWeather]=useState(true);
   useEffect(()=>{try{setScreenWeather(localStorage.getItem("rally-screen-weather")!=="off");}catch{}},[]);
   const toggleScreenWeather=()=>{setScreenWeather(on=>{try{localStorage.setItem("rally-screen-weather",on?"off":"on");}catch{}return !on;});};
@@ -118,6 +122,7 @@ export function RallyGame() {
         setGhostSource(api.current.ghostSource);setSelection({...api.current.selection});
         setCodriver(api.current.codriverEnabled);setDriverView(api.current.driverCamera.enabled);
         setMuted(api.current.muted);setReplayEnabled(api.current.replayEnabled);
+        setGraphics(api.current.miniature.graphics);setMiniatureFocus(api.current.miniature.focus);
         setReady(true);
       })
       .catch(() =>
@@ -288,7 +293,7 @@ export function RallyGame() {
     <div className={styles.page}>
       <div className={styles.heading}>
         <div>
-          <p className={styles.eyebrow}>MARK WHITLEY / POCKET RALLY V3.1</p>
+          <p className={styles.eyebrow}>MARK WHITLEY / POCKET RALLY V4</p>
           <h1>
             POCKET<span>RALLY.</span>
           </h1>
@@ -433,6 +438,7 @@ export function RallyGame() {
                 <button onClick={e=>openOptions('direction',e.currentTarget)}><small>ROUTE</small><strong>{selection.reverse?'Reverse':'Forward'}</strong><span><HudIcon name="next"/></span></button>
                 <button onClick={e=>openOptions('ghost',e.currentTarget)}><small>GHOST</small><strong>{ghostSource==='off'?'Off':ghostSource==='personal'?'My best':'Leaderboard'}</strong><span><HudIcon name="next"/></span></button>
                 <button onClick={toggleCamera} aria-pressed={driverView}><small><HudIcon name="camera"/> CAMERA</small><strong>{driverView?"Driver seat":"Isometric"}</strong></button><button aria-pressed={codriver} disabled={selection.stage==='kart'} onClick={toggleCodriver}><small><HudIcon name="headset"/> CO-DRIVER</small><strong>{selection.stage==='kart'?'Rally only':codriver?'On':'Off'}</strong></button>
+                <button onClick={changeGraphics} aria-label={`Graphics: ${graphics}. Change quality`}><small><HudIcon name="screen"/> GRAPHICS</small><strong>{graphics==='auto'?'Auto':graphics==='high'?'High':'Low'}</strong></button><button aria-pressed={miniatureFocus} onClick={changeFocus}><small><HudIcon name="camera"/> MINIATURE FOCUS</small><strong>{miniatureFocus?'On':'Off'}</strong></button>
                 <button aria-pressed={screenWeather} onClick={toggleScreenWeather}><small><HudIcon name="screen"/> SCREEN WEATHER</small><strong>{screenWeather?"On":"Off"}</strong></button>
               </div>
               <small className={styles.ghostStatus} role="status">{ghostStatus!=="Ghost off"&&ghostStatus!=="My best"?ghostStatus:""}</small>
@@ -517,6 +523,7 @@ export function RallyGame() {
                 <button disabled={audioBusy} aria-pressed={!muted} onClick={toggleSound}><HudIcon name={muted?'muted':'sound'}/>{muted?'Sound off':'Sound on'}</button>
                 <button disabled={ghostSource==='off'} aria-pressed={ghostShown&&ghostSource!=='off'} onClick={()=>api.current?.toggleGhost()}><HudIcon name="ghost"/>Ghost {ghostShown&&ghostSource!=='off'?'on':'off'}</button>
                 <button onClick={toggleCamera} aria-pressed={driverView}><HudIcon name="camera"/>Camera: {driverView?"Driver seat":"Isometric"}</button><button aria-pressed={codriver} disabled={selection.stage==='kart'} onClick={toggleCodriver}><HudIcon name="headset"/>Co-driver {codriver?'on':'off'}</button>
+                <button onClick={changeGraphics} aria-label={`Graphics: ${graphics}. Change quality`}><small><HudIcon name="screen"/> GRAPHICS</small><strong>{graphics==='auto'?'Auto':graphics==='high'?'High':'Low'}</strong></button><button aria-pressed={miniatureFocus} onClick={changeFocus}><small><HudIcon name="camera"/> MINIATURE FOCUS</small><strong>{miniatureFocus?'On':'Off'}</strong></button>
                 <button aria-pressed={screenWeather} onClick={toggleScreenWeather}><HudIcon name="screen"/>Screen weather {screenWeather?"on":"off"}</button>
                 <button onClick={toggleFullscreen}><HudIcon name={expanded?'contract':'expand'}/>{expanded?'Exit view':'Fullscreen'}</button>
               </div>

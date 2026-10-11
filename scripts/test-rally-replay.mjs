@@ -53,3 +53,14 @@ test('recovery adds exactly 1.5 seconds, stays practice-only and cannot change a
  w.resetPosition();assert.equal(w.time,61.5);assert.equal(w.recoveryPenalty,1.5);w.resetPosition();assert.equal(w.time,63);assert.equal(w.recoveryPenalty,3);
  w.completeRun();assert.equal(w.best,55);assert.equal(w.cleanRun,false);w.resetPosition();assert.equal(w.time,63);
 });
+
+test('V4 failed and stale vehicle downloads retain the current playable model',async()=>{
+ const original=globalThis.fetch;
+ try{
+  const w=fixture();w.mode='garage';w.visualGeneration=2;w.host={dataset:{}};const fallback=w.vehicle;
+  globalThis.fetch=async()=>{throw Error('offline')};await w.installVehicle(2,2,fallback);assert.equal(w.vehicle,fallback);assert.equal(w.mode,'garage');
+  const bytes=await readFile('public/rally/v4/car-1.glb');globalThis.fetch=async()=>({ok:true,arrayBuffer:async()=>bytes.buffer.slice(bytes.byteOffset,bytes.byteOffset+bytes.byteLength)});
+  await w.installVehicle(1,1,fallback);assert.equal(w.vehicle,fallback);assert.equal(w.host.dataset.visualModel,undefined);
+  w.mode='race';await w.installVehicle(1,2,fallback);assert.equal(w.vehicle,fallback);assert.equal(w.mode,'race');
+ }finally{globalThis.fetch=original;}
+});
