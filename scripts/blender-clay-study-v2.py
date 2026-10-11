@@ -72,11 +72,19 @@ for side in [-1,1]:
  box('sill',(side*1.04,0,.43),(.12,1.7,.12),blue,car,.035)
  for axle,y in [('front',1.325),('rear',-1.325)]:
   name='wheel_'+axle+('_left' if side<0 else '_right');wheel=bpy.data.objects.new(name,None);scene.collection.objects.link(wheel);wheel.parent=car;wheel.location=(side*1.03,y,.55)
-  bpy.ops.mesh.primitive_torus_add(major_radius=.415,minor_radius=.135,major_segments=32,minor_segments=10,location=(0,0,0),rotation=(0,math.pi/2,0));o=bpy.context.object;o.name=name+'_tyre';o.data.materials.append(rubber);o.parent=wheel;o.location=(0,0,0);o.scale.x=1.15;smooth(o)
-  bpy.ops.mesh.primitive_cylinder_add(vertices=20,radius=.34,depth=.14,location=(0,0,0),rotation=(0,math.pi/2,0));o=bpy.context.object;o.name=name+'_hub';o.data.materials.append(rubber);o.parent=wheel;o.location=(side*.08,0,0);bevel(o,.015,2)
+  # Square-shouldered rally tyre: a wide flat tread with softened corners.
+  profile=[(-.25,.38),(-.25,.48),(-.235,.525),(-.19,.55),(.19,.55),(.235,.525),(.25,.48),(.25,.38)]
+  vertices=[];faces=[];segments=64
+  for x,r in profile:
+   for k in range(segments):
+    a=k*math.tau/segments;rr=r-(.004 if k%4==0 and r==.55 else 0);vertices.append((x,math.cos(a)*rr,math.sin(a)*rr))
+  for ring in range(len(profile)):
+   for k in range(segments):faces.append((ring*segments+k,ring*segments+(k+1)%segments,((ring+1)%len(profile))*segments+(k+1)%segments,((ring+1)%len(profile))*segments+k))
+  o=mesh(name+'_wide_tyre',vertices,faces,rubber,wheel);smooth(o)
+  bpy.ops.mesh.primitive_cylinder_add(vertices=20,radius=.34,depth=.14,location=(0,0,0),rotation=(0,math.pi/2,0));o=bpy.context.object;o.name=name+'_hub';o.data.materials.append(rubber);o.parent=wheel;o.location=(side*.16,0,0);bevel(o,.015,2)
   for k in range(8):
-   a=k*math.pi/4;spoke=box(name+'_spoke',(0,0,0),(.035,.048,.69),gold,None,.015);spoke.parent=wheel;spoke.location=(side*.16,0,0);spoke.rotation_euler.x=a
-  bpy.ops.mesh.primitive_torus_add(major_radius=.355,minor_radius=.035,major_segments=32,minor_segments=8,rotation=(0,math.pi/2,0));rim=bpy.context.object;rim.name=name+'_gold_rim';rim.parent=wheel;rim.location=(side*.16,0,0);rim.data.materials.append(gold);smooth(rim)
+   a=k*math.pi/4;spoke=box(name+'_spoke',(0,0,0),(.035,.048,.69),gold,None,.015);spoke.parent=wheel;spoke.location=(side*.255,0,0);spoke.rotation_euler.x=a
+  bpy.ops.mesh.primitive_torus_add(major_radius=.355,minor_radius=.035,major_segments=32,minor_segments=8,rotation=(0,math.pi/2,0));rim=bpy.context.object;rim.name=name+'_gold_rim';rim.parent=wheel;rim.location=(side*.255,0,0);rim.data.materials.append(gold);smooth(rim)
   mount=bpy.data.objects.new('suspension_'+name,None);scene.collection.objects.link(mount);mount.parent=car;mount.location=wheel.location
 for side in [-1,1]:
  box('headlamp_'+str(side),(side*.70,2.235,.91),(.57,.065,.19),cream,car,.035)
@@ -162,6 +170,48 @@ for i in range(110):
 for x,z in [(-4.8,4.5),(4.9,-4.2)]:
  box('flag_pole',(x,-z,1.6),(.06,.06,3.2),cream,b=.015)
  for k,m in enumerate([blue,cream,ochre]):box('clay_flag',(x+.4+k*.3,-z,2.65),(.3,.035,.65),m,b=.01)
+# Tiny handmade spectators: two photographers and two flag carriers.
+skin=mat('Warm clay faces',(.62,.33,.19));coat=mat('Terracotta coats',(.57,.13,.045));navy=mat('Navy trousers',(.035,.055,.085));white=mat('Flag ivory',(.86,.84,.74));flaggreen=mat('Flag green',(.025,.30,.10))
+for index,(x,z) in enumerate([(-3.15,-2),(3.25,1.1),(-3.25,5),(3.3,-6.5)]):
+ side=1 if x>0 else -1;y=-z;h=height(x,z)
+ for dy in [-.12,.12]:
+  box('spectator_boot',(x-.05*side,y+dy,h+.10),(.32,.16,.19),rubber,b=.055)
+  box('spectator_leg',(x,y+dy,h+.35),(.16,.16,.45),navy,b=.045)
+ ellipsoid('spectator_coat',(x,y,h+.78),(.22,.27,.37),coat if index%2==0 else ochre)
+ ellipsoid('spectator_head',(x,y,h+1.27),(.19,.20,.23),skin)
+ ellipsoid('spectator_hat',(x,y,h+1.43),(.21,.22,.11),blue if index%2 else cream)
+ for dy in [-.075,.075]:ellipsoid('spectator_eye',(x-side*.181,y+dy,h+1.29),(.012,.025,.025),rubber)
+ if index<2:
+  for dy in [-.19,.19]:
+   arm=box('photographer_arm',(x-side*.16,y+dy,h+1.03),(.36,.13,.14),coat if index%2==0 else ochre,b=.055)
+   ellipsoid('photographer_hand',(x-side*.32,y+dy,h+1.09),(.08,.07,.08),skin)
+  box('camera_body',(x-side*.35,y,h+1.17),(.13,.35,.21),rubber,b=.035)
+  bpy.ops.mesh.primitive_cylinder_add(vertices=16,radius=.085,depth=.12,location=(x-side*.47,y,h+1.17),rotation=(0,math.pi/2,0));o=bpy.context.object;o.name='camera_lens';o.data.materials.append(silver);bevel(o,.01,2)
+ else:
+  box('flag_carrier_arm',(x-side*.21,y+.15,h+.90),(.38,.14,.15),coat if index%2==0 else ochre,b=.05)
+  box('supporter_flag_pole',(x-side*.39,y+.18,h+1.25),(.045,.045,2.45),cream,b=.014)
+  # Wavy cloth in Finland/Italy colours, formed from a single grid.
+  vv=[];ff=[];steps=12
+  for j in range(7):
+   for i in range(steps+1):
+    u=i/steps;v=j/6;vv.append((x-side*.39+.055*math.sin(u*9+v*2),y+.18+u*.8,h+2.33-v*.5))
+  for j in range(6):
+   for i in range(steps):k=j*(steps+1)+i;ff.append((k,k+1,k+steps+2,k+steps+1))
+  flag=mesh('supporter_flag',vv,ff,white);flag.data.materials.append(blue if index==2 else flaggreen);flag.data.materials.append(red)
+  for j in range(6):
+   for i in range(steps):flag.data.polygons[j*steps+i].material_index=(1 if i in [3,4] or j in [2,3] else 0) if index==2 else (1 if i<4 else 0 if i<8 else 2)
+# Packed clay microtexture: gentle tool marks and pores, shared by the clay materials.
+size=256;pixels=[]
+for j in range(size):
+ for i in range(size):
+  u=i/size;v=j/size;angle=math.atan2(v-.47,u-.38);r=math.hypot(v-.47,u-.38);grain=random.uniform(-.07,.07);ridge=math.sin(r*220+math.sin(angle*3)*2)*.09
+  pixels.extend([.5+grain+ridge*math.cos(angle),.5+grain+ridge*math.sin(angle),.98,1])
+image=bpy.data.images.new('Handworked clay normal',width=size,height=size);image.colorspace_settings.name='Non-Color';image.pixels=pixels;image.pack()
+for material in [blue,green,bark,cream,ochre,skin,coat,navy]:
+ nodes=material.node_tree.nodes;tex=nodes.new('ShaderNodeTexImage');tex.image=image;normal=nodes.new('ShaderNodeNormalMap');normal.inputs['Strength'].default_value=.38;material.node_tree.links.new(tex.outputs['Color'],normal.inputs['Color']);material.node_tree.links.new(normal.outputs['Normal'],nodes['Principled BSDF'].inputs['Normal'])
+for o in list(scene.objects):
+ if o.type=='MESH' and not o.data.uv_layers:
+  bpy.ops.object.select_all(action='DESELECT');o.select_set(True);bpy.context.view_layer.objects.active=o;bpy.ops.object.mode_set(mode='EDIT');bpy.ops.mesh.select_all(action='SELECT');bpy.ops.uv.smart_project(island_margin=.025);bpy.ops.object.mode_set(mode='OBJECT')
 # Batch fixed body surfaces and each wheel separately, preserving lights and animation roots.
 for parent in [car]+[o for o in car.children if o.name.startswith('wheel_')]:
  grouped={}
