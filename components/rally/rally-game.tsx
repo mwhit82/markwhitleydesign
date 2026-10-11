@@ -233,6 +233,9 @@ export function RallyGame() {
       {label}
     </button>
   );
+  // Display priority only: the notification manager retains its original expiry times.
+  const mobileCheckpoint = checkpointNotices.filter(n=>n.outcome==='missed').sort((a,b)=>b.id-a.id)[0]
+    ?? checkpointNotices.reduce<CheckpointNotice | undefined>((latest,n)=>!latest||n.id>latest.id?n:latest,undefined);
   const car = cars[selected];
   const stage = stageDefinition(selection);
   const changeStage = (next: StageSelection) => {
@@ -298,6 +301,8 @@ export function RallyGame() {
       <div
         ref={game}
         data-stage={selection.stage}
+        data-mode={mode}
+        data-practice={practice.length>0}
         data-time={timeOfDay(selection)}
         data-steering={controls.steering}
         className={`${styles.game} ${expanded ? styles.expanded : ""}`}
@@ -325,7 +330,7 @@ export function RallyGame() {
         </div>}
         <div className={styles.topbar} aria-label="Game controls">
           <button aria-label="Toggle driver-seat camera" title="Camera view" aria-pressed={driverView} onClick={toggleCamera}><HudIcon name="camera"/></button>
-          {(mode==='race'||mode==='countdown') && <button aria-label="Pause" title="Pause" onClick={()=>api.current?.pause()}><HudIcon name="pause"/></button>}
+          {(mode==='race'||mode==='countdown') && <button data-mobile-pause="true" aria-label="Pause" title="Pause" onClick={()=>api.current?.pause()}><HudIcon name="pause"/></button>}
           <button disabled={!ready||audioBusy} aria-label={muted?'Enable sound':'Mute sound'} title={muted?'Enable sound':'Mute sound'} aria-pressed={!muted} onClick={toggleSound}><HudIcon name={muted?'muted':'sound'}/></button>
           <button aria-label={expanded?'Exit game view':'Fullscreen'} title={expanded?'Exit game view':'Fullscreen'} aria-pressed={expanded} onClick={toggleFullscreen}><HudIcon name={expanded?'contract':'expand'}/></button>
           {!inRoom && (mode==='race'||mode==='countdown') && ghostSource!=='off' && <button aria-label={ghostShown?'Hide ghost':'Show ghost'} title="Ghost · G" aria-pressed={ghostShown} onClick={()=>api.current?.toggleGhost()}><HudIcon name="ghost"/></button>}
@@ -458,7 +463,8 @@ export function RallyGame() {
             <div className={styles.timer}>
               <small>{isCircuit(selection)?'RACE TIME':'STAGE TIME'}</small>
               <strong>{formatTime(stats.time)}</strong>
-              <span>BEST <b>{best ? formatTime(best) : "—"}</b></span>
+              <span className={styles.bestTime}>BEST <b>{best ? formatTime(best) : "—"}</b></span>
+              {isCircuit(selection)&&<span className={styles.mobileLap}>LAP {Math.min(stats.lap,lapCount(selection))} / {lapCount(selection)}</span>}
               {!isCircuit(selection)&&<div className={styles.progress} aria-label="Stage progress"><div style={{width:`${stats.progress*100}%`}}/></div>}
               {practice.length>0 && <em className={styles.practice}>! PRACTICE RUN</em>}
             </div>
@@ -540,7 +546,7 @@ export function RallyGame() {
           </div>
         )}
         {(mode==='race'||mode==='paused'||mode==='celebrating') && <div className={styles.checkpointStack} data-paused={mode==='paused'} aria-live="polite" aria-atomic="false">
-          {checkpointNotices.map(n=><div key={n.id} className={`${styles.checkpointToast} ${n.outcome==='missed'?styles.missedToast:''}`} style={{animationDuration:`${n.duration}s`}}>
+          {checkpointNotices.map(n=><div key={n.id} data-mobile-visible={n.id===mobileCheckpoint?.id} className={`${styles.checkpointToast} ${n.outcome==='missed'?styles.missedToast:''}`} style={{animationDuration:`${n.duration}s`}}>
             <span className={styles.checkpointSymbol}>{n.outcome==='missed'?'!':'✓'}</span>
             <div><strong>{n.outcome==='missed'?'MISSED CHECKPOINT':'CHECKPOINT'} {String(n.checkpoints[0]).padStart(2,'0')}{n.checkpoints.length>1?`–${String(n.checkpoints.at(-1)).padStart(2,'0')}`:n.outcome==='accepted'?'/18':''}</strong><small>{n.outcome==='missed'?'Practice run':formatTime(n.time)}</small>{n.delta!==undefined&&<small className={n.delta<=0?styles.ahead:styles.behind}>≈ {n.delta<=0?'−':'+'}{Math.abs(n.delta).toFixed(2)} {n.delta<=0?'ahead':'behind'}</small>}</div>
           </div>)}
