@@ -285,7 +285,7 @@ export function RallyGame() {
     <div className={styles.page}>
       <div className={styles.heading}>
         <div>
-          <p className={styles.eyebrow}>MARK WHITLEY / POCKET RALLY V3</p>
+          <p className={styles.eyebrow}>MARK WHITLEY / POCKET RALLY V3.1</p>
           <h1>
             POCKET<span>RALLY.</span>
           </h1>
@@ -324,7 +324,7 @@ export function RallyGame() {
           {Array.from({length:selection.weather==='rain'?8:selection.weather==='snow'?12:3},(_,i)=><i key={i} style={{left:`${i%2===0?2+(i*7)%19:78+(i*7)%19}%`,animationDelay:`${-i*1.3}s`,animationDuration:`${selection.weather==='rain'?5+i%3:8+i%4}s`}}/>)}
         </div>}
         <div className={styles.topbar} aria-label="Game controls">
-          <button aria-label="Toggle driver-seat camera" title="Camera view" aria-pressed={driverView} onClick={toggleCamera}>▣</button>
+          <button aria-label="Toggle driver-seat camera" title="Camera view" aria-pressed={driverView} onClick={toggleCamera}><HudIcon name="camera"/></button>
           {(mode==='race'||mode==='countdown') && <button aria-label="Pause" title="Pause" onClick={()=>api.current?.pause()}><HudIcon name="pause"/></button>}
           <button disabled={!ready||audioBusy} aria-label={muted?'Enable sound':'Mute sound'} title={muted?'Enable sound':'Mute sound'} aria-pressed={!muted} onClick={toggleSound}><HudIcon name={muted?'muted':'sound'}/></button>
           <button aria-label={expanded?'Exit game view':'Fullscreen'} title={expanded?'Exit game view':'Fullscreen'} aria-pressed={expanded} onClick={toggleFullscreen}><HudIcon name={expanded?'contract':'expand'}/></button>
@@ -427,7 +427,7 @@ export function RallyGame() {
                 {isCircuit(selection)&&<button onClick={e=>openOptions("laps",e.currentTarget)}><small>RACE LENGTH · {Math.round(routeLength(selection)*lapCount(selection))} M</small><strong>{lapCount(selection)} laps</strong><HudIcon name="next"/></button>}
                 <button onClick={e=>openOptions('direction',e.currentTarget)}><small>ROUTE</small><strong>{selection.reverse?'Reverse':'Forward'}</strong><span><HudIcon name="next"/></span></button>
                 <button onClick={e=>openOptions('ghost',e.currentTarget)}><small>GHOST</small><strong>{ghostSource==='off'?'Off':ghostSource==='personal'?'My best':'Leaderboard'}</strong><span><HudIcon name="next"/></span></button>
-                <button onClick={toggleCamera} aria-pressed={driverView}>Camera: {driverView?"Driver seat":"Isometric"}</button><button aria-pressed={codriver} disabled={selection.stage==='kart'} onClick={toggleCodriver}><small>CO-DRIVER</small><strong>{selection.stage==='kart'?'Rally only':codriver?'On':'Off'}</strong></button>
+                <button onClick={toggleCamera} aria-pressed={driverView}><small><HudIcon name="camera"/> CAMERA</small><strong>{driverView?"Driver seat":"Isometric"}</strong></button><button aria-pressed={codriver} disabled={selection.stage==='kart'} onClick={toggleCodriver}><small><HudIcon name="headset"/> CO-DRIVER</small><strong>{selection.stage==='kart'?'Rally only':codriver?'On':'Off'}</strong></button>
                 <button aria-pressed={screenWeather} onClick={toggleScreenWeather}><small><HudIcon name="screen"/> SCREEN WEATHER</small><strong>{screenWeather?"On":"Off"}</strong></button>
               </div>
               <small className={styles.ghostStatus} role="status">{ghostStatus!=="Ghost off"&&ghostStatus!=="My best"?ghostStatus:""}</small>
@@ -510,7 +510,7 @@ export function RallyGame() {
             <div className={styles.pauseSettings}>
                 <button disabled={audioBusy} aria-pressed={!muted} onClick={toggleSound}><HudIcon name={muted?'muted':'sound'}/>{muted?'Sound off':'Sound on'}</button>
                 <button disabled={ghostSource==='off'} aria-pressed={ghostShown&&ghostSource!=='off'} onClick={()=>api.current?.toggleGhost()}><HudIcon name="ghost"/>Ghost {ghostShown&&ghostSource!=='off'?'on':'off'}</button>
-                <button onClick={toggleCamera} aria-pressed={driverView}>Camera: {driverView?"Driver seat":"Isometric"}</button><button aria-pressed={codriver} disabled={selection.stage==='kart'} onClick={toggleCodriver}>Co-driver {codriver?'on':'off'}</button>
+                <button onClick={toggleCamera} aria-pressed={driverView}><HudIcon name="camera"/>Camera: {driverView?"Driver seat":"Isometric"}</button><button aria-pressed={codriver} disabled={selection.stage==='kart'} onClick={toggleCodriver}><HudIcon name="headset"/>Co-driver {codriver?'on':'off'}</button>
                 <button aria-pressed={screenWeather} onClick={toggleScreenWeather}><HudIcon name="screen"/>Screen weather {screenWeather?"on":"off"}</button>
                 <button onClick={toggleFullscreen}><HudIcon name={expanded?'contract':'expand'}/>{expanded?'Exit view':'Fullscreen'}</button>
               </div>
@@ -545,7 +545,7 @@ export function RallyGame() {
             <div><strong>{n.outcome==='missed'?'MISSED CHECKPOINT':'CHECKPOINT'} {String(n.checkpoints[0]).padStart(2,'0')}{n.checkpoints.length>1?`–${String(n.checkpoints.at(-1)).padStart(2,'0')}`:n.outcome==='accepted'?'/18':''}</strong><small>{n.outcome==='missed'?'Practice run':formatTime(n.time)}</small>{n.delta!==undefined&&<small className={n.delta<=0?styles.ahead:styles.behind}>≈ {n.delta<=0?'−':'+'}{Math.abs(n.delta).toFixed(2)} {n.delta<=0?'ahead':'behind'}</small>}</div>
           </div>)}
         </div>}
-        {mode==='race'&&subtitle&&<div className={styles.codriverSubtitle} role="status"><small>CO-DRIVER</small>{subtitle}</div>}
+        {mode==='race'&&subtitle&&<div className={styles.codriverSubtitle} role="status"><small><HudIcon name="headset"/> CO-DRIVER</small>{subtitle}</div>}
         {optionPanel && <div className={styles.optionScrim}><div className={styles.optionPanel} role="dialog" aria-modal="true" aria-label={optionTitle} data-rally-menu="true">
           <header><div><span className={styles.tag}>SERVICE PARK / SELECT</span><h2>{optionTitle}</h2></div><button aria-label="Close options" onClick={closeOptions}>×</button></header>
           <div className={styles.optionList}>{options.map(o=><button key={o.value} aria-pressed={o.selected} data-menu-default={o.selected||undefined} onClick={()=>selectOption(o.value)}><span>{o.label}<small>{o.detail}</small></span><b>{o.selected?'✓':<HudIcon name="right"/>}</b></button>)}</div>

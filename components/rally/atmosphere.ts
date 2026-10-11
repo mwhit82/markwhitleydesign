@@ -1,3 +1,4 @@
+import {internationalFlags} from './rally-effects';
 import {kartFinishLayout} from "./kart-venue";
 import type {StageSelection} from "./stages";
 import * as T from 'three';
@@ -109,6 +110,7 @@ export class Atmosphere {
     count++;
    }
   }
+  const flagPositions=this.spectators.filter((p,i)=>i%4===0).map(p=>new T.Vector3(p.x-Math.sin(p.angle)*1.5,0,p.z-Math.cos(p.angle)*1.5)).filter(p=>points.every(q=>Math.hypot(q.x-p.x,q.z-p.z)>7)&&!this.reserved(p.x,p.z));this.group.add(internationalFlags(flagPositions));
   this.people.count=count*3;this.arms.count=count*2;this.flashes.count=photoCount;camera.count=photoCount;
   this.group.add(this.people,this.arms,this.flashes,camera);
   const paper=new T.PlaneGeometry(.17,.3),paperMat=new T.MeshBasicMaterial({color:'#ffffff',side:T.DoubleSide});

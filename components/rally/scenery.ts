@@ -2,20 +2,8 @@ import {environmentScenery} from './v3-scenery';
 import {kartBarrierSegments} from "./kart-venue";
 import * as T from 'three';
 import {type StageSelection} from './stages';
-const ramps=[{index:135,height:.85},{index:325,height:2.2},{index:515,height:.85}];
-export function rampHeight(index:number){let y=0;for(const r of ramps){const u=(index-(r.index-12))/24;if(u>0&&u<1)y=Math.max(y,r.height*Math.sin(Math.PI*u)**2);}return y;}
-/** Cosmetic vertical profile only; ranked x/z motion, grip and traces stay unchanged.
- * Playback derives exactly the same profile from recorded horizontal speed. */
-export function elevationPose(index:number,speed:number,reduced=false){
- let y=rampHeight(index),pitch=0,roll=0;
- for(const r of ramps){const u=(index-(r.index-12))/24;
-  if(u>0&&u<1)pitch=-Math.sin(2*Math.PI*u)*r.height*.12;
-  const lift=Math.max(0,Math.min(1,(speed-7)/15));
-  if(u>.5&&u<1.3){const air=r.height*lift*Math.sin((u-.5)/.8*Math.PI);y+=air;pitch*=.5;}
-  if(!reduced&&u>=1.3&&u<1.55){const t=(u-1.3)/.25;roll=Math.sin(t*Math.PI*4)*(1-t)*lift*.08;}
- }
- return {y,pitch,roll};
-}
+import {rampHeight} from './jumps';
+export {rampHeight,elevationPose} from './jumps';
 function panel(text:string,color:string,width=14){
  const canvas=document.createElement('canvas');canvas.width=512;canvas.height=96;const p=canvas.getContext('2d')!;p.fillStyle=color;p.fillRect(0,0,512,96);p.fillStyle='#fff0d5';p.font='italic 900 42px sans-serif';p.textAlign='center';p.fillText(text,256,64);
  const texture=new T.CanvasTexture(canvas);texture.colorSpace=T.SRGBColorSpace;return new T.Mesh(new T.PlaneGeometry(width,2.2),new T.MeshStandardMaterial({map:texture,side:T.DoubleSide,roughness:.9}));

@@ -1,7 +1,9 @@
 import type {ReactNode} from 'react';
-export type IconName='screen'|'pause'|'sound'|'muted'|'expand'|'contract'|'ghost'|'recover'|'left'|'right'|'next';
+export type IconName='camera'|'headset'|'screen'|'pause'|'sound'|'muted'|'expand'|'contract'|'ghost'|'recover'|'left'|'right'|'next';
 export function HudIcon({name}:{name:IconName}){
  const paths:Record<IconName,ReactNode>={
+  camera:<><rect x="3" y="6" width="18" height="14" rx="2"/><path d="m8 6 2-3h4l2 3"/><circle cx="12" cy="13" r="4"/></>,
+  headset:<><path d="M4 13v-2a8 8 0 0 1 16 0v6q0 4-6 4"/><rect x="3" y="11" width="4" height="7" rx="1"/><rect x="17" y="11" width="4" height="7" rx="1"/><path d="M11 21h3"/></>,
   screen:<><rect x="3" y="4" width="18" height="13" rx="1"/><path d="M8 21h8m-4-4v4"/></>,
   left:<path d="M20 12H4m6-6-6 6 6 6"/>,
   right:<path d="M4 12h16m-6-6 6 6-6 6"/>,
