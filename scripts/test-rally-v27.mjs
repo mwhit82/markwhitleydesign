@@ -10,7 +10,7 @@ async function moduleUrl(path){
  for(const match of [...code.matchAll(/from ["']([^"']+)["']/g)]){const spec=match[1],url=spec.startsWith('.')?await moduleUrl(resolve(dirname(path),spec+'.ts')):import.meta.resolve(spec);code=code.replace(match[0],`from '${url}'`);}
  const url='data:text/javascript;base64,'+Buffer.from(code).toString('base64');cache.set(path,url);return url;
 }
-const {kartFinishLayout,kartFloor,kartLapProgress,kartBarrierSegments}=await import(await moduleUrl(resolve('components/rally/kart-venue.ts')));
+const {kartFinishLayout,kartFloor,kartLapProgress,kartBarrierSegments,kartFlagPosition}=await import(await moduleUrl(resolve('components/rally/kart-venue.ts')));
 const {stagePoints,checkpointIndices}=await import(await moduleUrl(resolve('components/rally/stages.ts')));
 const {Atmosphere}=await import(await moduleUrl(resolve('components/rally/atmosphere.ts')));
 const T=await import('three');
@@ -37,5 +37,15 @@ test('continuous barrier contours stay outside every circuit driving corridor',(
   const points=stagePoints({stage:'kart',weather:'clear',circuitVersion:2,track,reverse}),segments=kartBarrierSegments(points,()=>false);
   assert.ok(segments.length>400&&segments.length<2000);
   for(const segment of segments){assert.ok(Number.isFinite(segment.angle)&&segment.length>0);assert.ok(Math.min(...points.map(p=>p.distanceTo(segment.p)))>6.35);}
+ }
+});
+
+test('kart checkpoint signs stay outside every road corridor on all six routes',()=>{
+ for(const track of [1,2,3])for(const reverse of [false,true]){
+ const points=stagePoints({stage:'kart',weather:'clear',circuitVersion:2,track,reverse});
+ const edges=kartBarrierSegments(points,()=>false);
+ for(const idx of checkpointIndices){const p=points[idx],a=points[idx-1],dir=new T.Vector3(p.z-a.z,0,a.x-p.x).normalize();
+ for(const side of [-1,1]){const flag=kartFlagPosition(edges,p,dir,side,points);assert.ok(Math.min(...points.map(q=>q.distanceTo(flag)))>7,`flag intrudes ${track}/${reverse}/${idx}`);}
+ }
  }
 });

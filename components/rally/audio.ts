@@ -17,8 +17,8 @@ export function soundMix(drive: DriveSound, mode: Mode, car: number) {
   const kart = car === 4;
   const revs = Math.max(0, Math.min(1, ((drive.rpm ?? (950 + speed * 180)) - 950) / 6050));
   return {
-    tyre: kart && mode === "race" ? Math.min(1, Math.max(0, (speed - 4) / 10)) * Math.min(.15, (drive.sliding ? .095 : 0) + Math.max(0, (drive.corner ?? 0) - .25) * .07 + brake * .025) : 0,
-    rate: kart ? .78 + revs * .64 :
+    tyre: kart && mode === "race" ? Math.min(1, Math.max(0, (speed - 4) / 10)) * Math.min(.15, (drive.sliding ? .065 : 0) + Math.max(0, (drive.corner ?? 0) - .35) * .055 + brake * .018) : 0,
+    rate: kart ? .82 + Math.pow(revs,.7) * 1.12 :
       personality *
       Math.min(2.2, drive.rpm !== undefined && mode === "race" ? 0.72 + (drive.rpm - 950) / 4400 : 0.72 + speed * 0.043 + throttle * 0.42 - brake * 0.1),
     idle: (mode==="celebrating"||mode==="finished"?0:0.07) * (1 - Math.min(speed / 9, 1)) * (1 - throttle * 0.85),

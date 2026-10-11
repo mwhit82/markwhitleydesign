@@ -1,4 +1,4 @@
-import {kartFloor,kartLapProgress,type KartFinish} from "./kart-venue";
+import {kartFlagPosition,kartBarrierSegments,kartFloor,kartLapProgress,type KartFinish} from "./kart-venue";
 import {paceNotes,PaceScheduler} from "./codriver";
 import * as T from "three";
 import {roadRelief} from "./road-relief";
@@ -334,13 +334,17 @@ export class RallyWorld {
       rock.castShadow = true;
       this.root.add(rock);
     }
+    const kartEdges=this.selection.stage==="kart"?kartBarrierSegments(this.points,()=>false):[];
     this.checkpoints.forEach((idx, i) => {
       const p = this.points[idx],
         a = this.points[Math.max(0, idx - 1)],
         dir = new T.Vector3(p.z - a.z, 0, a.x - p.x).normalize();
       for (const side of [-1, 1]) {
-        const x = p.x + dir.x * 6 * side,
+        let x = p.x + dir.x * 6 * side,
           z = p.z + dir.z * 6 * side;
+        if(kartEdges.length){
+          const flagPoint=kartFlagPosition(kartEdges,p,dir,side,this.points);x=flagPoint.x;z=flagPoint.z;
+        }
         const rise=this.selection.stage==="kart"?0:rampHeight(idx)*.82;
         this.box(0.25, 1.7, 0.25, "#eee3ca", x, .85+rise, z);
         const flag=this.box(2, 1.5, 0.12, i === 17 ? "#e4bb48" : "#d65c3f", x, 2.3+rise, z);flag.rotation.y=Math.PI/4;this.checkpointEffects.register(i,flag);

@@ -87,3 +87,6 @@ resampling, gentle saturation, low-pass EQ, crossfades and level control.
 Stylised warm sports-car character, not a recording of a particular supercar.
 Kart tyre friction is an original offline procedural cue, softly band-limited
 and mixed quietly on corners. Rebuild: scripts/prepare-kart-v271.py (numpy).
+V2.7.2: broader accelerating rev range and a slightly brighter load sample.
+Replaced the tonal tyre chirp with predominantly filtered friction noise and
+only a faint tonal edge. Source/licence and offline preparation remain as above.

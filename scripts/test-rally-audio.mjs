@@ -271,7 +271,7 @@ test('crowd assets are bounded mono PCM recordings',async()=>{
  const d={speed:18,throttle:1,brake:0,sliding:false,rpm:7000,corner:0};
  const straight=soundMix(d,'race',4),turn=soundMix({...d,corner:.8},'race',4);
  assert.equal(straight.tyre,0);assert.ok(turn.tyre>0&&turn.tyre<.15);
- assert.ok(straight.rate<1.5);assert.ok(soundMix({...d,rpm:950},'race',4).rate<straight.rate);
+ assert.ok(straight.rate>1.8&&straight.rate<2);assert.ok(soundMix({...d,rpm:950},'race',4).rate<straight.rate);
  assert.equal(soundMix({...d,corner:1,sliding:true},'paused',4).tyre,0);
  assert.equal(soundMix({...d,speed:0,corner:1,sliding:true},'race',4).tyre,0);
  assert.equal(soundMix({...d,corner:1},'race',0).tyre,0);

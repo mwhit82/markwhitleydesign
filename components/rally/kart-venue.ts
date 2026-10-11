@@ -70,3 +70,12 @@ export function kartBarrierSegments(points:T.Vector3[],reserved:(x:number,z:numb
  }
  return segments;
 }
+
+/** Mount signs outside the union of road corridors, including tight inside bends. */
+export function kartFlagPosition(edges:ReturnType<typeof kartBarrierSegments>,p:T.Vector3,dir:T.Vector3,side:number,points:T.Vector3[]){
+ const target=p.clone().addScaledVector(dir,6*side);
+ const positions=edges.map(e=>e.p.clone().addScaledVector(e.normal,.9));
+ const safe=positions.filter(q=>q.clone().sub(p).dot(dir)*side>0&&points.every(r=>r.distanceToSquared(q)>49));
+ safe.sort((a,b)=>a.distanceToSquared(target)-b.distanceToSquared(target));
+ return safe[0]??target;
+}

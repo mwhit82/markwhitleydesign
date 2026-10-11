@@ -18,16 +18,16 @@ def save(name,x,level):
  with wave.open(str(root/f'public/rally/{name}.wav'),'wb') as w:
   w.setparams((1,2,rate,0,'NONE','not compressed'));w.writeframes((x*32767).astype('<i2').tobytes())
  print(name,'seconds',round(len(x)/rate,2),'peak',round(float(max(abs(x))),3))
-for name,pitch,cut,level in [('idle',.68,800,.16),('load',.95,1800,.23),('lift',.78,1150,.16)]:
+for name,pitch,cut,level in [('idle',.68,800,.16),('load',1.12,2100,.23),('lift',.78,1150,.16)]:
  x=np.interp(np.arange(0,len(raw),sr/rate*pitch),np.arange(len(raw)),raw)
  f=np.fft.rfftfreq(len(x),1/rate)
  x=np.fft.irfft(np.fft.rfft(x)*(1-np.exp(-(f/65)**4))/(1+(f/cut)**6),n=len(x))
  x=np.tanh(x*2)
  save(f'recorded-car-4-{name}',x,level)
-# Soft rubberchirp with fluctuating friction, instead of a pure piercing tone.
-t=np.arange(rate*2)/rate;rng=np.random.default_rng(271)
-phase=2*np.pi*(690*t+9*np.sin(2*np.pi*3*t)+3*np.sin(2*np.pi*7*t))
-x=(np.sin(phase)+.17*np.sin(phase*2))*(.7+.15*np.sin(2*np.pi*2*t))+.3*rng.normal(size=len(t))
+# Broad rubber scrub: mostly filtered friction with a faint unstable tonal edge.
+t=np.arange(rate*2)/rate;rng=np.random.default_rng(272)
+phase=2*np.pi*(530*t+5*np.sin(2*np.pi*3*t)+2*np.sin(2*np.pi*7*t))
+x=(.12*np.sin(phase)+rng.normal(size=len(t)))*(.7+.15*np.sin(2*np.pi*4*t))
 f=np.fft.rfftfreq(len(x),1/rate)
-x=np.fft.irfft(np.fft.rfft(x)*(1-np.exp(-(f/320)**4))/(1+(f/1600)**8),n=len(x))
-save('kart-tyres',x,.13)
+x=np.fft.irfft(np.fft.rfft(x)*(1-np.exp(-(f/430)**4))/(1+(f/1450)**8),n=len(x))
+save('kart-tyres',x,.11)
