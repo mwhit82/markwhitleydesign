@@ -7,7 +7,8 @@ export class TrialFocus {
  private composer:EffectComposer;private horizontal:ShaderPass;private vertical:ShaderPass;private output:OutputPass;
  enabled=true;
  constructor(private renderer:T.WebGLRenderer,private scene:T.Scene,private camera:T.Camera){
-  this.composer=new EffectComposer(renderer);this.composer.addPass(new RenderPass(scene,camera));
+  // Clear both ping-pong targets every frame, including the backdrop. Reflection renders must not leave stale colour buffers.
+  renderer.autoClear=true;this.composer=new EffectComposer(renderer);this.composer.addPass(new RenderPass(scene,camera));
   const shader={uniforms:{tDiffuse:{value:null},direction:{value:new T.Vector2()},focus:{value:.5}},vertexShader:`varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,fragmentShader:`uniform sampler2D tDiffuse;uniform vec2 direction;uniform float focus;varying vec2 vUv;void main(){float blur=smoothstep(.16,.48,abs(vUv.y-focus));vec2 d=direction*blur;vec4 c=texture2D(tDiffuse,vUv)*.227027;c+=(texture2D(tDiffuse,vUv+d*1.384615)+texture2D(tDiffuse,vUv-d*1.384615))*.316216;c+=(texture2D(tDiffuse,vUv+d*3.230769)+texture2D(tDiffuse,vUv-d*3.230769))*.070270;gl_FragColor=c;}`};
   this.horizontal=new ShaderPass(shader);this.vertical=new ShaderPass(shader);this.output=new OutputPass();this.composer.addPass(this.horizontal);this.composer.addPass(this.vertical);this.composer.addPass(this.output);
  }

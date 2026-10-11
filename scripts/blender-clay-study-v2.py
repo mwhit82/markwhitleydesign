@@ -5,7 +5,7 @@ random.seed(92)
 base=Path(__file__).resolve().parents[1];out=base/'public/rally/trial/v2';out.mkdir(parents=True,exist_ok=True)
 t=json.loads((out/'terrain.json').read_text());original=bpy.context.scene
 scene=bpy.data.scenes.new('Clay study V2');bpy.context.window.scene=scene
-scene.world=bpy.data.worlds.new('Study atmosphere');scene.world.use_nodes=True;scene.world.node_tree.nodes['Background'].inputs[0].default_value=(.56,.65,.72,1);scene.world.node_tree.nodes['Background'].inputs[1].default_value=.4
+scene.world=bpy.data.worlds.new('Study atmosphere');scene.world.use_nodes=True;scene.world.node_tree.nodes['Background'].inputs[0].default_value=(.70,.55,.39,1);scene.world.node_tree.nodes['Background'].inputs[1].default_value=.4
 scene.render.engine='CYCLES';scene.cycles.samples=24;scene.render.resolution_x=1400;scene.render.resolution_y=1000;scene.render.resolution_percentage=100
 car=bpy.data.objects.new('trial_car',None);scene.collection.objects.link(car)
 def mat(name,c,rough=.75,metal=0):
@@ -162,10 +162,25 @@ for poly in ground.data.polygons:
 for i in range(18):
  x=random.choice([-1,1])*random.uniform(4.6,8.8);z=random.uniform(-12,12)
  box('tree_trunk',(x,-z,.7+height(x,z)),(.24,.26,1.4),bark,b=.06)
- ellipsoid('clay_tree',(x,-z,2.1+height(x,z)),(random.uniform(.7,1.15),.8,1.45),green)
+ # Clustered thumb-shaped foliage rather than a single smooth egg.
+ for layer in range(7):
+  angle=layer*2.4;radius=.38 if layer else 0
+  ellipsoid('clay_leaf_cluster',(x+math.cos(angle)*radius,-z+math.sin(angle)*radius,1.8+height(x,z)+(layer%3)*.48),(.64,.58,.75),green)
+ for side in [-1,1]:
+  branch=box('clay_branch',(x+side*.23,-z,1.25+height(x,z)),(.12,.14,.85),bark,b=.04);branch.rotation_euler[1]=side*.55
 for i in range(40):
  x=random.choice([-1,1])*random.uniform(3.8,9);z=random.uniform(-13,13);ellipsoid('clay_shrub',(x,-z,.3+height(x,z)),(.45,.5,.45),green)
-for i in range(110):
+# Handmade tufts, moss cushions and pale stones break up the painted ground.
+for i in range(160):
+ x=random.choice([-1,1])*random.uniform(3.4,9);z=random.uniform(-13,13);h=height(x,z)
+ if i%3==0:
+  ellipsoid('moss_cushion',(x,-z,h+.08),(.22,.30,.12),green)
+ elif i%3==1:
+  ellipsoid('clay_stone',(x,-z,h+.045),(.12,.16,.07),cream)
+ else:
+  for blade in range(3):
+   tuft=ellipsoid('clay_grass',(x+(blade-1)*.07,-z,h+.13),(.035,.045,.20),green);tuft.rotation_euler[1]=(blade-1)*.3
+for i in range(210):
  x=random.choice([-1,1])*random.uniform(2.9,4.2);z=random.uniform(-13,13);ellipsoid('gravel',(x,-z,height(x,z)+.015),(.045,.065,.026),mud)
 for x,z in [(-4.8,4.5),(4.9,-4.2)]:
  box('flag_pole',(x,-z,1.6),(.06,.06,3.2),cream,b=.015)
@@ -238,7 +253,7 @@ export(out/'car.glb',carobjects);export(out/'environment.glb',[o for o in scene.
 # Render uses the same depression water level, exported water is made dynamically in the browser.
 water=mat('Preview water',(.1,.16,.17),.12,.3)
 for p in t['puddles']:ellipsoid('preview_water',(p['x'],-p['z'],p['level']), (p['rx'],p['rz'],.002),water)
-bpy.ops.object.light_add(type='AREA',location=(-6,2,12));bpy.context.object.data.energy=1800;bpy.context.object.data.size=10
+bpy.ops.object.light_add(type='AREA',location=(-6,2,12));bpy.context.object.data.energy=1800;bpy.context.object.data.size=7;bpy.context.object.data.color=(1,.78,.54)
 bpy.ops.object.camera_add(location=(10,13,9));camera=bpy.context.object;camera.rotation_euler=(Vector((0,0,.5))-camera.location).to_track_quat('-Z','Y').to_euler();camera.data.type='ORTHO';camera.data.ortho_scale=15;scene.camera=camera
 bpy.data.libraries.write(str(base/'art/rally/clay-study-v2.blend'),{scene});scene.render.filepath='/tmp/clay-study-v2.png';bpy.ops.render.render(write_still=True);bpy.context.window.scene=original
 print('TRIAL V2',json.dumps({p.name:p.stat().st_size for p in out.glob('*.glb')}))

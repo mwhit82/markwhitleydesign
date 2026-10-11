@@ -53,3 +53,14 @@ Optional tilt-shift focuses on the car; HTML controls stay sharp.
 Updated assets 4.18 MB; observed desktop Chrome peak 125 draws, 308k triangles, 120 FPS.
 These are desktop observations, not physical phone measurements.
 Nine focused trial tests plus existing regression suite. Physical iPhone/iPad checks outstanding.
+
+V2.3 handmade scenery and stable background
+Warmer low sunlight and cream backdrop; clustered clay foliage with branches,
+160 moss/grass/stone details and 210 shoulder gravel pieces, batched by material.
+Explicit scene background ensures postprocessing and reflections clear consistently.
+Site flow-field animation is disabled only on clay-study routes, with effect cleanup.
+Repeated desktop screenshot regions: zero changed channels both outside the diorama
+and around the page after the fix (the page region changed before it).
+Nine trial tests and production build pass; inspected day-clear and night-rain.
+Assets 6.58 MB; desktop 125–126 peak draws, 567k triangles, 120 FPS observed.
+Physical iPhone/iPad performance and flicker confirmation remain outstanding.

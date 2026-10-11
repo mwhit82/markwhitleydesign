@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { usePathname } from "next/navigation";
 
 type SimplexLike = {
   noise3D: (x: number, y: number, z: number) => number;
@@ -199,8 +200,10 @@ function getColor(noiseValue: number, palette: Color[]) {
 
 export function FlowFieldBackground() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const isTrial = usePathname().startsWith("/playground/rally/clay-study");
 
   useEffect(() => {
+    if (isTrial) return;
     const canvas = canvasRef.current;
     if (!canvas) {
       return;
@@ -371,7 +374,9 @@ export function FlowFieldBackground() {
       window.removeEventListener("mouseleave", handleMouseLeave);
       window.cancelAnimationFrame(animationFrame);
     };
-  }, []);
+  }, [isTrial]);
+
+  if (isTrial) return null;
 
   return (
     <canvas
