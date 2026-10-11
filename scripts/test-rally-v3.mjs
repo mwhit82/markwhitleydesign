@@ -62,3 +62,7 @@ test('forged early finishes and wrong attempt rejected, malformed traces remain 
  assert.throws(()=>roomAction(r,'a',{type:'finish',attempt:1,time:100,trace:[]},6000));assert.throws(()=>roomAction(r,'a',{type:'finish',attempt:0,time:1},6000));
  roomAction(r,'a',{type:'finish',attempt:1,time:1,trace:[[NaN,0,0]]},6000);assert.equal(r.members[0].practice,true);
 });
+const {paceNotes}=await import(await moduleUrl(resolve('components/rally/codriver.ts')));
+test('NYC pace calls match the route turn direction on both laps',()=>{
+ for(const reverse of [false,true]){const s={stage:'nyc',weather:'clear',reverse,circuitVersion:2},points=S.stagePoints(s);for(const n of paceNotes(s)){const a=points[n.index-14],b=points[n.index],c=points[n.index+14],turn=(b.x-a.x)*(c.z-b.z)-(b.z-a.z)*(c.x-b.x);assert.equal(n.clips[0].endsWith('right'),turn>0,`${reverse}:${n.index}:${n.text}`);}}
+});

@@ -1,7 +1,7 @@
 // Route-specific pace-note anchors, in driving order. 1 tightest, 5 fastest.
 export const routeNotes:Record<string,readonly (readonly [number,string])[]> = {
- "nyc:1:forward":[[55,"5-right"],[130,"2-right"],[182,"2-right"],[235,"3-left"],[305,"2-right"],[365,"2-right"],[412,"2-left"],[462,"2-left"],[520,"2-right"],[568,"2-right"],[615,"3-right"]],
- "nyc:1:reverse":[[35,"3-left"],[82,"2-left"],[130,"2-left"],[188,"2-right"],[238,"2-right"],[285,"2-left"],[345,"2-left"],[415,"3-right"],[468,"2-left"],[520,"2-left"],[595,"5-left"]],
+ "nyc:1:forward":[[120,"2-right"],[174,"2-right"],[224,"1-left"],[299,"1-right"],[358,"3-right"],[410,"2-left"],[455,"2-left"],[514,"1-right"]],
+ "nyc:1:reverse":[[18,"4-left"],[136,"1-left"],[195,"2-right"],[240,"2-right"],[292,"3-left"],[351,"1-left"],[426,"1-right"],[476,"2-left"],[530,"2-left"]],
   "forest:1:forward": [
     [
       49,

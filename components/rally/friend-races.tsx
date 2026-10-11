@@ -40,7 +40,7 @@ export function FriendRaces({world,selection,car,ready,mode,onSetup,onActive}:{w
  const enter=async(join:boolean)=>{setBusy(true);setError('');try{const response=await fetch('/api/rally/rooms',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,selection,car,...(join?{code}:{})})});const data=await response.json();if(!response.ok)throw Error(data.error||'Room unavailable');try{localStorage.setItem('rally-room-name',name);}catch{}connect(data);}catch(e){setError(e instanceof Error?e.message:'Could not join');}finally{setBusy(false);}};
  const me=room?.members.find(p=>p.id===session.current?.id),host=room?.host===session.current?.id;
  return <>
-  {(mode==='garage'||room)&&<button className={styles.friendsLaunch} disabled={!ready} onClick={()=>setOpen(true)}>{room?`Room ${room.code}`:'Race friends'}</button>}
+  {(mode==='garage'||room)&&<button className={`${styles.friendsLaunch} ${mode!=='garage'?styles.friendsInRace:''}`} disabled={!ready} onClick={()=>setOpen(true)}>{room?`Room ${room.code}`:'Race friends'}</button>}
   {room&&!open&&<div className={styles.roomStandings}>{room.members.map(m=><span key={m.id}>{m.id===session.current?.id?'You':m.name} · {m.time!==undefined?formatTime(m.time):m.status==='racing'?`${Math.round((poses.current.get(m.id)?.progress??0)*100)}%`:m.status}</span>)}</div>}
   {(open||liveMenu)&&<div className={styles.overlay} role="dialog" aria-modal="true" aria-label="Race friends" data-rally-menu="true"><div className={styles.roomCard}>
    <span className={styles.tag}>PRIVATE RACE · UP TO FOUR DRIVERS</span><h2>{room?room.code:'Race friends'}</h2>
