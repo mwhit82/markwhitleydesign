@@ -1,12 +1,13 @@
 "use client";
+import {FriendRaces} from "./friend-races";
 import { useEffect, useRef, useState } from "react";
 
-import {TouchWheel} from "./touch-wheel";
+
 import {defaultControls,readControls,currentHaptics,testHaptics,type HapticCapability,type ControlSettings} from "./controls";
 import {Standings} from "./standings";
 import { cars, formatTime, type Mode } from "./data";
 import styles from "./rally.module.css";
-import { lapCount, routeLength, stages, initialStage, stageDefinition, trackName, trackNames, trackNumber, weatherNames, stageTimes, timeNames, timeOfDay, type TimeOfDay, type StageSelection, type Weather } from "./stages";
+import { isCircuit, lapCount, routeLength, stages, initialStage, stageDefinition, trackName, trackNames, trackNumber, weatherNames, stageTimes, timeNames, timeOfDay, type TimeOfDay, type StageSelection, type Weather } from "./stages";
 import { Leaderboard, type RaceResult } from "./leaderboard";
 import { HudIcon } from "./ui";
 import { reasonText, type CheckpointNotice, type RunReason } from "./checkpoints";
@@ -15,6 +16,9 @@ export function RallyGame() {
   const host = useRef<HTMLDivElement>(null);
   const game = useRef<HTMLDivElement>(null);
   const hadNativeFullscreen = useRef(false);
+  const [inRoom,setInRoom]=useState(false);
+  const [driverView,setDriverView]=useState(false);
+  const toggleCamera=()=>{api.current?.toggleCamera();setDriverView(api.current?.driverCamera.enabled??false);};
   const [codriver,setCodriver]=useState(true);
   const [subtitle,setSubtitle]=useState("");
   const [hapticSupport,setHapticSupport]=useState<HapticCapability>('unavailable');
@@ -112,7 +116,7 @@ export function RallyGame() {
         });
         try{api.current.controls=readControls(JSON.parse(localStorage.getItem("rally-controls")||"null"));}catch{}
         setGhostSource(api.current.ghostSource);setSelection({...api.current.selection});
-        setCodriver(api.current.codriverEnabled);
+        setCodriver(api.current.codriverEnabled);setDriverView(api.current.driverCamera.enabled);
         setMuted(api.current.muted);setReplayEnabled(api.current.replayEnabled);
         setReady(true);
       })
@@ -232,7 +236,7 @@ export function RallyGame() {
   const car = cars[selected];
   const stage = stageDefinition(selection);
   const changeStage = (next: StageSelection) => {
-    next=next.stage==="kart"?{...next,laps:next.laps??3,circuitVersion:2}:{...next,laps:undefined,circuitVersion:undefined};
+    next=isCircuit(next)?{...next,laps:next.laps??3,circuitVersion:2}:{...next,laps:undefined,circuitVersion:undefined};
     setSelection(next);setResult(null);api.current?.configure(next);
     try{localStorage.setItem("rally-time-of-day",timeOfDay(next));}catch{}
   };
@@ -245,7 +249,7 @@ export function RallyGame() {
     optionPanel==='direction'?[{value:'forward',label:'Forward',detail:'Original route',selected:!selection.reverse},{value:'reverse',label:'Reverse',detail:'Same stage, other direction',selected:selection.reverse}]:
     [{value:'off',label:'Off',detail:'Just you and the stage',selected:ghostSource==='off'},{value:'personal',label:'My best',detail:'Your fastest clean run on this device',selected:ghostSource==='personal'},{value:'leader',label:'Leaderboard best',detail:'Fastest submitted run · same car and conditions',selected:ghostSource==='leader'}];
   const selectOption=(value:string)=>{
-    if(optionPanel==='stage')changeStage({...selection,stage:value as StageSelection['stage'],weather:'clear',timeOfDay:value==='kart'?'midday':timeOfDay(selection)});
+    if(optionPanel==='stage')changeStage({...selection,stage:value as StageSelection['stage'],weather:'clear',timeOfDay:timeOfDay(selection),track:1});
     if(optionPanel==='laps')changeStage({...selection,laps:Number(value) as 1|3|5,circuitVersion:2});
     if(optionPanel==='track')changeStage({...selection,track:Number(value) as 1|2|3});
     if(optionPanel==='time')changeStage({...selection,timeOfDay:value as TimeOfDay});
@@ -256,6 +260,7 @@ export function RallyGame() {
   };
   menuAction.current=action=>{
     if(action==='back'){
+      if(api.current?.roomMenuOpen){api.current.onRoomBack?.();return;}
       if(controlPanel)setControlPanel(false);else if(allBoards)setAllBoards(false);else if(optionPanel)closeOptions();else if(leaderboard)setLeaderboard(false);else if(installHelp)setInstallHelp(false);else if(api.current?.mode==='paused')api.current.pause();else if(api.current?.mode==='finished')mainMenu();
       return;
     }
@@ -272,7 +277,7 @@ export function RallyGame() {
     buttons[next].focus();
   };
   useEffect(()=>{
-    if(api.current)api.current.menuOpen=Boolean(optionPanel||leaderboard||installHelp||controlPanel||allBoards);
+    if(api.current)api.current.menuOpen=api.current.roomMenuOpen||Boolean(optionPanel||leaderboard||installHelp||controlPanel||allBoards);
     const menus=game.current?.querySelectorAll<HTMLElement>('[data-rally-menu]');const menu=menus?.[menus.length-1];
     (menu?.querySelector<HTMLElement>('[data-menu-default]')||menu?.querySelector<HTMLElement>('button'))?.focus();
   },[mode,optionPanel,leaderboard,installHelp,ready,controlPanel,allBoards]);
@@ -280,14 +285,14 @@ export function RallyGame() {
     <div className={styles.page}>
       <div className={styles.heading}>
         <div>
-          <p className={styles.eyebrow}>MARK WHITLEY / POCKET RALLY V2.7.3</p>
+          <p className={styles.eyebrow}>MARK WHITLEY / POCKET RALLY V3</p>
           <h1>
             POCKET<span>RALLY.</span>
           </h1>
         </div>
         <div className={styles.stageInfo}>
           <b>{trackName(selection).toUpperCase()}</b>
-          <span>{stage.surface} · {weatherNames[selection.weather]} · {(selection.stage==='kart'?`${lapCount(selection)} laps · Indoor`:timeNames[timeOfDay(selection)])} · {selection.reverse?"Reverse":"Forward"}</span>
+          <span>{stage.surface} · {weatherNames[selection.weather]} · {(isCircuit(selection)?`${lapCount(selection)} laps · ${timeNames[timeOfDay(selection)]}`:timeNames[timeOfDay(selection)])} · {selection.reverse?"Reverse":"Forward"}</span>
         </div>
       </div>
       <div
@@ -319,6 +324,7 @@ export function RallyGame() {
           {Array.from({length:selection.weather==='rain'?8:selection.weather==='snow'?12:3},(_,i)=><i key={i} style={{left:`${i%2===0?2+(i*7)%19:78+(i*7)%19}%`,animationDelay:`${-i*1.3}s`,animationDuration:`${selection.weather==='rain'?5+i%3:8+i%4}s`}}/>)}
         </div>}
         <div className={styles.topbar} aria-label="Game controls">
+          <button aria-label="Toggle driver-seat camera" title="Camera view" aria-pressed={driverView} onClick={toggleCamera}>▣</button>
           {(mode==='race'||mode==='countdown') && <button aria-label="Pause" title="Pause" onClick={()=>api.current?.pause()}><HudIcon name="pause"/></button>}
           <button disabled={!ready||audioBusy} aria-label={muted?'Enable sound':'Mute sound'} title={muted?'Enable sound':'Mute sound'} aria-pressed={!muted} onClick={toggleSound}><HudIcon name={muted?'muted':'sound'}/></button>
           <button aria-label={expanded?'Exit game view':'Fullscreen'} title={expanded?'Exit game view':'Fullscreen'} aria-pressed={expanded} onClick={toggleFullscreen}><HudIcon name={expanded?'contract':'expand'}/></button>
@@ -386,7 +392,7 @@ export function RallyGame() {
                 Big sideways.
               </h2>
               <p>
-                Five worlds. Fifteen tracks. Eight rally cars.
+                Six worlds. Sixteen tracks. Race your friends.
                 <br />Find your place on the leaderboard.
               </p>
             </div>
@@ -401,7 +407,7 @@ export function RallyGame() {
                 </button>
                 <div>
                   <span className={styles.eyebrow}>
-                    {selection.stage==='kart'?'INDOOR EXCLUSIVE':`${car.year} / ${String(selected + 1).padStart(2,"0")} OF 08`}
+                    {selection.stage==='kart'?'COUNTRYSIDE KART':`${car.year} / ${String(selected + 1).padStart(2,"0")} OF 08`}
                   </span>
                   <h3>{car.name}</h3>
                   <p>{car.trait}</p>
@@ -415,12 +421,13 @@ export function RallyGame() {
               </div>
               <div className={styles.stageChoices}>
                 <button onClick={e=>openOptions('stage',e.currentTarget)}><small>ENVIRONMENT</small><strong>{stage.name}</strong><span>{stage.surface} <HudIcon name="next"/></span></button>
-                <button onClick={e=>openOptions('track',e.currentTarget)}><small>TRACK {trackNumber(selection)} / 3</small><strong>{trackName(selection)}</strong><HudIcon name="next"/></button>
-                <button onClick={e=>openOptions(selection.stage==='kart'?'laps':'weather',e.currentTarget)}><small>{selection.stage==='kart'?'RACE LENGTH':'WEATHER'}</small><strong>{selection.stage==='kart'?`${lapCount(selection)} laps`:weatherNames[selection.weather]}</strong><span><HudIcon name="next"/></span></button>
-                {selection.stage==='kart'?<div className={styles.circuitSummary}><small>CIRCUIT / DISTANCE</small><strong>{Math.round(routeLength(selection)*lapCount(selection))} m</strong><span>Closed loop · {lapCount(selection)} laps</span></div>:<button onClick={e=>openOptions('time',e.currentTarget)}><small>TIME OF DAY</small><strong>{timeNames[timeOfDay(selection)]}</strong><HudIcon name="next"/></button>}
+                <button onClick={e=>openOptions('track',e.currentTarget)}><small>TRACK {trackNumber(selection)} / {trackNames[selection.stage].length}</small><strong>{trackName(selection)}</strong><HudIcon name="next"/></button>
+                <button onClick={e=>openOptions("weather",e.currentTarget)}><small>WEATHER</small><strong>{weatherNames[selection.weather]}</strong><HudIcon name="next"/></button>
+                <button onClick={e=>openOptions("time",e.currentTarget)}><small>TIME OF DAY</small><strong>{timeNames[timeOfDay(selection)]}</strong><HudIcon name="next"/></button>
+                {isCircuit(selection)&&<button onClick={e=>openOptions("laps",e.currentTarget)}><small>RACE LENGTH · {Math.round(routeLength(selection)*lapCount(selection))} M</small><strong>{lapCount(selection)} laps</strong><HudIcon name="next"/></button>}
                 <button onClick={e=>openOptions('direction',e.currentTarget)}><small>ROUTE</small><strong>{selection.reverse?'Reverse':'Forward'}</strong><span><HudIcon name="next"/></span></button>
                 <button onClick={e=>openOptions('ghost',e.currentTarget)}><small>GHOST</small><strong>{ghostSource==='off'?'Off':ghostSource==='personal'?'My best':'Leaderboard'}</strong><span><HudIcon name="next"/></span></button>
-                <button aria-pressed={codriver} disabled={selection.stage==='kart'} onClick={toggleCodriver}><small>CO-DRIVER</small><strong>{selection.stage==='kart'?'Rally only':codriver?'On':'Off'}</strong></button>
+                <button onClick={toggleCamera} aria-pressed={driverView}>Camera: {driverView?"Driver seat":"Isometric"}</button><button aria-pressed={codriver} disabled={selection.stage==='kart'} onClick={toggleCodriver}><small>CO-DRIVER</small><strong>{selection.stage==='kart'?'Rally only':codriver?'On':'Off'}</strong></button>
                 <button aria-pressed={screenWeather} onClick={toggleScreenWeather}><small><HudIcon name="screen"/> SCREEN WEATHER</small><strong>{screenWeather?"On":"Off"}</strong></button>
               </div>
               <small className={styles.ghostStatus} role="status">{ghostStatus!=="Ghost off"&&ghostStatus!=="My best"?ghostStatus:""}</small>
@@ -428,7 +435,7 @@ export function RallyGame() {
               <button
                 className={styles.start}
                 data-menu-default="true"
-                data-start-cue="true" onClick={() => api.current?.start()}
+                data-start-cue="true" disabled={inRoom} onClick={() => api.current?.start()}
               >
                 START STAGE <span><HudIcon name="next"/></span>
               </button>
@@ -438,7 +445,7 @@ export function RallyGame() {
             </div>
           </>
         )}
-        {selection.stage==='kart'&&['race','countdown','celebrating'].includes(mode)&&<div className={styles.lapCard} aria-label="Lap information">
+        {isCircuit(selection)&&['race','countdown','celebrating'].includes(mode)&&<div className={styles.lapCard} aria-label="Lap information">
           <small>{mode==='celebrating'?'FINISHED':stats.lap===lapCount(selection)?'FINAL LAP':'CIRCUIT RACE'}</small>
           <strong>LAP <b>{Math.min(stats.lap,lapCount(selection))}</b><span> / {lapCount(selection)}</span></strong>
           <div className={styles.lapProgressLabel}><span>Lap progress</span><b>{Math.round(stats.lapProgress*100)}%</b></div>
@@ -449,10 +456,10 @@ export function RallyGame() {
         {(mode === "race" || mode === "countdown") && (
           <>
             <div className={styles.timer}>
-              <small>{selection.stage==='kart'?'RACE TIME':'STAGE TIME'}</small>
+              <small>{isCircuit(selection)?'RACE TIME':'STAGE TIME'}</small>
               <strong>{formatTime(stats.time)}</strong>
               <span>BEST <b>{best ? formatTime(best) : "—"}</b></span>
-              {selection.stage!=='kart'&&<div className={styles.progress} aria-label="Stage progress"><div style={{width:`${stats.progress*100}%`}}/></div>}
+              {!isCircuit(selection)&&<div className={styles.progress} aria-label="Stage progress"><div style={{width:`${stats.progress*100}%`}}/></div>}
               {practice.length>0 && <em className={styles.practice}>! PRACTICE RUN</em>}
             </div>
             <div className={styles.speed}>
@@ -468,7 +475,7 @@ export function RallyGame() {
               aria-label="Touch driving controls"
             >
               <div className={styles.steeringPad}>
-                {controls.steering==="wheel"?<TouchWheel sensitivity={controls.sensitivity} onInput={(value,held)=>{if(api.current){if(held)api.current.touchSteer=value;api.current.touchHeld=held;api.current.touchActive=true;}}}/>:<>{touchButton("KeyA", <HudIcon name="left"/>, "Steer left")}{touchButton("KeyD", <HudIcon name="right"/>, "Steer right")}</>}
+                {touchButton("KeyA", <HudIcon name="left"/>, "Steer left")}{touchButton("KeyD", <HudIcon name="right"/>, "Steer right")}
               </div>
               <div className={styles.pedalPad}>
 
@@ -487,7 +494,7 @@ export function RallyGame() {
         )}
         {mode === "countdown" && (
           <div className={styles.count}>
-            {stats.count > 0 ? stats.count : "GO!"}
+            {stats.count > 3 ? <span style={{fontSize:28}}>TO THE GRID</span> : stats.count > 0 ? stats.count : "GO!"}
           </div>
         )}
         {mode === "paused" && (
@@ -495,15 +502,15 @@ export function RallyGame() {
             <div className={styles.pauseCard}>
               <span className={styles.tag}>SERVICE BREAK</span>
               <h2>PAUSED<span>.</span></h2>
-              <p>{trackName(selection)} · {(selection.stage==='kart'?`${lapCount(selection)} laps · Indoor`:timeNames[timeOfDay(selection)])} / {formatTime(stats.time)}</p>
+              <p>{trackName(selection)} · {(isCircuit(selection)?`${lapCount(selection)} laps · ${timeNames[timeOfDay(selection)]}`:timeNames[timeOfDay(selection)])} / {formatTime(stats.time)}</p>
               <button className={styles.start} data-menu-default="true" onClick={()=>api.current?.pause()}>RESUME <span><HudIcon name="right"/></span></button>
-              <button className={styles.menuButton} onClick={()=>api.current?.start()}>Restart stage <span>↻</span></button>
+              <button className={styles.menuButton} disabled={inRoom} onClick={()=>api.current?.start()}>Restart stage <span>↻</span></button>
               <button className={styles.menuButton} onClick={mainMenu}>Main menu <small>Ends this run</small></button>
               <button className={styles.menuButton} onClick={()=>setControlPanel(true)}>Controls & feedback <HudIcon name="right"/></button>
             <div className={styles.pauseSettings}>
                 <button disabled={audioBusy} aria-pressed={!muted} onClick={toggleSound}><HudIcon name={muted?'muted':'sound'}/>{muted?'Sound off':'Sound on'}</button>
                 <button disabled={ghostSource==='off'} aria-pressed={ghostShown&&ghostSource!=='off'} onClick={()=>api.current?.toggleGhost()}><HudIcon name="ghost"/>Ghost {ghostShown&&ghostSource!=='off'?'on':'off'}</button>
-                <button aria-pressed={codriver} disabled={selection.stage==='kart'} onClick={toggleCodriver}>Co-driver {codriver?'on':'off'}</button>
+                <button onClick={toggleCamera} aria-pressed={driverView}>Camera: {driverView?"Driver seat":"Isometric"}</button><button aria-pressed={codriver} disabled={selection.stage==='kart'} onClick={toggleCodriver}>Co-driver {codriver?'on':'off'}</button>
                 <button aria-pressed={screenWeather} onClick={toggleScreenWeather}><HudIcon name="screen"/>Screen weather {screenWeather?"on":"off"}</button>
                 <button onClick={toggleFullscreen}><HudIcon name={expanded?'contract':'expand'}/>{expanded?'Exit view':'Fullscreen'}</button>
               </div>
@@ -517,14 +524,14 @@ export function RallyGame() {
               {result?.eligible ? 'STAGE COMPLETE' : 'PRACTICE FINISH'}
             </span>
             <h2>{formatTime(result?.time ?? stats.time)}</h2>
-            <p>{car.name} · {trackName(selection)} · {weatherNames[selection.weather]} · {(selection.stage==='kart'?`${lapCount(selection)} laps · Indoor`:timeNames[timeOfDay(selection)])} · {selection.reverse?"Reverse":"Forward"}</p>
+            <p>{car.name} · {trackName(selection)} · {weatherNames[selection.weather]} · {(isCircuit(selection)?`${lapCount(selection)} laps · ${timeNames[timeOfDay(selection)]}`:timeNames[timeOfDay(selection)])} · {selection.reverse?"Reverse":"Forward"}</p>
             {result && !result.eligible && <p className={styles.practiceReason}>{result.reasons.map(r=>reasonText[r]).join(" · ")} — time shown, not ranked.</p>}
             {Boolean(result?.penalty)&&<p className={styles.practiceReason}>Recovery penalties: +{result!.penalty!.toFixed(2)}s · included in stage time</p>}
             <p>Personal best: {best ? formatTime(best) : "—"}</p>
             <button onClick={()=>setLeaderboard(true)}>{result?.eligible?"Submit time & leaderboard":"View leaderboard"}</button>
             <button
               className={styles.start}
-              data-start-cue="true" onClick={() => api.current?.start()}
+              data-start-cue="true" disabled={inRoom} onClick={() => api.current?.start()}
             >
               ONE MORE RUN <HudIcon name="next"/>
             </button>
@@ -545,15 +552,14 @@ export function RallyGame() {
         </div></div>}
         {controlPanel&&<div className={styles.optionScrim}><div className={styles.optionPanel} role="dialog" aria-modal="true" aria-label="Driving controls" data-rally-menu="true">
           <header><div><span className={styles.tag}>YOUR CONTROLS</span><h2>Driving controls</h2></div><button onClick={()=>setControlPanel(false)} aria-label="Close controls">×</button></header>
-          <div className={styles.optionList}>{(['arrows','wheel'] as const).map(steering=><button key={steering} aria-pressed={controls.steering===steering} onClick={()=>setControls(c=>({...c,steering}))}>{steering==='arrows'?'Arrow buttons':'◉ Steering wheel'}<b>{controls.steering===steering?'✓':''}</b></button>)}</div>
-          <label className={styles.controlRange}>Wheel sensitivity <strong>{controls.sensitivity.toFixed(1)}×</strong><input type="range" min="0.5" max="1.5" step="0.1" value={controls.sensitivity} onChange={e=>setControls(c=>({...c,sensitivity:Number(e.target.value)}))}/></label>
-          <p>Drag around the wheel rim to turn. Release to centre. Use your other thumb for the pedals.</p>
+          <label className={styles.controlRange}>Steering sensitivity <strong>{controls.sensitivity.toFixed(1)}×</strong><input type="range" min="0.5" max="1.5" step="0.1" value={controls.sensitivity} onChange={e=>setControls(c=>({...c,sensitivity:Number(e.target.value)}))}/></label>
           <button className={styles.menuButton} disabled={hapticSupport==='unavailable'} aria-pressed={controls.haptics} onClick={()=>setControls(c=>({...c,haptics:!c.haptics}))}>{hapticSupport==='controller'?'Controller rumble':hapticSupport==='device'?'Device vibration':'Haptics unavailable'}: {controls.haptics?'On':'Off'}</button>
           <button className={styles.menuButton} disabled={hapticSupport==='unavailable'} onClick={()=>void testHaptics().then(setHapticMessage)}>Test feedback</button><p role="status">{hapticMessage}</p>
           <p className={styles.hint}>Rumble requires a supported controller/browser. Handset vibration is available only where the browser supports it; iPhone and iPad web vibration is not supported.</p>
           <button className={styles.menuButton} onClick={()=>setControls({...defaultControls})}>Reset controls to defaults</button><small>Restores arrows, normal sensitivity and haptics off. Records stay saved.</small>
         </div></div>}
         {allBoards&&<Standings onClose={()=>setAllBoards(false)}/>}
+        <FriendRaces mode={mode} ready={ready} world={()=>api.current} selection={selection} car={selected} onActive={setInRoom} onSetup={(s,car)=>{const w=api.current;if(!w)return;if(w.mode!=='garage')w.garage();w.configure(s);w.choose(car);setSelection({...s});setSelected(car);}}/>
         {leaderboard && <Leaderboard selection={selection} result={result} onClose={()=>setLeaderboard(false)} />}
       </div>
       <div className={styles.below}>

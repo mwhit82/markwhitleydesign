@@ -4,7 +4,7 @@ export type ControlSettings={steering:'arrows'|'wheel';sensitivity:number;haptic
 export const defaultControls:ControlSettings={steering:'arrows',sensitivity:1,haptics:false};
 export function readControls(value:unknown):ControlSettings{
  const v=value as Partial<ControlSettings>|null;
- return {steering:v?.steering==='wheel'?'wheel':'arrows',sensitivity:typeof v?.sensitivity==='number'&&Number.isFinite(v.sensitivity)?Math.max(.5,Math.min(1.5,v.sensitivity)):1,haptics:v?.haptics===true};
+ return {steering:'arrows',sensitivity:typeof v?.sensitivity==='number'&&Number.isFinite(v.sensitivity)?Math.max(.5,Math.min(1.5,v.sensitivity)):1,haptics:v?.haptics===true};
 }
 export function wheelDelta(previous:number,next:number){return Math.atan2(Math.sin(next-previous),Math.cos(next-previous));}
 export function wheelInput(angle:number,sensitivity:number){return Math.max(-1,Math.min(1,angle/(Math.PI*.65)*sensitivity));}

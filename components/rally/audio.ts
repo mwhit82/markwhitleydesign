@@ -15,12 +15,12 @@ export function soundMix(drive: DriveSound, mode: Mode, car: number) {
   const brake = mode === "race" ? drive.brake : 0;
   const personality = [0.9, 1.04, 0.97, 1.1][car] ?? 1;
   const kart = car === 4;
+  const gearSpeed=Math.min(speed,27);const gear=Math.min(3,Math.floor(gearSpeed/7));
+  const raceRevs=Math.max(0,Math.min(1,(gearSpeed-gear*7)/7));
   const revs = Math.max(0, Math.min(1, ((drive.rpm ?? (950 + speed * 180)) - 950) / 6050));
   return {
     tyre: kart && mode === "race" ? Math.min(1, Math.max(0, (speed - 4) / 10)) * Math.min(.15, (drive.sliding ? .065 : 0) + Math.max(0, (drive.corner ?? 0) - .35) * .055 + brake * .018) : 0,
-    rate: kart ? .82 + Math.pow(revs,.7) * 1.12 :
-      personality *
-      Math.min(2.2, drive.rpm !== undefined && mode === "race" ? 0.72 + (drive.rpm - 950) / 4400 : 0.72 + speed * 0.043 + throttle * 0.42 - brake * 0.1),
+    rate: kart ? .82 + Math.pow(revs,.7) * 1.12 : personality * (.78 + raceRevs*.85 + revs*.15 + throttle*.3),
     idle: (mode==="celebrating"||mode==="finished"?0:0.07) * (1 - Math.min(speed / 9, 1)) * (1 - throttle * 0.85),
     load: mode === "race" ? throttle * (drive.limited ? 0.06 : 0.48) + Math.min(speed / 24, 1) * 0.018 : 0,
     lift: mode === "race" ? Math.min(speed/10,1)*(1-throttle)*.14 : 0,
@@ -198,8 +198,8 @@ export class RallyAudio {
   }
 
   setEnvironment(stage: string) {
-    this.indoor=stage==="kart";this.ambience.volume=this.indoor?0:1;
-    const next = stage === "forest" || stage === "alpine" ? "/rally/forest-birds.wav" : "/rally/open-wind.wav";
+    this.indoor=stage==="kart";this.ambience.volume=1;
+    const next = stage === "nyc" ? "/rally/nyc-ambience.wav" : stage === "forest" || stage === "alpine" || stage === "kart" ? "/rally/forest-birds.wav" : "/rally/open-wind.wav";
     if (this.ambience.getAttribute("src") === next) return;
     this.ambience.pause();
     this.ambience.src=next;

@@ -5,9 +5,9 @@ export function browseRequest(q:URLSearchParams){
  if((laps!==null&&!['1','3','5'].includes(laps))||(track!==null&&!/^[1-3]$/.test(track))||(stage&&!stages.some(s=>s.id===stage))||(weather&&!stages.some(s=>(s.conditions as readonly string[]).includes(weather)))||(day&&!(timesOfDay as readonly string[]).includes(day))||(direction!==null&&!['true','false'].includes(direction))||(car!==null&&!/^[0-8]$/.test(car))||search.length>20) return null;
  const cursor=q.get('cursor')||'0';if(!/^\d{1,6}$/.test(cursor))return null;const offset=Number(cursor),board=0;
  const selections:StageSelection[]=[];
- for(const s of stages)for(const w of s.conditions)for(const r of [false,true])for(const d of stageTimes(s.id))for(const layout of [1,2,3] as const)for(const count of (s.id==='kart'?[1,3,5]:[1]) as (1|3|5)[]){
-  if((laps!==null&&(s.id!=='kart'||count!==Number(laps)))||(track!==null&&layout!==Number(track))||(car!==null&&(s.id==='kart'?car!=='8':car==='8'))||(stage&&s.id!==stage)||(weather&&w!==weather)||(day&&d!==day)||(direction!==null&&String(r)!==direction))continue;
-  selections.push({stage:s.id,weather:w,reverse:r,timeOfDay:d,track:layout,...(s.id==='kart'?{laps:count,circuitVersion:2 as const}:{})});
+ for(const s of stages)for(const w of s.conditions)for(const r of [false,true])for(const d of stageTimes(s.id))for(const layout of (s.id==='nyc'?[1]:[1,2,3]) as (1|2|3)[])for(const count of ((s.id==='kart'||s.id==='nyc')?[1,3,5]:[1]) as (1|3|5)[]){
+  if((laps!==null&&((s.id!=='kart'&&s.id!=='nyc')||count!==Number(laps)))||(track!==null&&layout!==Number(track))||(car!==null&&(s.id==='kart'?car!=='8':car==='8'))||(stage&&s.id!==stage)||(weather&&w!==weather)||(day&&d!==day)||(direction!==null&&String(r)!==direction))continue;
+  selections.push({stage:s.id,weather:w,reverse:r,timeOfDay:d,track:layout,...((s.id==='kart'||s.id==='nyc')?{laps:count,circuitVersion:2 as const}:{})});
  }
  if(board>selections.length||offset>10000000)return null;
  return {selections,keys:selections.map(s=>`rally:${boardKey(s)}${car===null?'':`:car${car}`}`),board,offset,search:search.toLowerCase()};

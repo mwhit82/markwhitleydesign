@@ -19,7 +19,7 @@ export function kartFinishLayout(points:T.Vector3[],selection:StageSelection){
  return {finish,direction,center,angle,approach,crossing,normal,tangent};
 }
 export type KartFinish=ReturnType<typeof kartFinishLayout>;
-export function kartFloor(layout:KartFinish){
+export function kartFloor(layout:KartFinish,snow=false){
  const shape=new T.Shape();shape.moveTo(-120,-120);shape.lineTo(120,-120);shape.lineTo(120,120);shape.lineTo(-120,120);shape.closePath();
  for(const sign of [-1,1]){
   const hole=new T.Path();
@@ -27,7 +27,7 @@ export function kartFloor(layout:KartFinish){
    const p=layout.crossing.clone().addScaledVector(layout.normal,sign*d).addScaledVector(layout.tangent,w);if(i===0)hole.moveTo(p.x,-p.z);else hole.lineTo(p.x,-p.z);
   }hole.closePath();shape.holes.push(hole);
  }
- const floor=new T.Mesh(new T.ShapeGeometry(shape),new T.MeshStandardMaterial({color:'#636664',roughness:.96}));floor.rotation.x=-Math.PI/2;floor.position.y=-.3;floor.receiveShadow=true;
+ const floor=new T.Mesh(new T.ShapeGeometry(shape),new T.MeshStandardMaterial({color:snow?'#dbe3dc':'#82956a',roughness:.96}));floor.rotation.x=-Math.PI/2;floor.position.y=-.3;floor.receiveShadow=true;
  const group=new T.Group();group.add(floor);
  const box=(w:number,h:number,d:number,color:string,p:T.Vector3,angle=0)=>{const mesh=new T.Mesh(new T.BoxGeometry(w,h,d),new T.MeshStandardMaterial({color,roughness:.94}));mesh.position.copy(p);mesh.rotation.y=angle;mesh.receiveShadow=true;group.add(mesh);return mesh;};
  box(240,.4,240,'#343b3a',new T.Vector3(0,-4.7,0));

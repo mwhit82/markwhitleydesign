@@ -56,7 +56,7 @@ export class SurfaceEffects {
     for(const side of [-1,1]){
      const i=this.cursor++%TRACK_CAP;
      const nearest=this.routePoints.reduce((best,p,j)=>Math.hypot(p.x-car.x,p.z-car.z)<Math.hypot(this.routePoints[best].x-car.x,this.routePoints[best].z-car.z)?j:best,0);
-     this.object.position.set((car.x+this.previous.x)/2+Math.cos(angle)*side,.073+(this.selection.stage==='kart'?0:rampHeight(nearest)),(car.z+this.previous.z)/2-Math.sin(angle)*side);
+     this.object.position.set((car.x+this.previous.x)/2+Math.cos(angle)*side,.073+((this.selection.stage==='kart'||this.selection.stage==='nyc')?0:rampHeight(nearest)),(car.z+this.previous.z)/2-Math.sin(angle)*side);
      this.object.rotation.set(-Math.PI/2,0,Math.atan2(dx,dz));this.object.scale.set(1,Math.min(2.5,distance+.1),1);this.object.updateMatrix();this.tracks.setMatrixAt(i,this.object.matrix);this.age[i]=0;this.bornDistance[i]=this.travelled;
     }
     this.travelled+=distance;this.tracks.instanceMatrix.needsUpdate=true;this.previous.copy(car);this.clock=0;

@@ -36,7 +36,7 @@ test('all 18 kart circuit races close, count laps once and validate without chan
   const layout=finishLayout(points);assert.ok(layout.center.distanceTo(points[0])>20);
  }
  assert.equal(validSelection({stage:'kart',weather:'clear',reverse:false,laps:2,circuitVersion:2}),false);
- assert.equal(browseRequest(new URLSearchParams('stage=kart&laps=5')).keys.length,6);
+ assert.equal(browseRequest(new URLSearchParams('stage=kart&laps=5')).keys.length,96);
 });
 test('closed-circuit start crossing cannot finish and missing a later gate makes the lap practice',()=>{
  const p=stagePoints({stage:'kart',weather:'clear',reverse:false,circuitVersion:2});
@@ -46,7 +46,7 @@ test('closed-circuit start crossing cannot finish and missing a later gate makes
  assert.ok(passed.finished);assert.ok(passed.events.some(e=>e.outcome==='missed'));
 });
 test('all route bridges clear other road sections and finish crowds have safe retreat positions',()=>{
- for(const stage of stages)for(const track of [1,2,3])for(const reverse of [false,true]){
+ for(const stage of stages.filter(s=>s.id!=='nyc'))for(const track of [1,2,3])for(const reverse of [false,true]){
   const points=stagePoints({stage:stage.id,weather:'clear',track,reverse,...(stage.id==='kart'?{circuitVersion:2}:{})}),a=new Atmosphere(points);
   assert.equal(a.spectators.filter(p=>p.finish).length,36);
   assert.equal(a.spectators.filter(p=>p.photo).length,24);
@@ -56,7 +56,7 @@ test('all route bridges clear other road sections and finish crowds have safe re
 });
 test('road relief adds bounded local geometry with continuous texture coordinates',async()=>{
  const {roadRelief}=await import(await moduleUrl(resolve('components/rally/road-relief.ts')));
- for(const stage of stages.filter(s=>s.id!=='kart'))for(const track of [1,2,3])for(const reverse of [false,true]){
+ for(const stage of stages.filter(s=>s.id!=='kart'&&s.id!=='nyc'))for(const track of [1,2,3])for(const reverse of [false,true]){
   const {road,earth}=roadRelief(stagePoints({stage:stage.id,track,reverse,weather:'clear'}));
   assert.ok(road.attributes.position.count<600);assert.ok(earth.attributes.position.count<600);
   for(const mesh of [road,earth]){const p=mesh.attributes.position,u=mesh.attributes.uv;for(let i=0;i<p.count;i++){assert.ok(Number.isFinite(p.getZ(i)));assert.ok(Math.abs(u.getX(i)-(p.getX(i)+85)/170)<1e-6);assert.ok(Math.abs(u.getY(i)-(p.getY(i)+80)/160)<1e-6);}mesh.dispose();}

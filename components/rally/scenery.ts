@@ -1,3 +1,4 @@
+import {environmentScenery} from './v3-scenery';
 import {kartBarrierSegments} from "./kart-venue";
 import * as T from 'three';
 import {type StageSelection} from './stages';
@@ -25,19 +26,9 @@ export class StageScenery {
   this.group.name="stage-scenery";
   const mat=(color:string)=>new T.MeshStandardMaterial({color,roughness:.9});
   const box=(w:number,h:number,d:number,color:string,x:number,y:number,z:number,parent=this.group)=>{const m=new T.Mesh(new T.BoxGeometry(w,h,d),mat(color));m.position.set(x,y,z);m.receiveShadow=true;m.castShadow=true;parent.add(m);return m;};
+  if(selection.stage==='nyc'){this.group.add(environmentScenery(selection,points,reserved));return;}
   if(selection.stage==='kart'){
-   // Roofless clay warehouse: structure sits at the perimeter, never above the kart.
-   box(240,10,.8,'#67716f',0,4.7,-119);box(.8,10,238,'#67716f',-119,4.7,0);
-   box(240,.65,.8,'#484f4d',0,.02,119);box(.8,.65,238,'#484f4d',119,.02,0);
-   const posts=new T.InstancedMesh(new T.BoxGeometry(.9,10.5,1.1),mat('#b84b3e'),20);
-   const panels=new T.InstancedMesh(new T.BoxGeometry(20,5.4,.15),mat('#929a94'),10);
-   const lights=new T.InstancedMesh(new T.BoxGeometry(13,.2,.5),new T.MeshStandardMaterial({color:'#fff2cc',emissive:'#ffe6ac',emissiveIntensity:.8}),20);
-   for(let i=0;i<10;i++){
-    for(const side of [0,1]){this.object.position.set(side?-117:-108+i*24,5,side?-108+i*24:-117);this.object.rotation.set(0,side?Math.PI/2:0,0);this.object.scale.setScalar(1);this.object.updateMatrix();posts.setMatrixAt(i*2+side,this.object.matrix);this.object.position.y=9.5;this.object.updateMatrix();lights.setMatrixAt(i*2+side,this.object.matrix);}
-    this.object.position.set(-108+i*24,4,-118.4);this.object.rotation.set(0,0,0);this.object.updateMatrix();panels.setMatrixAt(i,this.object.matrix);
-   }posts.castShadow=true;this.group.add(posts,panels,lights);
-   box(236,.4,.5,'#3f4947',0,9,-116);box(.5,.4,236,'#3f4947',-116,9,0);
-   const banner=panel('POCKET KART • 1993','#b94d3e',28);banner.position.set(-18,6,-117.8);this.group.add(banner);
+   this.group.add(environmentScenery(selection,points,reserved));
    const blocks=kartBarrierSegments(points,reserved),placements:T.Vector3[]=[];
    const barriers=new T.InstancedMesh(new T.BoxGeometry(.85,1.1,1),mat('#eee6cf'),blocks.length);
    blocks.forEach(({p,angle,length,normal},i)=>{

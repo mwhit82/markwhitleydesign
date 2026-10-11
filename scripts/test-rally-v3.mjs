@@ -1,0 +1,64 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {readFile} from 'node:fs/promises';
+import {resolve,dirname} from 'node:path';
+import ts from 'typescript';
+const cache=new Map();
+async function moduleUrl(path){
+ if(cache.has(path))return cache.get(path);
+ let code=ts.transpileModule(await readFile(path,'utf8'),{compilerOptions:{module:ts.ModuleKind.ESNext,target:ts.ScriptTarget.ES2022}}).outputText;
+ for(const match of [...code.matchAll(/from ["']([^"']+)["']/g)]){const spec=match[1],url=spec.startsWith('.')?await moduleUrl(resolve(dirname(path),spec+'.ts')):import.meta.resolve(spec);code=code.replace(match[0],`from '${url}'`);}
+ const url='data:text/javascript;base64,'+Buffer.from(code).toString('base64');cache.set(path,url);return url;
+}
+const S=await import(await moduleUrl(resolve('components/rally/stages.ts')));
+const {validateRun}=await import(await moduleUrl(resolve('lib/rally/validation.ts')));
+const {Atmosphere}=await import(await moduleUrl(resolve('components/rally/atmosphere.ts')));
+const {DriverCamera}=await import(await moduleUrl(resolve('components/rally/driver-camera.ts')));
+const {readControls}=await import(await moduleUrl(resolve('components/rally/controls.ts')));
+const T=await import('three');
+test('all 360 NYC/outdoor-kart race configurations validate and preserve clear-midday keys',()=>{
+ const keys=new Set();let count=0;
+ for(const stage of ['kart','nyc'])for(const track of stage==='nyc'?[1]:[1,2,3])for(const reverse of [false,true])for(const weather of S.stages.find(s=>s.id===stage).conditions)for(const timeOfDay of S.timesOfDay)for(const laps of [1,3,5]){
+  const s={stage,track,reverse,weather,timeOfDay,laps,circuitVersion:2};assert.ok(S.validSelection(s));const key=S.boardKey(s);assert.ok(!keys.has(key));keys.add(key);count++;
+  const p=S.stagePoints(s);assert.ok(p[0].distanceTo(p[650])<1e-8);assert.ok(p.every(q=>Math.abs(q.x)<79&&Math.abs(q.z)<74));
+  let time=0,previous=p[0];const trace=[[0,previous.x,previous.z]];
+  for(let lap=0;lap<laps;lap++)for(const q of p.slice(1)){time+=q.distanceTo(previous)/12;previous=q;if(time-trace.at(-1)[0]>.25)trace.push([time,q.x,q.z]);}
+  time+=p[1].distanceTo(previous)/12;trace.push([time,p[1].x,p[1].z]);
+  assert.ok(validateRun(s,time,trace,time+3),JSON.stringify(s));
+  if(stage==='kart'&&weather==='clear'&&timeOfDay==='midday')assert.equal(key,`v3:kart:track${track}:${reverse?'reverse':'forward'}:laps${laps}`);
+ }
+ assert.equal(count,360);
+ assert.equal(S.validSelection({stage:'nyc',track:2,weather:'clear',reverse:false,circuitVersion:2}),false);
+});
+test('NYC station and arrival clear the circuit in both directions',()=>{
+ for(const reverse of [false,true]){const s={stage:'nyc',weather:'clear',reverse,circuitVersion:2},p=S.stagePoints(s),a=new Atmosphere(p,s);assert.ok(a.layout.center.distanceTo(p[0])>20);assert.ok(p.every(q=>q.distanceTo(a.layout.center)>15));assert.ok(a.group.children.every(o=>Number.isFinite(o.position.x)));a.celebrate();a.reset();}
+});
+test('driver camera blends, stabilises its horizon and restores external visibility',()=>{
+ const c=new DriverCamera(),v=new T.Group(),base=new T.OrthographicCamera();base.position.set(28,36,28);base.lookAt(0,0,0);c.enabled=true;
+ for(let i=0;i<40;i++)c.update(.016,v,1,.5,base,true,false,390,844,true);
+ assert.equal(c.blend,1);assert.equal(v.visible,true);assert.ok(c.camera.aspect<1);assert.ok(Math.abs(c.camera.up.y-1)<1e-8);
+ c.update(0,v,1,0,base,false,true,844,390,true);assert.equal(c.blend,0);assert.equal(v.visible,true);c.dispose();
+ assert.equal(readControls({steering:'wheel',sensitivity:1.2,haptics:true}).steering,'arrows');
+});
+const {roomAction,sweepRoom}=await import(await moduleUrl(resolve('lib/rally/room-state.ts')));
+const roomFixture=()=>({version:1,code:'ABC234',host:'a',selection:{stage:'forest',weather:'clear',reverse:false},car:0,phase:'lobby',attempt:0,startAt:0,members:['a','b','c','d'].map(id=>({id,name:id,ready:false,seen:1000,status:'lobby'}))});
+test('four seats ready together, host alone controls locked setup and countdown',()=>{
+ const r=roomFixture();assert.throws(()=>roomAction(r,'a',{type:'start'},1000));assert.throws(()=>roomAction(r,'b',{type:'setup',selection:r.selection,car:1},1000));
+ for(const m of r.members)roomAction(r,m.id,{type:'ready',ready:true},1000);
+ roomAction(r,'a',{type:'start'},1000);assert.equal(r.startAt,5000);assert.equal(r.attempt,1);assert.ok(r.members.every(m=>m.status==='racing'));
+ assert.throws(()=>roomAction(r,'a',{type:'setup',selection:r.selection,car:1},1000));
+});
+test('reconnect grace, host migration, terminal states and rematch',()=>{
+ const r=roomFixture();for(const m of r.members)m.ready=true;roomAction(r,'a',{type:'start'},1000);
+ r.members.slice(1).forEach(m=>m.seen=21000);sweepRoom(r,21000);assert.equal(r.host,'a');sweepRoom(r,21001);assert.equal(r.host,'b');assert.equal(r.members[0].status,'disconnected');
+ assert.throws(()=>roomAction(r,'a',{type:'ready',ready:true},21002));
+ for(const id of ['b','c','d'])roomAction(r,id,{type:'finish',attempt:1,time:12,trace:[]},21002);
+ assert.equal(r.phase,'results');assert.ok(r.members.slice(1).every(m=>m.practice));assert.throws(()=>roomAction(r,'b',{type:'finish',attempt:1,time:12},21002));
+ roomAction(r,'b',{type:'again'},21003);assert.equal(r.members.length,3);assert.ok(r.members.every(m=>m.status==='lobby'&&!m.ready));
+ roomAction(r,'b',{type:'leave'},21004);assert.equal(r.host,'c');
+});
+test('forged early finishes and wrong attempt rejected, malformed traces remain practice',()=>{
+ const r=roomFixture();for(const m of r.members)m.ready=true;roomAction(r,'a',{type:'start'},1000);
+ assert.throws(()=>roomAction(r,'a',{type:'finish',attempt:1,time:100,trace:[]},6000));assert.throws(()=>roomAction(r,'a',{type:'finish',attempt:0,time:1},6000));
+ roomAction(r,'a',{type:'finish',attempt:1,time:1,trace:[[NaN,0,0]]},6000);assert.equal(r.members[0].practice,true);
+});

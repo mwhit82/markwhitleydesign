@@ -5,10 +5,10 @@ const {surfaceAccumulation,createSnow}=await import(await load(resolve('componen
 const {elevationPose,rampHeight,StageScenery}=await import(await load(resolve('components/rally/scenery.ts')));
 const {RallyAudio}=await import(await load(resolve('components/rally/audio.ts')));
 test('legacy routes and keys are retained; new routes are distinct; kart is isolated',()=>{
- for(const stage of stages){const base={stage:stage.id,weather:'clear',reverse:false};assert.equal(boardKey(base),boardKey({...base,track:1}));assert.notEqual(boardKey(base),boardKey({...base,track:2}));const routes=[1,2,3].map(track=>stagePoints({...base,track}));for(let i=0;i<3;i++)for(let j=i+1;j<3;j++)assert.ok(routes[i].some((p,k)=>p.distanceTo(routes[j][k])>12));}
+ for(const stage of stages.filter(s=>s.id!=='nyc')){const base={stage:stage.id,weather:'clear',reverse:false};assert.equal(boardKey(base),boardKey({...base,track:1}));assert.notEqual(boardKey(base),boardKey({...base,track:2}));const routes=[1,2,3].map(track=>stagePoints({...base,track}));for(let i=0;i<3;i++)for(let j=i+1;j<3;j++)assert.ok(routes[i].some((p,k)=>p.distanceTo(routes[j][k])>12));}
  assert.ok(compatibleCar({stage:'kart'},8));assert.equal(compatibleCar({stage:'kart'},0),false);assert.equal(compatibleCar({stage:'forest'},8),false);for(let i=0;i<8;i++)assert.ok(compatibleCar({stage:'forest'},i));
  for(const track of [0,4,'2',NaN])assert.equal(validSelection({stage:'forest',weather:'clear',reverse:false,track}),false);
- assert.equal(validSelection({stage:'kart',weather:'rain',reverse:false}),false);assert.equal(validSelection({stage:'kart',weather:'clear',reverse:false,timeOfDay:'night'}),false);
+ assert.equal(validSelection({stage:'kart',weather:'rain',reverse:false}),true);assert.equal(validSelection({stage:'kart',weather:'clear',reverse:false,timeOfDay:'night'}),true);
 });
 test('buildup responds to surface, rain and snowfall, remains bounded and pauses',()=>{
  const base={stage:'forest',weather:'clear',reverse:false};const dry=surfaceAccumulation(base,20,20,0,0),wet=surfaceAccumulation({...base,weather:'rain'},20,20,0,0);assert.ok(wet.mud>dry.mud);
@@ -23,5 +23,5 @@ test('finish crowd profiles distinguish practice, clean completion and personal 
 });
 test('scenery allocation is bounded; indoor has no birds or ramps; pause freezes flight',()=>{
  globalThis.document={createElement:()=>({getContext:()=>({fillRect(){},fillText(){}})})};
- for(const stage of stages){const selection={stage:stage.id,weather:'clear',reverse:false},scenery=new StageScenery(selection,stagePoints(selection),()=>false);assert.ok(scenery.group.children.length<40);scenery.update(1,false);const clock=scenery.clock;scenery.update(0,false);assert.equal(scenery.clock,clock);if(stage.id==='kart')assert.equal(scenery.birds,null);else assert.equal(scenery.birds.count,16);scenery.group.traverse(o=>{if(o instanceof T.Mesh){o.geometry.dispose();o.material.map?.dispose();o.material.dispose();}});}
+ for(const stage of stages.filter(s=>s.id!=='nyc')){const selection={stage:stage.id,weather:'clear',reverse:false},scenery=new StageScenery(selection,stagePoints(selection),()=>false);assert.ok(scenery.group.children.length<40);scenery.update(1,false);const clock=scenery.clock;scenery.update(0,false);assert.equal(scenery.clock,clock);if(stage.id==='kart')assert.equal(scenery.birds,null);else assert.equal(scenery.birds.count,16);scenery.group.traverse(o=>{if(o instanceof T.Mesh){o.geometry.dispose();o.material.map?.dispose();o.material.dispose();}});}
 });
