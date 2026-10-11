@@ -37,7 +37,7 @@ export function surfaceGrip(selection: StageSelection) {
 }
 
 export function compatibleCar(selection:StageSelection,car:number){return Number.isInteger(car)&&(selection.stage==='kart'?car===8:car>=0&&car<8);}
-export function stageTimes(stage:StageId):readonly TimeOfDay[]{return stages.some(s=>s.id===stage)?timesOfDay:timesOfDay;}
+export function stageTimes(_stage:StageId):readonly TimeOfDay[]{return timesOfDay;}
 
 export function trackNumber(s:StageSelection){return s.track??1;}
 export const trackNames:Record<StageId,readonly string[]>={forest:['Forest Run','Fern Valley','Pine Ridge'],mountain:['Mountain Pass','Summit Switchbacks','Quarry Road'],alpine:['Alpine Sprint','Glacier Run','Snowbank Trail'],desert:['Desert Dash','Canyon Run','Dune Loop'],kart:['Meadow Circuit','Hedgerow Ring','Downs Sprint'],nyc:['Times Square Loop']};

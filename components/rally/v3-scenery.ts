@@ -5,12 +5,14 @@ export function environmentScenery(s:StageSelection,points:T.Vector3[],reserved:
  const box=(w:number,h:number,d:number,color:string,x:number,y:number,z:number)=>{const key=`${w},${h},${d}`;if(!geometries.has(key))geometries.set(key,new T.BoxGeometry(w,h,d));if(!materials.has(color))materials.set(color,new T.MeshStandardMaterial({color,roughness:.92}));const m=new T.Mesh(geometries.get(key),materials.get(color));m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;group.add(m);return m;};
  const clear=(x:number,z:number,r=10)=>!reserved(x,z)&&points.every(p=>Math.hypot(p.x-x,p.z-z)>r);
  const snow=s.weather==='snow';
+ const treeGeo=new T.IcosahedronGeometry(3,1),treeMat=new T.MeshStandardMaterial({color:snow?'#dee8df':'#4d704d',roughness:1});
  if(s.stage==='kart'){
   // Hills remain beyond the unchanged, level circuits and service lane.
   const hillGeo=new T.SphereGeometry(1,12,8),hillMat=new T.MeshStandardMaterial({color:snow?'#dbe3dc':'#718957',roughness:1});
   for(let i=0;i<18;i++){const a=i/18*Math.PI*2,x=Math.cos(a)*101,z=Math.sin(a)*100;if(!clear(x,z,23))continue;const hill=new T.Mesh(hillGeo,hillMat);hill.position.set(x,-2,z);hill.scale.set(19,7+i%4*2,17);hill.receiveShadow=true;group.add(hill);}
-  for(let x=-90;x<=90;x+=9)for(let z=-85;z<=85;z+=17){if(!clear(x,z,16))continue;box(.7,4,.7,'#79684c',x,1.7,z);const crown=new T.Mesh(new T.IcosahedronGeometry(3,1),new T.MeshStandardMaterial({color:snow?'#dee8df':'#4d704d',roughness:1}));crown.position.set(x,4,z);group.add(crown);}
+  for(let x=-90;x<=90;x+=9)for(let z=-85;z<=85;z+=17){if(!clear(x,z,16))continue;box(.7,4,.7,'#79684c',x,1.7,z);const crown=new T.Mesh(treeGeo,treeMat);crown.position.set(x,4,z);group.add(crown);}
   for(let i=-12;i<=12;i++){box(6,1.4,1,'#899082',i*7,.4,-91);box(6,2,2,snow?'#d3ded2':'#536e46',i*7,.7,91);}
+  for(let i=20;i<650;i+=42){const p=points[i],d=points[i+1].clone().sub(p).normalize(),n=new T.Vector3(d.z,0,-d.x);const q=p.clone().addScaledVector(n,11);if(!clear(q.x,q.z,8))continue;box(.3,4,.3,'#5d665c',q.x,1.7,q.z);const lamp=box(1.5,.3,.7,'#f2dda4',q.x,3.8,q.z);lamp.material.emissive.set('#f2dda4');lamp.material.emissiveIntensity=1;}
   box(12,4,8,'#b7a484',83,1.7,70);box(14,.6,10,'#4e5c52',83,4,70);
  }else{
   for(let x=-75;x<=75;x+=25)for(let z=-66;z<=66;z+=22){if(!clear(x,z,15))continue;const h=9+((x+z+160)%4)*3,color=['#a87968','#a99e87','#777f83'][Math.abs(x+z)%3];
