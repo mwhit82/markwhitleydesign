@@ -79,11 +79,11 @@ test('cockpit hides the body while keeping night headlights active',()=>{
 test('cockpit wheel and instruments animate without frame allocations or excess geometry',()=>{
  const c=new DriverCamera(),v=new T.Group(),base=new T.PerspectiveCamera();c.enabled=true;
  c.update(.5,v,0,1,base,true,true,390,700,false,110,4000,false,true);
- assert.ok(c.wheel.rotation.z>.8);const angle=c.wheel.rotation.z;
+ assert.ok(c.wheel.rotation.z<-.8);const angle=c.wheel.rotation.z;
  c.update(0,v,0,-1,base,true,true,390,700,false,110,4000,false,true);assert.equal(c.wheel.rotation.z,angle);
- c.update(.5,v,0,-1,base,true,true,390,700,false,0,950,false,false);assert.ok(c.wheel.rotation.z<-.8);
+ c.update(.5,v,0,-1,base,true,true,390,700,false,0,950,false,false);assert.ok(c.wheel.rotation.z>.8);
  let triangles=0,meshes=0;c.cockpit.traverse(o=>{if(o.isMesh){meshes++;triangles+=(o.geometry.index?.count??o.geometry.attributes.position.count)/3;}});
- assert.ok(triangles<5000,`${triangles} triangles`);assert.ok(meshes<=15,`${meshes} meshes`);c.dispose();
+ assert.ok(triangles<5000,`${triangles} triangles`);assert.ok(meshes<=24,`${meshes} meshes`);c.dispose();
 });
 
 test('every route has compact, distinct weather and daylight preview assets',async()=>{
@@ -95,3 +95,10 @@ test('every route has compact, distinct weather and daylight preview assets',asy
   }assert.equal(hashes.size,stage.conditions.length);
  }
 });
+
+test('Blender cockpit switches safely, lights gauges at night and falls back on failure',async()=>{
+ const fetchBefore=globalThis.fetch;globalThis.fetch=async path=>{const b=await readFile(resolve('public'+path));return {ok:true,arrayBuffer:async()=>b.buffer.slice(b.byteOffset,b.byteOffset+b.byteLength)};};
+ const c=new DriverCamera(),v=new T.Group(),base=new T.PerspectiveCamera();c.enabled=true;
+ try{const goodFetch=globalThis.fetch;globalThis.fetch=async()=>{throw Error('offline')};const failed=new DriverCamera();await failed.prepare(false);assert.equal(failed.assetRoot,null);assert.ok(failed.cockpit.children.length>3);failed.dispose();globalThis.fetch=goodFetch;await c.prepare(false);assert.ok(c.assetRoot);const root=c.assetRoot;await c.prepare(false);assert.equal(c.assetRoot,root);c.update(.5,v,0,-1,base,true,true,390,700,false,40,3000,false,true);assert.ok(c.wheel.rotation.z>.8,'left is counterclockwise from the driver');assert.equal(c.arms.length,2);assert.ok(c.lights.every(m=>m.emissiveIntensity>1));assert.ok(c.arms.every(a=>Number.isFinite(a.scale.y)&&a.scale.y>.1));await c.prepare(true);assert.notEqual(c.assetRoot,root);globalThis.fetch=async()=>{throw Error('offline')};const fallback=new DriverCamera();await fallback.prepare(false);assert.ok(fallback.assetRoot,'encoded buffers survive offline restarts');fallback.dispose();}finally{c.dispose();globalThis.fetch=fetchBefore;}
+});
+test('track outline cards cover every layout and direction, with open rally routes',async()=>{for(const stage of S.stages)for(const track of stage.id==='nyc'?[1]:[1,2,3]){const pair=[];for(const direction of ['forward','reverse']){const svg=await readFile(`public/rally/previews/routes/${stage.id}-${track}-${direction}.svg`,'utf8');assert.ok(svg.includes('<polyline'));assert.ok(svg.includes(direction.toUpperCase()));assert.ok(svg.includes(['kart','nyc'].includes(stage.id)?'START / FINISH':'POINT TO POINT'));pair.push(svg);}assert.notEqual(...pair);}});

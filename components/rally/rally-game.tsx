@@ -1,6 +1,7 @@
 /* eslint-disable @next/next/no-img-element -- Locally captured, pre-sized WebP previews need no image service. */
 "use client";
 import {useModalViewport,useModalIsolation} from "./modal-viewport";
+import {PreparationBar} from './preparation-bar';
 import {SelectionCard} from "./selection-card";
 import {previewImage,weatherIcons} from "./preview-manifest";
 import {HudStore,HudRead} from "./hud-store";
@@ -59,10 +60,8 @@ export function RallyGame() {
   const [error, setError] = useState("");
   const [muted, setMuted] = useState(false);
   const [replayEnabled,setReplayEnabled]=useState(true);
-  const [graphics,setGraphics]=useState<'auto'|'high'|'low'>('auto');
-  const [miniatureFocus,setMiniatureFocus]=useState(true);
-  const changeGraphics=()=>{const next=graphics==='auto'?'high':graphics==='high'?'low':'auto';setGraphics(next);api.current?.setGraphics(next,miniatureFocus);};
-  const changeFocus=()=>{setMiniatureFocus(!miniatureFocus);api.current?.setGraphics(graphics,!miniatureFocus);};
+  const [graphics,setGraphics]=useState<'auto'|'high'|'low'>('high');
+  const changeGraphics=()=>{const next=graphics==='auto'?'high':graphics==='high'?'low':'auto';setGraphics(next);api.current?.setGraphics(next);};
   const [screenWeather,setScreenWeather]=useState(true);
   useEffect(()=>{try{setScreenWeather(localStorage.getItem("rally-screen-weather")!=="off");}catch{}},[]);
   const toggleScreenWeather=()=>{setScreenWeather(on=>{try{localStorage.setItem("rally-screen-weather",on?"off":"on");}catch{}return !on;});};
@@ -127,7 +126,7 @@ export function RallyGame() {
         setGhostSource(api.current.ghostSource);setSelection({...api.current.selection});
         setCodriver(api.current.codriverEnabled);setDriverView(api.current.driverCamera.enabled);
         setMuted(api.current.muted);setReplayEnabled(api.current.replayEnabled);
-        setGraphics(api.current.miniature.graphics);setMiniatureFocus(api.current.miniature.focus);
+        setGraphics(api.current.miniature.graphics);
         setReady(true);
       })
       .catch(() =>
@@ -259,7 +258,7 @@ export function RallyGame() {
   const openOptions=(panel:NonNullable<typeof optionPanel>,button:HTMLButtonElement)=>{optionOpener.current=button;setOptionPanel(panel);};
   const closeOptions=()=>{setOptionPanel(null);requestAnimationFrame(()=>optionOpener.current?.focus());};
   const optionTitle=optionPanel==='laps'?'Race laps':optionPanel==='track'?'Choose track':optionPanel==='time'?'Time of day':optionPanel==='stage'?'Choose stage':optionPanel==='weather'?'Choose weather':optionPanel==='direction'?'Route direction':'Ghost rival';
-  const options=optionPanel==='laps'?([1,3,5] as const).map(n=>({value:String(n),label:`${n} ${n===1?'lap':'laps'}`,detail:'Separate records and ghosts',selected:lapCount(selection)===n})):optionPanel==='track'?trackNames[selection.stage].map((name,i)=>({value:String(i+1),label:name,detail:i===0?'Original layout · existing records':'New route · separate records',selected:trackNumber(selection)===i+1})):optionPanel==='time'?stageTimes(selection.stage).map(t=>({value:t,label:timeNames[t],detail:t==='night'?'Moonlight and headlights':t==='midday'?'Bright skies':t==='sunrise'?'First light':'Golden hour',selected:timeOfDay(selection)===t})):optionPanel==='stage'?stages.map(s=>({value:s.id,label:s.name,detail:s.surface,selected:selection.stage===s.id})):
+  const options=optionPanel==='laps'?([1,3,5] as const).map(n=>({value:String(n),label:`${n} ${n===1?'lap':'laps'}`,detail:'Separate records and ghosts',selected:lapCount(selection)===n})):optionPanel==='track'?trackNames[selection.stage].map((name,i)=>({value:String(i+1),label:name,detail:isCircuit(selection)?'Closed circuit':'Point-to-point rally',selected:trackNumber(selection)===i+1})):optionPanel==='time'?stageTimes(selection.stage).map(t=>({value:t,label:timeNames[t],detail:t==='night'?'Moonlight and headlights':t==='midday'?'Bright skies':t==='sunrise'?'First light':'Golden hour',selected:timeOfDay(selection)===t})):optionPanel==='stage'?stages.map(s=>({value:s.id,label:s.name,detail:s.surface,selected:selection.stage===s.id})):
     optionPanel==='weather'?stage.conditions.map(w=>({value:w,label:weatherNames[w],detail:w==='clear'?'Open skies':w==='fog'||w==='haze'?'Reduced visibility':'Changing conditions',selected:selection.weather===w})):
     optionPanel==='direction'?[{value:'forward',label:'Forward',detail:'Original route',selected:!selection.reverse},{value:'reverse',label:'Reverse',detail:'Same stage, other direction',selected:selection.reverse}]:
     [{value:'off',label:'Off',detail:'Just you and the stage',selected:ghostSource==='off'},{value:'personal',label:'My best',detail:'Your fastest clean run on this device',selected:ghostSource==='personal'},{value:'leader',label:'Leaderboard best',detail:'Fastest submitted run · same car and conditions',selected:ghostSource==='leader'}];
@@ -300,7 +299,7 @@ export function RallyGame() {
     <div className={styles.page}>
       <div className={styles.heading}>
         <div>
-          <p className={styles.eyebrow}>MARK WHITLEY / POCKET RALLY V4.2</p>
+          <p className={styles.eyebrow}>MARK WHITLEY / POCKET RALLY V4.3</p>
           <h1>
             POCKET<span>RALLY.</span>
           </h1>
@@ -394,7 +393,7 @@ export function RallyGame() {
             ↻ Rotate to landscape for a wider track and bigger controls.
           </div>
         )}
-        {preparing&&<div className={styles.preparation} role="status"><strong>Preparing race…</strong><span>{preparing}</span><button onClick={()=>api.current?.cancelPreparation()}>Cancel</button></div>}
+        <PreparationBar step={preparing} onCancel={()=>api.current?.cancelPreparation()}/>
         {!ready && (
           <div className={styles.overlay}>
             <h2>{error || "Sculpting the stage…"}</h2>
@@ -541,7 +540,7 @@ export function RallyGame() {
             <div><strong>{n.outcome==='missed'?'MISSED CHECKPOINT':'CHECKPOINT'} {String(n.checkpoints[0]).padStart(2,'0')}{n.checkpoints.length>1?`–${String(n.checkpoints.at(-1)).padStart(2,'0')}`:n.outcome==='accepted'?'/18':''}</strong><small>{n.outcome==='missed'?'Practice run':formatTime(n.time)}</small>{n.delta!==undefined&&<small className={n.delta<=0?styles.ahead:styles.behind}>≈ {n.delta<=0?'−':'+'}{Math.abs(n.delta).toFixed(2)} {n.delta<=0?'ahead':'behind'}</small>}</div>
           </div>)}
         </div>}
-        {mode==='race'&&subtitle&&<div className={styles.codriverSubtitle} role="status"><small><HudIcon name="headset"/> CO-DRIVER</small>{subtitle}</div>}
+        {<div className={styles.codriverSubtitle} role="status" style={{visibility:mode==='race'&&subtitle?'visible':'hidden'}}><small><HudIcon name="headset"/> CO-DRIVER</small>{subtitle}</div>}
         {optionPanel && ["stage","track","weather","time"].includes(optionPanel) && <SelectionCard key={optionPanel} title={optionTitle} options={options.map(o=>({...o,image:previewImage(optionPanel,o.value,selection),icon:optionPanel==='weather'?weatherIcons[o.value]:undefined}))} onSelect={selectOption} onClose={closeOptions}/> }
         {optionPanel && !["stage","track","weather","time"].includes(optionPanel) && <div className={styles.optionScrim}><div className={styles.optionPanel} role="dialog" aria-modal="true" aria-label={optionTitle} data-rally-menu="true">
           <header><div><span className={styles.tag}>SERVICE PARK / SELECT</span><h2>{optionTitle}</h2></div><button aria-label="Close options" onClick={closeOptions}>×</button></header>
@@ -551,7 +550,7 @@ export function RallyGame() {
         </div></div>}
         {settingsPanel&&<div className={styles.optionScrim}><div className={styles.optionPanel} role="dialog" aria-modal="true" aria-label="Settings" data-rally-menu="true"><header><h2>Settings</h2><button aria-label="Close settings" onClick={()=>setSettingsPanel(false)}>×</button></header><div className={styles.stageChoices}>
                 <button onClick={toggleCamera} aria-pressed={driverView}><small><HudIcon name="wheel"/> CAMERA</small><strong>{driverView?"Driver seat":"Isometric"}</strong></button><button aria-pressed={codriver} disabled={selection.stage==='kart'} onClick={toggleCodriver}><small><HudIcon name="headset"/> CO-DRIVER</small><strong>{selection.stage==='kart'?'Rally only':codriver?'On':'Off'}</strong></button>
-                <button onClick={changeGraphics} aria-label={`Graphics: ${graphics}. Change quality`}><small><HudIcon name="screen"/> GRAPHICS</small><strong>{graphics==='auto'?'Auto':graphics==='high'?'High':'Low'}</strong></button><button aria-pressed={miniatureFocus} onClick={changeFocus}><small><HudIcon name="camera"/> MINIATURE FOCUS</small><strong>{miniatureFocus?'On':'Off'}</strong></button>
+                <button onClick={changeGraphics} aria-label={`Graphics: ${graphics}. Change quality`}><small><HudIcon name="screen"/> GRAPHICS</small><strong>{graphics==='auto'?'Auto':graphics==='high'?'High':'Low'}</strong></button>
                 <button aria-pressed={screenWeather} onClick={toggleScreenWeather}><small><HudIcon name="screen"/> SCREEN WEATHER</small><strong>{screenWeather?"On":"Off"}</strong></button>
               </div><div className={styles.secondaryTiles}><button onClick={toggleSound}><HudIcon name={muted?'muted':'sound'}/>{muted?'Sound off':'Sound on'}</button><button onClick={()=>{api.current?.toggleReplay();setReplayEnabled(Boolean(api.current?.replayEnabled));}}><HudIcon name="replay"/>Replay {replayEnabled?'on':'off'}</button><button onClick={toggleFullscreen}><HudIcon name={expanded?'contract':'expand'}/>{expanded?'Exit view':'Fullscreen'}</button></div></div></div>}
         {controlPanel&&<div className={styles.optionScrim}><div className={styles.optionPanel} role="dialog" aria-modal="true" aria-label="Driving controls" data-rally-menu="true">

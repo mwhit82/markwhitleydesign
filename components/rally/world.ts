@@ -80,16 +80,17 @@ export class RallyWorld {
       await this.modelPending;
       if(id!==this.preparationId||this.disposed)return false;
       this.callbacks.preparation?.('Preparing rivals and sound…');
-      await Promise.allSettled([this.prepareGhost(),this.ensureAudio()]);
+      await Promise.allSettled([this.prepareGhost(),this.ensureAudio(),this.driverCamera.prepare(this.selected===8)]);
       if(id!==this.preparationId||this.disposed)return false;
       this.rivals.prewarm(this.vehicle);
       this.callbacks.preparation?.('Warming lights and materials…');
       const textures=new Set<T.Texture>();this.scene.traverse(o=>{if(o instanceof T.Mesh)for(const material of Array.isArray(o.material)?o.material:[o.material])for(const value of Object.values(material))if(value instanceof T.Texture)textures.add(value);});for(const texture of textures)this.renderer.initTexture(texture);
       await this.renderer.compileAsync(this.scene,this.camera);
+      const cockpitVisible=this.driverCamera.cockpit.visible;this.driverCamera.cockpit.visible=true;await this.renderer.compileAsync(this.scene,this.driverCamera.camera);this.driverCamera.cockpit.visible=cockpitVisible;
       if(id!==this.preparationId||this.disposed)return false;
       this.renderer.render(this.scene,this.camera);this.rivals.hidePool();this.preparedKey=key;
       return true;
-    })().catch(()=>!this.disposed&&id===this.preparationId).finally(()=>{if(id===this.preparationId){this.preparation=null;this.rivals.hidePool();this.callbacks.preparation?.('');}});
+    })().catch(()=>false).finally(()=>{if(id===this.preparationId){this.preparation=null;this.rivals.hidePool();this.callbacks.preparation?.('');}});
     return this.preparation;
   }
   cancelPreparation(){this.preparedKey="";this.preparationId++;this.preparation=null;this.rivals.hidePool();this.callbacks.preparation?.('');}
@@ -137,7 +138,7 @@ export class RallyWorld {
   private environmentMap:T.WebGLRenderTarget|null=null;
   miniature!:MiniatureRenderer;
   private metrics!:RenderMetrics;
-  setGraphics(g:Graphics,focus:boolean){this.miniature.set(g,focus);this.resize();}
+  setGraphics(g:Graphics){this.miniature.set(g);this.resize();}
 
   mode: Mode = "garage";
   selected = 0;
@@ -231,7 +232,7 @@ export class RallyWorld {
     try {const day=localStorage.getItem("rally-time-of-day");if(timesOfDay.includes(day as typeof timesOfDay[number]))this.selection.timeOfDay=day as typeof timesOfDay[number];}catch{}
     this.buildStage();
     this.choose(0);
-    this.miniature.set(this.miniature.graphics,this.miniature.focus);
+    this.miniature.set(this.miniature.graphics);
     this.observer = new ResizeObserver(() => this.resize());
     this.observer.observe(host);
     this.resize();
@@ -280,7 +281,7 @@ export class RallyWorld {
     this.nearestCache.clear();this.points = stagePoints(this.selection);this.routeIndex=new RouteIndex(this.points);
     this.buildStage();
     this.choose(selection.stage==="kart"?8:this.lastRallyCar);
-    this.miniature.set(this.miniature.graphics,this.miniature.focus);
+    this.miniature.set(this.miniature.graphics);
     this.audio?.setEnvironment(selection.stage);
   }
   buildStage() {
@@ -721,8 +722,8 @@ export class RallyWorld {
     });
   }
   garage() {
-    this.miniature.set(this.miniature.graphics,this.miniature.focus);
-    this.cancelPreparation();
+    this.miniature.set(this.miniature.graphics);
+    if(this.preparation)this.cancelPreparation();
     this.clearFeedback();
     this.atmosphere.reset();
     this.setMode("garage");
@@ -1024,7 +1025,7 @@ export class RallyWorld {
     }
     if(this.mode==="race"&&this.codriverEnabled){
       const note=this.pace?.update(this.paceDistance(),this.velocity.length(),this.time);
-      if(note){this.showSubtitle(note.text);this.subtitleUntil=this.time+Math.max(2.5,note.clips.length*1.7);if(!this.muted)this.audio?.speak(note.clips);}
+      if(note){this.showSubtitle(note.text);this.subtitleUntil=this.time+Math.max(2.5,note.clips.length*1.7);if(!this.muted){this.audio?.speak(note.clips);if(this.audio)this.metrics.voice(this.audio.diagnostics);}}
       if(this.time>=this.subtitleUntil)this.showSubtitle("");
     }
     if(this.notifications.tick(dt,this.mode==="paused"))this.callbacks.checkpoints?.([...this.notifications.items]);
@@ -1084,7 +1085,7 @@ export class RallyWorld {
     const transition=this.driverCamera.blend;this.renderer.domElement.style.filter=!this.atmosphere.reduced&&transition>0&&transition<1?`blur(${Math.sin(transition*Math.PI)*2}px)`:'none';
     if(this.live){if(this.ghostCar)this.ghostCar.visible=false;this.rivals.update(now,(x,z,speed)=>{const nearest=this.nearest(x,z),shoulder=T.MathUtils.clamp((8-nearest.distance)/2.4,0,1);return this.playbackHeight(x,z,elevationPose(this.routeProgress({x,z}),speed,true,this.ramps).y*shoulder+.08);});if(this.mode==='race'&&now-this.sentPose>=100){this.sentPose=now;this.onLivePose?.({x:this.vehicle.position.x,z:this.vehicle.position.z,heading:this.angle,speed:this.velocity.length(),progress:((this.lap-1)+this.checkpoint/18)/lapCount(this.selection)},!this.cleanRun);}}
     this.visual?.update(this.mode==='paused'?0:dt,(this.velocity.x*Math.sin(this.angle)+this.velocity.z*Math.cos(this.angle)),steer,braking,timeOfDay(this.selection)!=='midday');
-    this.metrics.begin();this.miniature.render(activeCamera,this.vehicle.position,frameDt,this.mode==='race',this.atmosphere.reduced);this.metrics.end(frameDt,this.mode==='race');
+    this.metrics.begin();this.miniature.render(activeCamera,frameDt,this.mode==='race');this.metrics.end(frameDt,this.mode==='race');
   };
   resizeCamera() {
     const span = this.mode === "garage" ? 17 : 31,

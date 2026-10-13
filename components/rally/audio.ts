@@ -57,7 +57,11 @@ export class RallyAudio {
   private crowdLoop:Layer|null=null;
   private cheers:Layer[]=[];
   private finishStarted=false;
-  private voiceLayers:Layer[]=[];
+  private voiceLayers:AudioBufferSourceNode[]=[];
+  private voiceBus:GainNode|null=null;
+  private enabling:Promise<void>|null=null;
+  private voiceWarmed=false;
+  readonly diagnostics={decodeCount:0,enableCount:0,firstVoiceMs:null as number|null};
   private uiLayer:Layer|null=null;
   private finishUntil=0;
   private finishGain=.12;private finishDuration=3;
@@ -110,12 +114,19 @@ export class RallyAudio {
     await Promise.all(
       [...encoded].map(async ([name, data]) => {
         if (this.buffers.has(name)) return;
-        try {const buffer = await context.decodeAudioData(data.slice(0));this.buffers.set(name, buffer);}catch(error){if(!name.startsWith("crowd-")&&!name.startsWith("ui-")&&!name.startsWith("voice-"))throw error;}
+        try {this.diagnostics.decodeCount++;const buffer = await context.decodeAudioData(data.slice(0));this.buffers.set(name, buffer);}catch(error){if(!name.startsWith("crowd-")&&!name.startsWith("ui-")&&!name.startsWith("voice-"))throw error;}
       }),
     );
   }
 
-  async enable() {
+  enable(){
+    if(this.disposed||this.playing)return Promise.resolve();
+    if(this.enabling)return this.enabling;
+    const pending=this.startAudio();this.enabling=pending;
+    void pending.finally(()=>{if(this.enabling===pending)this.enabling=null;}).catch(()=>{});return pending;
+  }
+  private async startAudio() {
+    this.diagnostics.enableCount++;
     if (this.disposed || this.playing) return;
     const generation = ++this.generation;
     const session = (
@@ -133,6 +144,7 @@ export class RallyAudio {
       this.master = this.context.createGain();
       this.master.gain.value = 0.45;
       this.master.connect(this.context.destination);
+      this.voiceBus=this.context.createGain();this.voiceBus.gain.value=.50;this.voiceBus.connect(this.master);
     }
     this.decoding ??= this.decode();
     // Both unlock requests happen directly inside the user's tap, before awaiting data.
@@ -150,6 +162,8 @@ export class RallyAudio {
         }),
       ]);
       if (generation !== this.generation || this.disposed) return;
+      await this.warmVoice();
+      if(generation!==this.generation||this.disposed)return;
       this.installLayers();
       this.playing = true;
       if(!this.crowdLoop)this.crowdLoop=this.crowdSource("crowd-bed",0,true);
@@ -221,15 +235,23 @@ export class RallyAudio {
     layer.source.onended=()=>{layer.source.disconnect();layer.gain.disconnect();this.cheers=this.cheers.filter(item=>item!==layer);};
   }
   private clearCheers(){for(const layer of this.cheers){layer.source.stop();layer.source.disconnect();layer.gain.disconnect();}this.cheers=[];}
-  stopVoice(){for(const l of this.voiceLayers){l.source.onended=null;try{l.source.stop();}catch{}l.source.disconnect();l.gain.disconnect();}this.voiceLayers=[];}
+  private async warmVoice(){
+    if(this.voiceWarmed||!this.context||!this.voiceBus)return;
+    const buffer=this.buffers.get('voice-1-left');if(!buffer)return;
+    const context=this.context,bus=this.voiceBus,source=context.createBufferSource();source.buffer=buffer;source.connect(bus);bus.gain.setValueAtTime(0,context.currentTime);
+    await new Promise<void>(resolve=>{const timer=setTimeout(done,200);function done(){clearTimeout(timer);source.onended=null;source.disconnect();resolve();}source.onended=done;source.start(context.currentTime,0,.03);});
+    bus.gain.setValueAtTime(.50,context.currentTime);this.voiceWarmed=true;
+  }
+  stopVoice(){for(const source of this.voiceLayers){source.onended=null;try{source.stop();}catch{}source.disconnect();}this.voiceLayers=[];}
   speak(clips:string[]){
-    if(!this.playing||!this.context||!this.master||this.mode!=="race"||this.voiceLayers.length)return;
-    let at=this.context.currentTime;
+    if(!this.playing||!this.context||!this.voiceBus||this.mode!=="race"||this.voiceLayers.length)return;
+    const began=performance.now();let at=this.context.currentTime;
     for(const [i,clip] of clips.slice(0,2).entries()){
       const name=`voice-${i&&clip!=="finish"?"into-":""}${clip}`,buffer=this.buffers.get(name);if(!buffer)continue;
-      const source=this.context.createBufferSource(),gain=this.context.createGain();source.buffer=buffer;gain.gain.value=.85;source.connect(gain);gain.connect(this.master);
-      const layer={source,gain};this.voiceLayers.push(layer);source.onended=()=>{source.disconnect();gain.disconnect();this.voiceLayers=this.voiceLayers.filter(l=>l!==layer);};source.start(at);at+=buffer.duration+.13;
+      const source=this.context.createBufferSource();source.buffer=buffer;source.connect(this.voiceBus);this.voiceLayers.push(source);
+      source.onended=()=>{source.disconnect();this.voiceLayers=this.voiceLayers.filter(l=>l!==source);};source.start(at);at+=buffer.duration+.13;
     }
+    if(this.diagnostics.firstVoiceMs===null&&this.voiceLayers.length){this.diagnostics.firstVoiceMs=performance.now()-began;performance.mark('rally-first-codriver-call');}
   }
   setMode(mode: Mode) {
     if(mode===this.mode)return;
@@ -266,6 +288,7 @@ export class RallyAudio {
     if(celebration)for(const layer of this.cheers)layer.gain.gain.setTargetAtTime(this.finishGain*Math.max(0,Math.min(1,(this.finishUntil-time)/2)),time,.3);
   }
   pause() {
+    this.enabling=null;
     this.stopVoice();
     this.generation++;
     this.playing = false;
@@ -288,6 +311,7 @@ export class RallyAudio {
     this.layers = [];this.clearCheers();
     if(this.uiLayer){this.uiLayer.source.stop();this.uiLayer.source.disconnect();this.uiLayer.gain.disconnect();this.uiLayer=null;}
     if(this.crowdLoop){this.crowdLoop.source.stop();this.crowdLoop.source.disconnect();this.crowdLoop.gain.disconnect();this.crowdLoop=null;}
+    this.voiceBus?.disconnect();this.voiceBus=null;
     void this.context?.close();
     this.ambience.removeAttribute("src");
     this.ambience.load();

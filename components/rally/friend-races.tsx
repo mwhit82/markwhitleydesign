@@ -1,5 +1,5 @@
 'use client';
-import {useEffect,useRef,useState} from 'react';
+import {useCallback,useEffect,useRef,useState} from 'react';
 import type {RallyWorld} from './world';
 import type {RaceRoom,LivePose} from './room-types';
 import {lapCount,isCircuit,boardKey,trackName,timeNames,timeOfDay,weatherNames,type StageSelection} from './stages';
@@ -11,13 +11,14 @@ const rivalColors=['#68c4d0','#e6ad5c','#cfa1e2','#a8ce78'];
 type Session={room:RaceRoom;id:string;token:string};
 export function FriendRaces({openRequest,world,selection,car,ready,mode,onSetup,onActive}:{openRequest:number;world:()=>RallyWorld|null;selection:StageSelection;car:number;ready:boolean;mode:string;onSetup:(s:StageSelection,car:number)=>void;onActive:(active:boolean)=>void}){
  const [open,setOpen]=useState(false),[room,setRoom]=useState<RaceRoom|null>(null),[name,setName]=useState(''),[code,setCode]=useState(''),[error,setError]=useState(''),[connected,setConnected]=useState(false),[busy,setBusy]=useState(false),[liveMenu,setLiveMenu]=useState(false);
+ const [confirmLeave,setConfirmLeave]=useState(false);
  const [entryStep,setEntryStep]=useState<'choose'|'create'|'join'>('choose'),[setupOpen,setSetupOpen]=useState(false),[draft,setDraft]=useState(selection),[draftCar,setDraftCar]=useState(car),[preparing,setPreparing]=useState(false),[inviteOpen,setInviteOpen]=useState(false);
  useEffect(()=>{if(openRequest)setOpen(true);},[openRequest]);
  const session=useRef<Session|null>(null),socket=useRef<WebSocket|null>(null),generation=useRef(0),attempt=useRef(-1),offset=useRef(0),lostAt=useRef(0),retry=useRef<ReturnType<typeof setTimeout>|null>(null),poses=useRef(new Map<string,LivePose>());
  const pendingFinish=useRef<Record<string,unknown>|null>(null);
  const [,refreshStandings]=useState(0),hasRoom=room!==null;
  const card=useRef<HTMLDivElement>(null);
- useEffect(()=>{if(open||liveMenu)card.current?.querySelector<HTMLElement>('input,button')?.focus();},[open,liveMenu]);
+ useEffect(()=>{if(open||liveMenu)card.current?.querySelector<HTMLElement>('input,button')?.focus();},[open,liveMenu,confirmLeave]);
  useEffect(()=>{if(!hasRoom)return;const timer=setInterval(()=>refreshStandings(n=>n+1),1000);return()=>clearInterval(timer);},[hasRoom]);
  const callbacks=useRef({world,onSetup,onActive});callbacks.current={world,onSetup,onActive};
  const send=(payload:Record<string,unknown>)=>{if(socket.current?.readyState===WebSocket.OPEN)socket.current.send(JSON.stringify({version:1,...payload}));};
@@ -29,7 +30,8 @@ export function FriendRaces({openRequest,world,selection,car,ready,mode,onSetup,
    const ack=(event:MessageEvent)=>{try{const m=JSON.parse(event.data);if(m.type==='room'){const seat=m.room.members.find((p:{id:string;status:string})=>p.id===id);if(!seat||seat.status==='retired')close();}}catch{}};
    const deadline=setTimeout(close,5000);departing.addEventListener('message',ack);send({type:'leave'});
   }else departing?.close();
-  generation.current++;if(retry.current)clearTimeout(retry.current);socket.current=null;session.current=null;pendingFinish.current=null;setRoom(null);setConnected(false);setLiveMenu(false);setOpen(false);attempt.current=-1;const w=callbacks.current.world();if(w){w.roomJoined=false;w.leaveLive();}callbacks.current.onActive(false);try{sessionStorage.removeItem('rally-room');}catch{}};
+  setConfirmLeave(false);setEntryStep('choose');setSetupOpen(false);setInviteOpen(false);generation.current++;if(retry.current)clearTimeout(retry.current);socket.current=null;session.current=null;pendingFinish.current=null;setRoom(null);setConnected(false);setLiveMenu(false);setOpen(false);attempt.current=-1;const w=callbacks.current.world();if(w){w.roomJoined=false;w.leaveLive();}callbacks.current.onActive(false);try{sessionStorage.removeItem('rally-room');}catch{}};
+ const requestBack=useCallback(()=>{if(confirmLeave){setConfirmLeave(false);return;}if(room?.phase==='lobby'||room?.phase==='results'){setConfirmLeave(true);return;}if(!room&&entryStep!=='choose'){setEntryStep('choose');return;}setOpen(false);setLiveMenu(false);},[confirmLeave,room,entryStep]);
  const connect=(entry:Session)=>{
   session.current=entry;const rev=++generation.current;setRoom(entry.room);setOpen(true);callbacks.current.onActive(true);const joined=callbacks.current.world();if(joined)joined.roomJoined=true;
   const boot=()=>{
@@ -53,7 +55,7 @@ export function FriendRaces({openRequest,world,selection,car,ready,mode,onSetup,
  };
  useEffect(()=>{const invite=new URLSearchParams(location.search).get('room');if(invite){setEntryStep('join');setCode(invite.toUpperCase().slice(0,6));setOpen(true);}try{const saved=localStorage.getItem('rally-room-name');if(saved&&saved!=='Driver')setName(saved);}catch{}const currentGeneration=generation;return()=>{currentGeneration.current++;if(retry.current)clearTimeout(retry.current);socket.current?.close();};},[]);
  useEffect(()=>{if(!ready)return;const w=callbacks.current.world();if(!w)return;w.onLiveMenu=setLiveMenu;w.onLivePose=(pose,recovered)=>{if(session.current)poses.current.set(session.current.id,{...pose,id:session.current.id,sent:Date.now()});send({type:'pose',pose,recovered});};w.onLiveFinish=(time,trace,practice)=>{pendingFinish.current={type:'finish',attempt:attempt.current,time,trace,practice};send(pendingFinish.current);};return()=>{w.onLiveMenu=null;w.onLivePose=null;w.onLiveFinish=null;};},[ready]);
- useEffect(()=>{const w=callbacks.current.world();if(w){w.roomMenuOpen=open||liveMenu;w.onRoomBack=()=>{setOpen(false);setLiveMenu(false);};w.menuOpen=open||liveMenu;if(w.live)w.liveMenu=open||liveMenu;}},[open,liveMenu,ready]);
+ useEffect(()=>{const w=callbacks.current.world();if(w){w.roomMenuOpen=open||liveMenu;w.onRoomBack=requestBack;w.menuOpen=open||liveMenu;if(w.live)w.liveMenu=open||liveMenu;}},[open,liveMenu,ready,requestBack]);
  const enter=async(join:boolean)=>{setBusy(true);setError('');try{const response=await fetch('/api/rally/rooms',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,selection,car,...(join?{code}:{})})});const data=await response.json();if(!response.ok)throw Error(data.error||'Room unavailable');try{localStorage.setItem('rally-room-name',name);}catch{}connect(data);}catch(e){setError(e instanceof Error?e.message:'Could not join');}finally{setBusy(false);}};
  const me=room?.members.find(p=>p.id===session.current?.id),host=room?.host===session.current?.id;
  const readyUp=async()=>{if(me?.ready){send({type:'ready',ready:false});return;}setPreparing(true);try{if(await world()?.prepareRace())send({type:'ready',ready:true});}finally{setPreparing(false);}};
@@ -62,7 +64,8 @@ export function FriendRaces({openRequest,world,selection,car,ready,mode,onSetup,
   {room&&mode!=='garage'&&<button className={`${styles.friendsLaunch} ${styles.friendsInRace}`} onClick={()=>setOpen(true)}><HudIcon name="people"/> Friends</button>}
   {room&&!open&&<div className={styles.roomStandings}>{room.members.map((m,i)=><span key={m.id} style={{borderLeft:`3px solid ${rivalColors[i]}`,paddingLeft:6}}>{m.id===session.current?.id?'You':m.name} · {m.time!==undefined?formatTime(m.time):m.status==='racing'?`${Math.round((poses.current.get(m.id)?.progress??0)*100)}%`:m.status}</span>)}</div>}
   {(open||liveMenu)&&<div className={styles.overlay} role="dialog" aria-modal="true" aria-label="Race friends" data-rally-menu="true"><div ref={card} className={styles.roomCard} onKeyDown={e=>{if(e.key!=='Tab')return;const items=Array.from(card.current?.querySelectorAll<HTMLElement>('button:not(:disabled),input,select')??[]).filter(el=>el.getClientRects().length);if(!items.length)return;e.preventDefault();const i=items.indexOf(document.activeElement as HTMLElement);items[(i+(e.shiftKey?-1:1)+items.length)%items.length].focus();}}>
-   <button className={styles.tertiary} onClick={()=>{if(!room&&entryStep!=='choose')setEntryStep('choose');else{setOpen(false);setLiveMenu(false);}}}><HudIcon name="left"/> Back</button><h2>Race friends</h2>
+   {confirmLeave?<><h2>Leave lobby?</h2><p>{room?.members.length===1?'Nobody else has joined yet. Leaving will close your lobby.':'You will leave this room and return to solo setup.'}</p><button data-menu-default onClick={()=>setConfirmLeave(false)}>Stay</button><button onClick={leave}>Leave lobby</button></>:<>
+   <button className={styles.tertiary} onClick={requestBack}><HudIcon name="left"/> Back</button><h2>Race friends</h2>
    {error&&<p role="status">{error}</p>}
    {!room?<>
     {entryStep==='choose'?<div className={styles.roomChoices}><button disabled={!ready} onClick={()=>setEntryStep('create')}><HudIcon name="people"/> Create race</button><button disabled={!ready} onClick={()=>setEntryStep('join')}><HudIcon name="invite"/> Join race</button></div>:<>
@@ -91,7 +94,8 @@ export function FriendRaces({openRequest,world,selection,car,ready,mode,onSetup,
     {room.phase==='results'&&host&&<button onClick={()=>send({type:'again'})}><HudIcon name="recover"/> Race again</button>}
     {room.phase==='results'&&!host&&<p>Waiting for the host to start a rematch.</p>}
     {room.phase==='racing'&&<><p>The race continues while this menu is open.</p><button onClick={()=>{setOpen(false);setLiveMenu(false);const w=world();if(w)w.liveMenu=false;}}>Resume driving</button></>}
-    <button className={styles.tertiary} onClick={leave}><HudIcon name="left"/> Leave room</button>
+    <button className={styles.tertiary} onClick={()=>setConfirmLeave(true)}><HudIcon name="left"/> Leave room</button>
+   </>}
    </>}
   </div></div>}
  </>;

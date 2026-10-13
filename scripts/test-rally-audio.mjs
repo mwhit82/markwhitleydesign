@@ -157,9 +157,9 @@ test("bounded audio graph: no native media rate mutations, cached decoding, paus
   const audio = new RallyAudio(() => {});
   try {
     assert.equal(mediaPlays, 0, "preloading must not autoplay");
-    await audio.enable();
+    const startup=audio.enable();assert.equal(audio.enable(),startup,"concurrent starts share one promise");await startup;
     assert.equal(decodes, 50);
-    assert.equal(sources, 5);
+    assert.equal(sources, 6, "five ongoing sources plus one completed silent warmup");
     assert.deepEqual(periods, [50]);
     const previous = automation;
     for (let i = 0; i < 600; i++) {
@@ -183,7 +183,7 @@ test("bounded audio graph: no native media rate mutations, cached decoding, paus
     audio.stopVoice();assert.equal(audio.voiceLayers.length,0);
     audio.setCar(2);
     assert.equal(decodes, 50);
-    assert.equal(sources, 11);
+    assert.equal(sources, 12);
     audio.setMode("paused");
     assert.equal(timers.size, 0);
     assert.ok(mediaPauses > 0);
