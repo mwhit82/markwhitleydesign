@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Moon02Icon, Sun01Icon } from "@hugeicons/core-free-icons";
 import { Icon } from "@/components/icon";
+import { trackEvent } from "@/lib/pendo";
 
 export function ThemeToggle() {
   const [theme, setTheme] = useState<"light" | "dark">("light");
@@ -20,6 +21,12 @@ export function ThemeToggle() {
     setTheme(nextTheme);
     document.documentElement.classList.toggle("dark", nextTheme === "dark");
     document.documentElement.dataset.theme = nextTheme;
+    // Reported before saving, so a storage failure cannot drop the event.
+    trackEvent("theme_changed", {
+      theme: nextTheme,
+      previousTheme: theme,
+      pathname: window.location.pathname,
+    });
     localStorage.setItem("theme", nextTheme);
   }
 

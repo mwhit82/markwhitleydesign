@@ -4,7 +4,11 @@ import {cars,formatTime} from './data';
 import {isCircuit,lapCount,stages,trackNames,stageTimes,weatherNames,timeNames,timesOfDay,timeOfDay,trackName,boardKey,type StageSelection,type Weather} from './stages';
 import styles from './rally.module.css';
 import {BoardPeriodPicker,useBoardPeriod} from './board-period';
+import {trackEvent} from '../../lib/pendo';
 type Entry={rank:number;name:string;car:number;time:number;mine:boolean;selection:StageSelection};
+/** Search filters as Pendo properties, read from the request so effects keep their dependencies. Driver names are sent as a length only. */
+function searchProperties(query:string){const q=new URLSearchParams(query),number=(key:string)=>q.has(key)?Number(q.get(key)):undefined;return {searchLength:q.get('search')?.length??0,stage:q.get('stage')??undefined,track:number('track'),weather:q.get('weather')??undefined,reverse:q.has('reverse')?q.get('reverse')==='true':undefined,timeOfDay:q.get('timeOfDay')??undefined,laps:number('laps'),car:number('car'),period:q.get('period')??undefined,activeFilterCount:[...q.keys()].filter(k=>k!=='search'&&k!=='period').length};}
+function loadFailed(query:string,errorMessage:string,httpStatus:number|undefined,isPagination:boolean){const {period,activeFilterCount,stage,car}=searchProperties(query);trackEvent('rally_leaderboard_load_failed',{leaderboardType:'standings',errorMessage,httpStatus,period,isPagination,activeFilterCount,stage,carFilter:car});}
 export function Standings({onClose}:{onClose:()=>void}){
  const {period,setPeriod,window,setWindow,rollover}=useBoardPeriod();
  const [showFilters,setShowFilters]=useState(false);
@@ -13,15 +17,18 @@ export function Standings({onClose}:{onClose:()=>void}){
  const [search,setSearch]=useState('');const [rows,setRows]=useState<Entry[]>([]);const [cursor,setCursor]=useState<string|null>(null);const [busy,setBusy]=useState(true);const [error,setError]=useState('');const [revision,setRevision]=useState(0);const generation=useRef(0);const pending=useRef<AbortController|null>(null);
  useEffect(()=>{const timer=setTimeout(()=>setSearch(filters.search.trim()),300);return()=>clearTimeout(timer);},[filters.search]);
  const query=new URLSearchParams(Object.entries({...filters,search,period}).filter(([,v])=>v!=='')).toString();
+ const searchedQuery=useRef(query);
  useEffect(()=>{
-  const version=++generation.current;pending.current?.abort();const abort=new AbortController();pending.current=abort;setWindow(null);setRows([]);setMine([]);setCursor(null);setBusy(true);setError('');
-  fetch(`/api/rally/standings?${query}`,{signal:abort.signal}).then(async response=>{const data=await response.json();if(!response.ok)throw Error(data.error);if(version===generation.current){setWindow(data.window);setRows(data.entries);setMine(data.me??[]);setCursor(data.cursor);}}).catch(e=>{if(!abort.signal.aborted)setError(e.message||'Could not load times.');}).finally(()=>{if(version===generation.current)setBusy(false);});
+  const version=++generation.current;pending.current?.abort();const abort=new AbortController();pending.current=abort;setWindow(null);setRows([]);setMine([]);setCursor(null);setBusy(true);setError('');let status:number|undefined;
+  fetch(`/api/rally/standings?${query}`,{signal:abort.signal}).then(async response=>{status=response.status;const data=await response.json();if(!response.ok)throw Error(data.error);if(version===generation.current){setWindow(data.window);setRows(data.entries);setMine(data.me??[]);setCursor(data.cursor);
+   // Report each new search or filter once it returns results; skips the initial default board, retries and weekly rollovers.
+   if(query!==searchedQuery.current){searchedQuery.current=query;trackEvent('rally_leaderboards_searched',()=>({...searchProperties(query),resultsCount:data.entries.length,myResultsCount:(data.me??[]).length,hasMore:Boolean(data.cursor)}));}}}).catch(e=>{if(!abort.signal.aborted){const errorMessage=e.message||'Could not load times.';setError(errorMessage);loadFailed(query,errorMessage,status,false);}}).finally(()=>{if(version===generation.current)setBusy(false);});
   return()=>{abort.abort();generation.current=version+1;};
  },[query,revision,rollover,setWindow]);
  const more=async()=>{
-  if(!cursor||busy)return;const version=generation.current;const abort=new AbortController();pending.current?.abort();pending.current=abort;setBusy(true);setError('');
-  try{const response=await fetch(`/api/rally/standings?${query}&cursor=${encodeURIComponent(cursor)}${period==='weekly'&&window?.week?`&week=${window.week}`:''}`,{signal:abort.signal});const data=await response.json();if(version!==generation.current)return;if(response.status===409){setRevision(n=>n+1);return;}if(!response.ok)throw Error(data.error);if(version===generation.current){setRows(previous=>[...previous,...data.entries]);setCursor(data.cursor);}}
-  catch(e){if(!abort.signal.aborted)setError(e instanceof Error?e.message:'Could not load times.');}finally{if(version===generation.current)setBusy(false);}
+  if(!cursor||busy)return;const version=generation.current;const abort=new AbortController();pending.current?.abort();pending.current=abort;setBusy(true);setError('');let status:number|undefined;
+  try{const response=await fetch(`/api/rally/standings?${query}&cursor=${encodeURIComponent(cursor)}${period==='weekly'&&window?.week?`&week=${window.week}`:''}`,{signal:abort.signal});status=response.status;const data=await response.json();if(version!==generation.current)return;if(response.status===409){setRevision(n=>n+1);return;}if(!response.ok)throw Error(data.error);if(version===generation.current){setRows(previous=>[...previous,...data.entries]);setCursor(data.cursor);}}
+  catch(e){if(!abort.signal.aborted){const errorMessage=e instanceof Error?e.message:'Could not load times.';setError(errorMessage);loadFailed(query,errorMessage,status,true);}}finally{if(version===generation.current)setBusy(false);}
  };
  const change=(key:keyof typeof filters,value:string)=>setFilters(f=>({...f,[key]:value,...(key==='stage'?{weather:'',timeOfDay:'',car:''}:{})}));
  const conditions=filters.stage?stages.find(s=>s.id===filters.stage)!.conditions:Object.keys(weatherNames) as Weather[];
