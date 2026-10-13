@@ -6,6 +6,7 @@ import {TrialFocus} from './clay-trial-focus';
 import {TrialWater} from './clay-trial-water';
 import {RoomEnvironment} from 'three/examples/jsm/environments/RoomEnvironment.js';
 import {TrialDrive,TrialTerrain,terrainHeight,puddleRadius} from './clay-trial-physics';
+import {trackEvent} from '../../lib/pendo';
 export function createTrial(element:HTMLElement,report:(text:string)=>void){
  const scene=new T.Scene(),renderer=new T.WebGLRenderer({antialias:true});renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));renderer.info.autoReset=false;renderer.shadowMap.enabled=true;renderer.shadowMap.type=T.PCFShadowMap;renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=1.15;element.appendChild(renderer.domElement);
  const camera=new T.OrthographicCamera(-7,7,7,-7,.1,100);camera.position.set(10,10.8,-10);const controls=new OrbitControls(camera,renderer.domElement);controls.target.set(0,.8,0);controls.enableDamping=true;controls.minZoom=.6;controls.maxZoom=2.8;controls.maxPolarAngle=Math.PI*.48;
@@ -32,7 +33,7 @@ export function createTrial(element:HTMLElement,report:(text:string)=>void){
  for(let i=0;i<=64;i++){const a=i/64*Math.PI*2;for(const r of [1,1.16]){const x=p.x+Math.cos(a)*p.rx*r,z=p.z+Math.sin(a)*p.rz*r;edgePositions.push(x,terrainHeight(terrain!,x,z)+.004,z);edgeColors.push(.12,.10,.07,r===1?.45:0);}if(i<64){const k=i*2;edgeIndices.push(k,k+1,k+2,k+1,k+3,k+2);}}
  const edgeGeometry=new T.BufferGeometry();edgeGeometry.setAttribute('position',new T.Float32BufferAttribute(edgePositions,3));edgeGeometry.setAttribute('color',new T.Float32BufferAttribute(edgeColors,4));edgeGeometry.setIndex(edgeIndices);const edge=new T.Mesh(edgeGeometry,new T.MeshBasicMaterial({vertexColors:true,transparent:true,depthWrite:false,side:T.DoubleSide}));scene.add(edge);
  }waterState.current=new TrialWater(terrain!.puddles);scene.add(waterState.current.group);apply();report('Ready · hold Forward or Reverse to explore the lane.');
- }catch{if(!dead)report('The trial could not load. Refresh to try again.');}})();
+ }catch(error){if(!dead){report('The trial could not load. Refresh to try again.');trackEvent('clay_study_load_failed',{studyVersion:'v2.3',errorMessage:error instanceof Error&&error.message?error.message:'The trial could not load.',pathname:location.pathname});}}})();
  const resize=()=>{renderer.setSize(element.clientWidth,element.clientHeight);const aspect=element.clientWidth/element.clientHeight;const half=aspect<1?8:6.4;camera.left=-half*aspect;camera.right=half*aspect;camera.top=half;camera.bottom=-half;camera.updateProjectionMatrix();focus.resize(element.clientWidth,element.clientHeight);};const observer=new ResizeObserver(resize);observer.observe(element);resize();
  const vector=new T.Vector3();const render=(now:number)=>{const raw=(now-last)/1000,dt=document.hidden?0:Math.min(.05,raw);last=now;
  if(car&&terrain){drive.step(dt,input,terrain);const h=drive.wheelHeights(terrain);const front=(h[0]+h[2])/2,rear=(h[1]+h[3])/2,left=(h[0]+h[1])/2,right=(h[2]+h[3])/2;

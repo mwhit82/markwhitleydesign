@@ -12,18 +12,50 @@ import { Leaderboard, type RaceResult } from "./leaderboard";
 import { HudIcon } from "./ui";
 import { reasonText, type CheckpointNotice, type RunReason } from "./checkpoints";
 import type { GhostSource } from "./replay";
+import { trackEvent } from "../../lib/pendo";
+/** How Pocket Rally was opened: as an installed Home Screen app or in a browser tab. */
+function displayMode() {
+  if (window.matchMedia("(display-mode: standalone)").matches) return "standalone";
+  if (window.matchMedia("(display-mode: fullscreen)").matches) return "fullscreen";
+  if ((navigator as Navigator & { standalone?: boolean }).standalone) return "ios_standalone";
+  return "browser";
+}
+const hasRoomInvite = () => Boolean(new URLSearchParams(location.search).get("room"));
+let homeScreenLaunchReported = false;
+/** Reports a Home Screen app launch once per browser session, across remounts and reloads. */
+function reportHomeScreenLaunch(display: string) {
+  if (homeScreenLaunchReported) return;
+  homeScreenLaunchReported = true;
+  try {
+    if (sessionStorage.getItem("rally-home-screen-launch")) return;
+    sessionStorage.setItem("rally-home-screen-launch", "reported");
+  } catch {
+    /* Without session storage, the module flag still limits this to one report per page load. */
+  }
+  trackEvent("rally_home_screen_app_launched", { displayMode: display, hasRoomInvite: hasRoomInvite() });
+}
+/** Reports game audio that failed to start or stopped unexpectedly. */
+function trackAudioFailure(trigger: string, world: import("./world").RallyWorld | null, error?: unknown) {
+  trackEvent("rally_audio_failed", () => ({
+    trigger,
+    errorMessage: error instanceof Error ? error.message : undefined,
+    mode: world?.mode,
+    stage: world?.selection.stage,
+    isStandalone: displayMode() !== "browser",
+  }));
+}
 export function RallyGame() {
   const host = useRef<HTMLDivElement>(null);
   const game = useRef<HTMLDivElement>(null);
   const hadNativeFullscreen = useRef(false);
   const [inRoom,setInRoom]=useState(false);
   const [driverView,setDriverView]=useState(false);
-  const toggleCamera=()=>{api.current?.toggleCamera();setDriverView(api.current?.driverCamera.enabled??false);};
+  const toggleCamera=()=>{api.current?.toggleCamera();setDriverView(api.current?.driverCamera.enabled??false);if(api.current)settingToggled("camera",api.current.driverCamera.enabled,"driver","isometric");};
   const [codriver,setCodriver]=useState(true);
   const [subtitle,setSubtitle]=useState("");
   const [hapticSupport,setHapticSupport]=useState<HapticCapability>('unavailable');
   const [hapticMessage,setHapticMessage]=useState("");
-  const toggleCodriver=()=>{api.current?.toggleCodriver();setCodriver(api.current?.codriverEnabled??true);};
+  const toggleCodriver=()=>{api.current?.toggleCodriver();setCodriver(api.current?.codriverEnabled??true);if(api.current)settingToggled("codriver",api.current.codriverEnabled);};
   useEffect(()=>{const refresh=()=>setHapticSupport(currentHaptics());refresh();const timer=window.setInterval(refresh,1000);return ()=>window.clearInterval(timer);},[]);
   const [expanded, setExpanded] = useState(false);
   const [installHelp, setInstallHelp] = useState(false);
@@ -31,17 +63,28 @@ export function RallyGame() {
   const [audioBusy, setAudioBusy] = useState(false);
   const [notice, setNotice] = useState("");
   const api = useRef<import("./world").RallyWorld | null>(null);
+  const soundRequest = useRef(false);
   const [selected, setSelected] = useState(0);
   const [selection, setSelection] = useState<StageSelection>({...initialStage});
   const [allBoards,setAllBoards]=useState(false);
   const [controlPanel,setControlPanel]=useState(false);
   const [controls,setControls]=useState<ControlSettings>({...defaultControls});
+  const sensitivityChange=useRef<{from:number;timer:number}|null>(null);
   useEffect(()=>{try{setControls(readControls(JSON.parse(localStorage.getItem("rally-controls")||"null")));}catch{}},[]);
   useEffect(()=>{if(api.current)api.current.controls=controls;try{localStorage.setItem("rally-controls",JSON.stringify(controls));}catch{}},[controls]);
   const [leaderboard, setLeaderboard] = useState(false);
   const [result, setResult] = useState<RaceResult|null>(null);
   const run = useRef<Promise<string|null>>(Promise.resolve(null));
   const [mode, setMode] = useState<Mode>("garage");
+  const settingChanged=(setting:string,value:string,previousValue?:string)=>trackEvent("rally_setting_changed",{setting,value,previousValue,mode,stage:selection.stage});
+  const settingToggled=(setting:string,enabled:boolean,on="on",off="off")=>settingChanged(setting,enabled?on:off,enabled?off:on);
+  // The slider reports once it settles, from the value before the drag started.
+  const changeSensitivity=(value:number)=>{
+    const pending=sensitivityChange.current;if(pending)window.clearTimeout(pending.timer);
+    const from=pending?.from??controls.sensitivity;
+    setControls(c=>({...c,sensitivity:value}));
+    sensitivityChange.current={from,timer:window.setTimeout(()=>{sensitivityChange.current=null;if(from!==value)settingChanged("steering_sensitivity",value.toFixed(1),from.toFixed(1));},700)};
+  };
   const [ghostSource,setGhostSource]=useState<GhostSource>("personal");
   const [ghostStatus,setGhostStatus]=useState("");
   const [ghostShown,setGhostShown]=useState(true);
@@ -51,11 +94,11 @@ export function RallyGame() {
   const [replayEnabled,setReplayEnabled]=useState(true);
   const [graphics,setGraphics]=useState<'auto'|'high'|'low'>('auto');
   const [miniatureFocus,setMiniatureFocus]=useState(true);
-  const changeGraphics=()=>{const next=graphics==='auto'?'high':graphics==='high'?'low':'auto';setGraphics(next);api.current?.setGraphics(next,miniatureFocus);};
-  const changeFocus=()=>{setMiniatureFocus(!miniatureFocus);api.current?.setGraphics(graphics,!miniatureFocus);};
+  const changeGraphics=()=>{const next=graphics==='auto'?'high':graphics==='high'?'low':'auto';setGraphics(next);api.current?.setGraphics(next,miniatureFocus);settingChanged("graphics",next,graphics);};
+  const changeFocus=()=>{setMiniatureFocus(!miniatureFocus);api.current?.setGraphics(graphics,!miniatureFocus);settingToggled("miniature_focus",!miniatureFocus);};
   const [screenWeather,setScreenWeather]=useState(true);
   useEffect(()=>{try{setScreenWeather(localStorage.getItem("rally-screen-weather")!=="off");}catch{}},[]);
-  const toggleScreenWeather=()=>{setScreenWeather(on=>{try{localStorage.setItem("rally-screen-weather",on?"off":"on");}catch{}return !on;});};
+  const toggleScreenWeather=()=>{setScreenWeather(on=>{try{localStorage.setItem("rally-screen-weather",on?"off":"on");}catch{}return !on;});settingToggled("screen_weather",!screenWeather);};
   const [checkpointNotices,setCheckpointNotices]=useState<CheckpointNotice[]>([]);
   const [practice,setPractice]=useState<RunReason[]>([]);
   const [optionPanel,setOptionPanel]=useState<'stage'|'weather'|'direction'|'ghost'|'time'|'track'|'laps'|null>(null);
@@ -116,6 +159,8 @@ export function RallyGame() {
           audio: (isMuted) => {
             setMuted(isMuted);
             if (isMuted) setNotice("Audio stopped. Tap Sound to retry.");
+            // A failed Sound tap is reported by toggleSound with its error.
+            if (isMuted && !soundRequest.current) trackAudioFailure("audio_stopped", api.current);
           },
         });
         try{api.current.controls=readControls(JSON.parse(localStorage.getItem("rally-controls")||"null"));}catch{}
@@ -125,11 +170,18 @@ export function RallyGame() {
         setGraphics(api.current.miniature.graphics);setMiniatureFocus(api.current.miniature.focus);
         setReady(true);
       })
-      .catch(() =>
+      .catch((error) => {
         setError(
           "The 3D stage could not load. Please try a browser with WebGL enabled.",
-        ),
-      );
+        );
+        trackEvent("rally_game_load_failed", () => ({
+          errorMessage: error instanceof Error ? error.message : String(error),
+          errorName: error instanceof Error ? error.name : undefined,
+          isStandalone: displayMode() !== "browser",
+          devicePixelRatio: Math.round(window.devicePixelRatio * 100) / 100,
+          hasRoomInvite: hasRoomInvite(),
+        }));
+      });
     return () => {
       disposed = true;
       api.current?.dispose();
@@ -137,12 +189,13 @@ export function RallyGame() {
     };
   }, []);
   useEffect(() => {
-    const installed =
-      window.matchMedia("(display-mode: standalone)").matches ||
-      window.matchMedia("(display-mode: fullscreen)").matches ||
-      Boolean((navigator as Navigator & { standalone?: boolean }).standalone);
+    const display = displayMode();
+    const installed = display !== "browser";
     setStandalone(installed);
-    if (installed) setExpanded(true);
+    if (installed) {
+      setExpanded(true);
+      reportHomeScreenLaunch(display);
+    }
   }, []);
   useEffect(() => {
     const changed = () => {
@@ -202,6 +255,7 @@ export function RallyGame() {
     if (!api.current) return;
     setAudioBusy(true);
     const next = !muted;
+    soundRequest.current = true;
     try {
       await api.current.sound(next);
       setMuted(next);
@@ -210,19 +264,24 @@ export function RallyGame() {
           ? "Sound muted."
           : "Audio playback started. Adjust your phone’s media volume.",
       );
-    } catch {
+      settingToggled("sound", !next);
+    } catch (error) {
       setMuted(true);
       setNotice("Sound could not start. Tap Sound again to retry.");
+      trackAudioFailure("sound_toggle", api.current, error);
     } finally {
+      soundRequest.current = false;
       setAudioBusy(false);
     }
   };
+  // Touch buttons and the game surface can both unlock on one tap; only the first failure is reported.
+  const unlockAudio=()=>{const world=api.current;if(world&&!world.muted)void world.ensureAudio().catch(error=>{if(!world.muted)trackAudioFailure("pointer_unlock",world,error);world.muted=true;setMuted(true);setNotice("Tap Sound to retry audio.");});};
   const touchButton = (key: string, label: React.ReactNode, name: string) => (
     <button
       key={key}
       data-driving-control="true"
       aria-label={name}
-      onPointerDownCapture={()=>{const world=api.current;if(world&&!world.muted)void world.ensureAudio().catch(()=>{world.muted=true;setMuted(true);setNotice("Tap Sound to retry audio.");});}}
+      onPointerDownCapture={unlockAudio}
         onContextMenu={(event) => event.preventDefault()}
       onPointerDown={(event) => {
         event.preventDefault();
@@ -311,7 +370,7 @@ export function RallyGame() {
         data-time={timeOfDay(selection)}
         data-steering={controls.steering}
         className={`${styles.game} ${expanded ? styles.expanded : ""}`}
-        onPointerDownCapture={()=>{const world=api.current;if(world&&!world.muted)void world.ensureAudio().catch(()=>{world.muted=true;setMuted(true);setNotice("Tap Sound to retry audio.");});}}
+        onPointerDownCapture={unlockAudio}
         onContextMenu={(event) => event.preventDefault()}
         onClickCapture={event=>{const button=(event.target as HTMLElement).closest("button");if(button&&!button.hasAttribute("data-driving-control")&&!button.hasAttribute("data-start-cue"))api.current?.uiCue();}}
         onKeyDown={event=>{
@@ -516,8 +575,8 @@ export function RallyGame() {
               <h2>PAUSED<span>.</span></h2>
               <p>{trackName(selection)} · {(isCircuit(selection)?`${lapCount(selection)} laps · ${timeNames[timeOfDay(selection)]}`:timeNames[timeOfDay(selection)])} / {formatTime(stats.time)}</p>
               <button className={styles.start} data-menu-default="true" onClick={()=>api.current?.pause()}>RESUME <span><HudIcon name="right"/></span></button>
-              <button className={styles.menuButton} disabled={inRoom} onClick={()=>api.current?.start()}>Restart stage <span>↻</span></button>
-              <button className={styles.menuButton} onClick={mainMenu}>Main menu <small>Ends this run</small></button>
+              <button className={styles.menuButton} disabled={inRoom} onClick={()=>{api.current?.trackAbandoned("restart");api.current?.start();}}>Restart stage <span>↻</span></button>
+              <button className={styles.menuButton} onClick={()=>{api.current?.trackAbandoned("main_menu");mainMenu();}}>Main menu <small>Ends this run</small></button>
               <button className={styles.menuButton} onClick={()=>setControlPanel(true)}>Controls & feedback <HudIcon name="right"/></button>
             <div className={styles.pauseSettings}>
                 <button disabled={audioBusy} aria-pressed={!muted} onClick={toggleSound}><HudIcon name={muted?'muted':'sound'}/>{muted?'Sound off':'Sound on'}</button>
@@ -548,7 +607,7 @@ export function RallyGame() {
             >
               ONE MORE RUN <HudIcon name="next"/>
             </button>
-            <button aria-pressed={replayEnabled} onClick={()=>{api.current?.toggleReplay();setReplayEnabled(Boolean(api.current?.replayEnabled));}}>Background replay: {replayEnabled?"On":"Off"}</button>
+            <button aria-pressed={replayEnabled} onClick={()=>{api.current?.toggleReplay();setReplayEnabled(Boolean(api.current?.replayEnabled));if(api.current)settingToggled("background_replay",api.current.replayEnabled);}}>Background replay: {replayEnabled?"On":"Off"}</button>
             <button onClick={mainMenu}>Main menu</button>
           </div>
         )}
@@ -565,15 +624,15 @@ export function RallyGame() {
         </div></div>}
         {controlPanel&&<div className={styles.optionScrim}><div className={styles.optionPanel} role="dialog" aria-modal="true" aria-label="Driving controls" data-rally-menu="true">
           <header><div><span className={styles.tag}>YOUR CONTROLS</span><h2>Driving controls</h2></div><button onClick={()=>setControlPanel(false)} aria-label="Close controls">×</button></header>
-          <label className={styles.controlRange}>Steering sensitivity <strong>{controls.sensitivity.toFixed(1)}×</strong><input type="range" min="0.5" max="1.5" step="0.1" value={controls.sensitivity} onChange={e=>setControls(c=>({...c,sensitivity:Number(e.target.value)}))}/></label>
-          <button className={styles.menuButton} disabled={hapticSupport==='unavailable'} aria-pressed={controls.haptics} onClick={()=>setControls(c=>({...c,haptics:!c.haptics}))}>{hapticSupport==='controller'?'Controller rumble':hapticSupport==='device'?'Device vibration':'Haptics unavailable'}: {controls.haptics?'On':'Off'}</button>
+          <label className={styles.controlRange}>Steering sensitivity <strong>{controls.sensitivity.toFixed(1)}×</strong><input type="range" min="0.5" max="1.5" step="0.1" value={controls.sensitivity} onChange={e=>changeSensitivity(Number(e.target.value))}/></label>
+          <button className={styles.menuButton} disabled={hapticSupport==='unavailable'} aria-pressed={controls.haptics} onClick={()=>{setControls(c=>({...c,haptics:!c.haptics}));settingToggled("haptics",!controls.haptics);}}>{hapticSupport==='controller'?'Controller rumble':hapticSupport==='device'?'Device vibration':'Haptics unavailable'}: {controls.haptics?'On':'Off'}</button>
           <button className={styles.menuButton} disabled={hapticSupport==='unavailable'} onClick={()=>void testHaptics().then(setHapticMessage)}>Test feedback</button><p role="status">{hapticMessage}</p>
           <p className={styles.hint}>Rumble requires a supported controller/browser. Handset vibration is available only where the browser supports it; iPhone and iPad web vibration is not supported.</p>
-          <button className={styles.menuButton} onClick={()=>setControls({...defaultControls})}>Reset controls to defaults</button><small>Restores arrows, normal sensitivity and haptics off. Records stay saved.</small>
+          <button className={styles.menuButton} onClick={()=>{setControls({...defaultControls});settingChanged("reset_controls","defaults");}}>Reset controls to defaults</button><small>Restores arrows, normal sensitivity and haptics off. Records stay saved.</small>
         </div></div>}
         {allBoards&&<Standings onClose={()=>setAllBoards(false)}/>}
         <FriendRaces mode={mode} ready={ready} world={()=>api.current} selection={selection} car={selected} onActive={setInRoom} onSetup={(s,car)=>{const w=api.current;if(!w)return;if(w.mode!=='garage')w.garage();w.configure(s);w.choose(car);setSelection({...s});setSelected(car);}}/>
-        {leaderboard && <Leaderboard selection={selection} result={result} onClose={()=>setLeaderboard(false)} />}
+        {leaderboard && <Leaderboard selection={selection} car={selected} result={result} onClose={()=>setLeaderboard(false)} />}
       </div>
       <div className={styles.below}>
         <div>

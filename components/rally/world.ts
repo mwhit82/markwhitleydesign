@@ -25,6 +25,10 @@ import { handling, engine } from "./handling";
 import { isCircuit, lapCount, initialStage, stageDefinition, stagePoints, checkpointIndices, boardKey, surfaceGrip, timeOfDay, timesOfDay, type StageSelection } from "./stages";
 import { Atmosphere } from "./atmosphere";
 import { type Replay, type GhostSource, matchingReplay, replayKey, replayPose, headingBetween, checkpointSplits } from "./replay";
+import {trackEvent} from "../../lib/pendo";
+import {seconds,setupProperties} from "./analytics";
+/** Last controller reported to Pendo; module scope so a remounted game does not report it again. */
+let reportedController:{controllerId:string;mapping:string;rumbleSupported:boolean}|null=null;
 type Callbacks = {
   subtitle?: (text:string)=>void;
   stats: (s: {
@@ -188,6 +192,7 @@ export class RallyWorld {
     const pmrem=new T.PMREMGenerator(this.renderer),room=new RoomEnvironment();this.environmentMap=pmrem.fromScene(room,.05);this.scene.environment=this.environmentMap.texture;this.scene.environmentIntensity=.35;room.dispose();pmrem.dispose();
     this.renderer.toneMapping=T.ACESFilmicToneMapping;this.renderer.toneMappingExposure=1.1;
     this.miniature=new MiniatureRenderer(this.renderer,this.scene,this.camera,sun);
+    this.miniature.conditions=()=>({stage:this.selection.stage,weather:this.selection.weather,timeOfDay:timeOfDay(this.selection)});
     this.points = stagePoints(this.selection);
     this.checkpoints = [...checkpointIndices];
     try {const stored=localStorage.getItem("rally-ghost-source");if(stored==="off"||stored==="personal"||stored==="leader")this.ghostSource=stored;}catch{}
@@ -573,7 +578,7 @@ export class RallyWorld {
     if(this.ghostCar){this.root.remove(this.ghostCar);this.release(this.ghostCar);this.ghostCar=null;}
     this.ghostReplay=null;
   }
-  toggleGhost(){this.ghostVisible=!this.ghostVisible;this.callbacks.ghostVisibility?.(this.ghostVisible);}
+  toggleGhost(){this.ghostVisible=!this.ghostVisible;this.callbacks.ghostVisibility?.(this.ghostVisible);trackEvent("rally_setting_changed",()=>({setting:"ghost_visibility",value:this.ghostVisible?"on":"off",previousValue:this.ghostVisible?"off":"on",mode:this.mode,stage:this.selection.stage}));}
   setGhost(source:GhostSource){
     this.ghostSource=source;this.ghostVisible=true;this.callbacks.ghostVisibility?.(true);
     try{localStorage.setItem("rally-ghost-source",source);}catch{}
@@ -583,7 +588,7 @@ export class RallyWorld {
     this.clearGhost();
     if(this.ghostSource==="off"){this.callbacks.ghost?.("Ghost off");return;}
     const generation=this.ghostGeneration;
-    let replay:unknown=null,label="My best";
+    let replay:unknown=null,label="My best",status:number|undefined,leaderTime:number|undefined;
     try{
       if(this.ghostSource==="personal"){
         replay=JSON.parse(localStorage.getItem(replayKey(this.selection,this.selected))||"null");
@@ -594,16 +599,22 @@ export class RallyWorld {
         const timeout=setTimeout(()=>controller.abort(),5000);
         try {
           const query=new URLSearchParams({stage:this.selection.stage,weather:this.selection.weather,reverse:String(this.selection.reverse),timeOfDay:timeOfDay(this.selection),...(isCircuit(this.selection)?{laps:String(lapCount(this.selection)),circuitVersion:"2"}:{}),track:String(this.selection.track??1),car:String(this.selected)});
-          const response=await fetch(`/api/rally/ghost?${query}`,{signal:this.ghostAbort.signal});
-          if(!response.ok)throw new Error("unavailable");const data=await response.json();replay=data.replay;label=data.name?`Leader: ${data.name}`:"Leader";
+          const response=await fetch(`/api/rally/ghost?${query}`,{signal:this.ghostAbort.signal});status=response.status;
+          if(!response.ok)throw new Error("unavailable");const data=await response.json();replay=data.replay;leaderTime=typeof data.time==="number"?data.time:undefined;label=data.name?`Leader: ${data.name}`:"Leader";
         }finally{clearTimeout(timeout);}
       }
       if(generation!==this.ghostGeneration || this.disposed || (this.mode!=="garage" && this.mode!=="finished"))return;
-      if(!matchingReplay(replay,this.selection,this.selected)){this.callbacks.ghost?.("Leader’s ghost unavailable");return;}
+      if(!matchingReplay(replay,this.selection,this.selected)){this.callbacks.ghost?.("Leader’s ghost unavailable");this.leaderGhostFetched("no_recording",status,leaderTime);return;}
       this.ghostReplay=replay;
       this.ghostCar=cloneGhost(this.vehicle,"#b6f7ed",.3);
       this.ghostCar.visible=false;this.root.add(this.ghostCar);this.callbacks.ghost?.(label);
-    }catch{if(generation===this.ghostGeneration)this.callbacks.ghost?.("Ghost unavailable · racing still works");}
+      this.leaderGhostFetched("loaded",status,leaderTime);
+    }catch{if(generation===this.ghostGeneration){this.callbacks.ghost?.("Ghost unavailable · racing still works");this.leaderGhostFetched("failed",status);}}
+  }
+  /** Reports a current "Leaderboard best" ghost request; stale requests and personal ghosts are ignored. */
+  private leaderGhostFetched(outcome:"loaded"|"no_recording"|"failed",httpStatus?:number,leaderTime?:number){
+    if(this.ghostSource!=="leader")return;
+    trackEvent("rally_leader_ghost_fetched",()=>({outcome,leaderTime:leaderTime===undefined?undefined:seconds(leaderTime),httpStatus,...setupProperties(this.selection,this.selected),personalBest:this.best===null?undefined:seconds(this.best)}));
   }
   completeRun(){
     if(this.mode!=="race")return;
@@ -613,15 +624,19 @@ export class RallyWorld {
     this.replaySamples.push([this.time,Number(this.vehicle.position.x.toFixed(2)),Number(this.vehicle.position.z.toFixed(2)),Number(this.angle.toFixed(4))]);
     const replay:Replay|undefined=this.cleanRun && this.time<=600 && this.replaySamples.length<=2600 ? {version:1,selection:{...this.selection},car:this.selected,time:this.time,samples:this.replaySamples}:undefined;
     this.resultReplay={version:1,selection:{...this.selection},car:this.selected,time:this.time,samples:this.replaySamples.map(s=>[...s])};this.replayClock=0;
+    const previousBest=this.best;
     const personalBest=this.cleanRun && (!this.best || this.time < this.best);
     this.audio?.finishResult(this.cleanRun,Boolean(personalBest));
+    trackEvent("rally_run_completed",()=>({time:seconds(this.time),eligible:this.cleanRun,reasons:[...this.reasons],recoveryPenalty:seconds(this.recoveryPenalty),isPersonalBest:Boolean(personalBest),previousBest:previousBest===null?undefined:seconds(previousBest),lapTimes:this.lapTimes.map(seconds),...setupProperties(this.selection,this.selected),ghostSource:this.ghostSource,ghostTime:this.ghostReplay?seconds(this.ghostReplay.time):undefined,beatGhost:this.ghostReplay?this.time<this.ghostReplay.time:undefined,live:this.live,controllerConnected:this.padConnected,touchActive:this.touchActive}));
     if (personalBest) {
       this.best=this.time;
+      let replaySaved=false;
       try {
         localStorage.setItem(`pocket-rally-best-${boardKey(this.selection)}-${this.selected}`,String(this.best));
-        if(replay)localStorage.setItem(replayKey(this.selection,this.selected),JSON.stringify(replay));
+        if(replay){localStorage.setItem(replayKey(this.selection,this.selected),JSON.stringify(replay));replaySaved=true;}
       }catch{}
       this.callbacks.best(this.best);
+      trackEvent("rally_personal_best_set",()=>({time:seconds(this.time),previousBest:previousBest===null?undefined:seconds(previousBest),improvementSeconds:previousBest===null?undefined:seconds(previousBest-this.time),isFirstCleanFinish:previousBest===null,...setupProperties(this.selection,this.selected),replaySaved,live:this.live}));
     }
     if(this.live)this.onLiveFinish?.(this.time,this.trace,!this.cleanRun);
     this.callbacks.finish?.(this.time,this.cleanRun ? this.trace : [],replay,{eligible:this.cleanRun,reasons:[...this.reasons]});
@@ -643,9 +658,14 @@ export class RallyWorld {
     this.callbacks.mode(mode);
     if(mode==="finished")void this.prepareGhost();
   }
-  markPractice(reason:RunReason){
+  markPractice(reason:RunReason,checkpoint=this.checkpoint){
     this.cleanRun=false;
-    if(!this.reasons.includes(reason)){this.reasons.push(reason);this.callbacks.practice?.([...this.reasons]);}
+    if(!this.reasons.includes(reason)){this.reasons.push(reason);this.callbacks.practice?.([...this.reasons]);trackEvent("rally_run_marked_practice",()=>({reason,elapsedTime:seconds(this.time),checkpoint,lap:this.lap,recoveryPenalty:seconds(this.recoveryPenalty),...setupProperties(this.selection,this.selected),live:this.live}));}
+  }
+  /** Reports an attempt ended early: pause-menu restart or main menu, or leaving a friend race mid-race. */
+  trackAbandoned(exitMethod:"restart"|"main_menu"|"leave_room"){
+    if(this.mode!=="paused"&&this.mode!=="race"&&this.mode!=="countdown")return;
+    trackEvent("rally_run_abandoned",()=>({exitMethod,elapsedTime:seconds(this.time),progress:Math.round(((this.lap-1)+this.checkpoint/this.checkpoints.length)/lapCount(this.selection)*100)/100,lap:this.lap,practiceReasons:[...this.reasons],...setupProperties(this.selection,this.selected)}));
   }
   toggleReplay(){this.replayEnabled=!this.replayEnabled;if(!this.replayEnabled){this.vehicle.position.copy(this.atmosphere.layout.center);this.vehicle.rotation.set(0,this.atmosphere.layout.angle,0);}}
   clearFeedback(){this.plume?.reset();this.fountains?.reset();this.resultReplay=null;this.replayClock=0;this.surfaceEffects?.reset();if(this.mud)(this.mud.material as T.MeshStandardMaterial).opacity=0;if(this.snow)(this.snow.material as T.MeshStandardMaterial).opacity=0;this.checkpointEffects?.reset();this.splitReference=[];this.notifications.clear();this.callbacks.checkpoints?.([]);this.reasons=[];this.callbacks.practice?.([]);}
@@ -666,6 +686,7 @@ export class RallyWorld {
   uiCue(kind:"select"|"start"|"restart"="select"){if(!this.muted)this.audio?.cue(kind);}
   start(fromRoom=false) {
     if(this.roomJoined&&!fromRoom)return;
+    const isRestart=this.mode!=="garage";
     this.uiCue(this.mode==="garage"?"start":"restart");
     this.setMode("countdown");
     this.clearFeedback();
@@ -686,6 +707,7 @@ export class RallyWorld {
     this.callbacks.start?.();
     this.resetPosition();
     this.setMode("countdown");
+    trackEvent("rally_run_started",()=>({...setupProperties(this.selection,this.selected),isRestart,fromRoom,ghostSource:this.ghostSource,ghostAvailable:this.ghostReplay!==null,personalBest:this.best===null?undefined:seconds(this.best),driverCamera:this.driverCamera.enabled,codriverEnabled:this.codriverEnabled,graphics:this.miniature.graphics,controllerConnected:this.padConnected,steeringSensitivity:this.controls.sensitivity,hapticsEnabled:this.controls.haptics,muted:this.muted}));
     void this.ensureAudio().catch(() => {
       this.muted = true;
     });
@@ -821,9 +843,15 @@ export class RallyWorld {
       brake = 0,
       hand = false;
     if (!!pad !== this.padConnected) {
+      const mode = this.mode;
       if (!pad && this.padConnected) this.blur();
       this.padConnected = !!pad;
       this.callbacks.pad(pad ? "Controller connected" : "Controller disconnected");
+      if (!!pad !== (reportedController !== null)) {
+        const controller = pad ? { controllerId: pad.id, mapping: pad.mapping || "none", rumbleSupported: Boolean(pad.vibrationActuator?.playEffect) } : reportedController;
+        reportedController = pad ? controller : null;
+        trackEvent("rally_controller_connection_changed", () => ({ connected: !!pad, ...controller, mode, stage: this.selection.stage }));
+      }
     }
     if (pad) {
       const buttons = pad.buttons.map((b) => b.pressed),
@@ -950,7 +978,7 @@ export class RallyWorld {
       const passage=advanceCheckpoints(this.points,this.checkpoints,this.checkpoint,this.movementFrom,this.vehicle.position,this.time,this.selection.circuitVersion===2,this.circuitFinishArmed);
       this.checkpoint=passage.cursor;
       if(passage.events.length){
-        if(passage.events.some(e=>e.outcome==="missed"))this.markPractice("missed-checkpoint");
+        const missed=passage.events.find(e=>e.outcome==="missed");if(missed)this.markPractice("missed-checkpoint",missed.checkpoint);
         this.checkpointEffects.emit(passage.events);
         for(const event of passage.events){const reference=this.splitReference[(this.lap-1)*18+event.checkpoint-1];if(this.cleanRun&&event.outcome==='accepted'&&reference!==undefined)event.delta=event.time-reference;}
         this.notifications.push(passage.events);this.callbacks.checkpoints?.([...this.notifications.items]);
