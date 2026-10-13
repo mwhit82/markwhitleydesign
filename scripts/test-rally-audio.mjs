@@ -101,6 +101,7 @@ test("bounded audio graph: no native media rate mutations, cached decoding, paus
       throw new Error("Native media rate must stay unchanged");
     }
   }
+  let awaitingGesture=false;const pendingResumes=[];
   class Context {
     state = "suspended";
     currentTime = 0;
@@ -123,6 +124,8 @@ test("bounded audio graph: no native media rate mutations, cached decoding, paus
       return Promise.resolve({duration:1});
     }
     resume() {
+      if(awaitingGesture)return new Promise(resolve=>pendingResumes.push(resolve));
+      for(const resolve of pendingResumes.splice(0))resolve();
       this.state = "running";
       return Promise.resolve();
     }
@@ -228,6 +231,17 @@ test("bounded audio graph: no native media rate mutations, cached decoding, paus
     assert.equal(stageErrors,0,'stage selection must not request global mute');
     switching.pause();const playsBefore=mediaPlays;switching.setEnvironment('neon');assert.equal(mediaPlays,playsBefore,'changing stage while muted must not autoplay');
     switching.dispose();deferMedia=false;mediaFailure=null;
+    awaitingGesture=true;
+    const gestureAudio=new RallyAudio(()=>assert.fail('a waiting browser unlock must recover on the next tap'));
+    const waiting=gestureAudio.enable();
+    assert.equal(gestureAudio.context.state,'suspended');
+    awaitingGesture=false;
+    const tapped=gestureAudio.enable();
+    assert.equal(tapped,waiting,'reuse the same startup while reissuing resume');
+    await tapped;
+    assert.equal(gestureAudio.playing,true);
+    assert.equal(gestureAudio.diagnostics.enableCount,1);
+    gestureAudio.dispose();
     globalThis.fetch=async url=>({ok:!String(url).includes('crowd-')&&!String(url).includes('voice-'),arrayBuffer:async()=>new ArrayBuffer(8)});
     const fallback=new RallyAudio(()=>assert.fail('optional crowd/voice assets must not stop engine audio'));
     await fallback.enable();assert.equal(fallback.layers.length,4);assert.equal(fallback.crowdLoop,null);fallback.setMode("race");fallback.speak(["1-left"]);assert.equal(fallback.voiceLayers.length,0);fallback.dispose();

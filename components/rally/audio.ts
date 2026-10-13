@@ -116,7 +116,12 @@ export class RallyAudio {
   enable(){
     if(this.disposed)return Promise.resolve();
     if(this.playing)return this.context&&this.context.state!=='running'?this.context.resume():Promise.resolve();
-    if(this.enabling)return this.enabling;
+    if(this.enabling){
+      // Safari can leave the initial resume pending until a later trusted tap.
+      // Reissue it inside that gesture without starting another decode/graph.
+      if(this.context&&this.context.state!=='running')void this.context.resume().catch(()=>{});
+      return this.enabling;
+    }
     const pending=this.startAudio();this.enabling=pending;
     void pending.finally(()=>{if(this.enabling===pending)this.enabling=null;}).catch(()=>{});return pending;
   }

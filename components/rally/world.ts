@@ -757,6 +757,7 @@ export class RallyWorld {
     }
   }
   async sound(muted: boolean) {
+    if(!muted)this.audioUnlocked=true;
     this.muted = muted;
     try{localStorage.setItem("rally-muted",String(muted));}catch{}
     if (muted) {
@@ -774,7 +775,8 @@ export class RallyWorld {
     // Playback availability is separate from the player's remembered mute choice.
     if (!this.disposed && !this.muted) this.callbacks.audioError?.();
   };
-  unlockAudio() { void this.ensureAudio().catch(()=>this.audioFailed()); }
+  private audioUnlocked=false;
+  unlockAudio() { this.audioUnlocked=true;void this.ensureAudio().catch(()=>this.audioFailed()); }
   prepareAudio() {
     if (this.audio) return;
     this.audio = new RallyAudio(()=>this.audioFailed());
@@ -783,6 +785,7 @@ export class RallyWorld {
     this.audio.setMode(this.mode);
   }
   async ensureAudio() {
+    if (!this.audioUnlocked) return;
     if (
       this.muted ||
       this.disposed ||
@@ -794,6 +797,7 @@ export class RallyWorld {
     await this.audio?.enable();
   }
   keydown = (event: KeyboardEvent) => {
+    if(!event.repeat)this.unlockAudio();
     if(event.code==="Escape"){
       event.preventDefault();
       if(this.menuOpen || this.mode==="paused" || this.mode==="garage" || this.mode==="finished")this.callbacks.menu?.("back");else this.pause();

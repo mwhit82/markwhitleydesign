@@ -318,7 +318,7 @@ export function RallyGame() {
         className={`${styles.game} ${expanded ? styles.expanded : ""}`}
         onPointerDownCapture={()=>{api.current?.unlockAudio();}}
         onContextMenu={(event) => event.preventDefault()}
-        onClickCapture={event=>{const button=(event.target as HTMLElement).closest("button");if(button&&!button.hasAttribute("data-driving-control")&&!button.hasAttribute("data-start-cue"))api.current?.uiCue();}}
+        onClickCapture={event=>{api.current?.unlockAudio();const button=(event.target as HTMLElement).closest("button");if(button&&!button.hasAttribute("data-driving-control")&&!button.hasAttribute("data-start-cue"))api.current?.uiCue();}}
         onKeyDown={event=>{
           if(!(optionPanel||leaderboard||installHelp||allBoards||settingsPanel||mode==='garage'||mode==='paused'||mode==='finished'))return;
           if((event.target as HTMLElement).matches('input,select,textarea'))return;

@@ -86,6 +86,7 @@ test('audio failures never change the explicit mute preference and the next gest
  const oldDocument=globalThis.document;globalThis.document={hidden:false};memory.clear();const w=fixture();let attempts=0,notices=0,fail=true,paused=0;
  Object.assign(w,{mode:'garage',muted:false,audio:{enable:async()=>{attempts++;if(fail)throw new DOMException('Gesture required','NotAllowedError');},pause(){paused++;}},callbacks:{audioError(){notices++;}}});
  try{
+  await w.ensureAudio();assert.equal(attempts,0,"preparation must not request playback before interaction");
   for(let i=0;i<3;i++){w.unlockAudio();await new Promise(r=>setImmediate(r));assert.equal(w.muted,false);assert.equal(memory.has('rally-muted'),false);}
   assert.equal(notices,3);fail=false;w.unlockAudio();await new Promise(r=>setImmediate(r));assert.equal(attempts,4);assert.equal(w.muted,false);
   await w.sound(true);w.unlockAudio();await new Promise(r=>setImmediate(r));assert.equal(attempts,4);assert.equal(w.muted,true);assert.equal(memory.get('rally-muted'),'true');
