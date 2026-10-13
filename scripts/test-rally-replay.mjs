@@ -81,3 +81,15 @@ test('live rival snapshots are bounded, extrapolation is limited and stale rival
  assert.equal(rivals.group.children.length,3);assert.equal(rivals.cars.get('a').samples.length,8);rivals.update(now+500,()=>0);assert.ok(rivals.cars.get('a').car.position.z<=20);rivals.update(now+2100,()=>0);assert.equal(rivals.cars.get('a').car.visible,false);rivals.clear();assert.equal(rivals.group.children.length,0);
  }finally{globalThis.performance=original;}
 });
+
+test('audio failures never change the explicit mute preference and the next gesture retries',async()=>{
+ const oldDocument=globalThis.document;globalThis.document={hidden:false};memory.clear();const w=fixture();let attempts=0,notices=0,fail=true,paused=0;
+ Object.assign(w,{mode:'garage',muted:false,audio:{enable:async()=>{attempts++;if(fail)throw new DOMException('Gesture required','NotAllowedError');},pause(){paused++;}},callbacks:{audioError(){notices++;}}});
+ try{
+  for(let i=0;i<3;i++){w.unlockAudio();await new Promise(r=>setImmediate(r));assert.equal(w.muted,false);assert.equal(memory.has('rally-muted'),false);}
+  assert.equal(notices,3);fail=false;w.unlockAudio();await new Promise(r=>setImmediate(r));assert.equal(attempts,4);assert.equal(w.muted,false);
+  await w.sound(true);w.unlockAudio();await new Promise(r=>setImmediate(r));assert.equal(attempts,4);assert.equal(w.muted,true);assert.equal(memory.get('rally-muted'),'true');
+  fail=true;await assert.rejects(w.sound(false));assert.equal(w.muted,false);assert.equal(memory.get('rally-muted'),'false');assert.ok(paused>=1);
+  w.disposed=true;w.audioFailed();assert.equal(notices,3);
+ }finally{globalThis.document=oldDocument;}
+});

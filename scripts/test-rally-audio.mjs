@@ -168,6 +168,7 @@ test("bounded audio graph: no native media rate mutations, cached decoding, paus
     assert.equal(decodes, 56);
     assert.equal(sources, 6, "five ongoing sources plus one completed silent warmup");
     assert.deepEqual(periods, [50]);
+    audio.context.state='suspended';await audio.enable();assert.equal(audio.context.state,'running','a browser-interrupted context resumes on the next gesture');assert.equal(decodes,56);
     const previous = automation;
     for (let i = 0; i < 600; i++) {
       audio.drive.speed = i % 24;

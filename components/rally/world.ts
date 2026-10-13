@@ -47,7 +47,7 @@ type Callbacks = {
   pad: (s: string) => void;
   select: (i: number) => void;
   best: (n: number | null) => void;
-  audio?: (muted: boolean) => void;
+  audioError?: () => void;
   start?: () => void;
   finish?: (time: number, trace: number[][], replay: Replay | undefined, eligibility:Eligibility) => void;
   checkpoints?: (notices:CheckpointNotice[]) => void;
@@ -732,9 +732,7 @@ export class RallyWorld {
     this.callbacks.start?.();
     this.resetPosition();
     this.setMode("countdown");
-    void this.ensureAudio().catch(() => {
-      this.muted = true;
-    });
+    void this.ensureAudio().catch(()=>this.audioFailed());
   }
   garage() {
     this.miniature.set(this.miniature.graphics);
@@ -747,19 +745,13 @@ export class RallyWorld {
     this.checkpoint = 0;
     this.resetPosition();
     if(this.selection.stage==='nyc')this.vehicle.position.copy(this.atmosphere.layout.center);
-    void this.ensureAudio().catch(() => {
-      this.muted = true;
-      this.callbacks.audio?.(true);
-    });
+    void this.ensureAudio().catch(()=>this.audioFailed());
   }
   pause() {
     if(this.live){this.liveMenu=!this.liveMenu;this.onLiveMenu?.(this.liveMenu);return;}
     if (this.mode === "paused") {
       this.setMode(this.resumeMode);
-      void this.ensureAudio().catch(() => {
-        this.muted = true;
-        this.callbacks.audio?.(true);
-      });
+      void this.ensureAudio().catch(()=>this.audioFailed());
     } else if (this.mode === "race" || this.mode === "countdown") {
       this.resumeMode=this.mode;this.setMode("paused");
     }
@@ -775,17 +767,17 @@ export class RallyWorld {
       await this.ensureAudio();
     } catch (error) {
       this.audio?.pause();
-      this.muted = true;
-      this.callbacks.audio?.(true);
       throw error;
     }
   }
+  private audioFailed() {
+    // Playback availability is separate from the player's remembered mute choice.
+    if (!this.disposed && !this.muted) this.callbacks.audioError?.();
+  };
+  unlockAudio() { void this.ensureAudio().catch(()=>this.audioFailed()); }
   prepareAudio() {
     if (this.audio) return;
-    this.audio = new RallyAudio(() => {
-      this.muted = true;
-      if (!this.disposed) this.callbacks.audio?.(true);
-    });
+    this.audio = new RallyAudio(()=>this.audioFailed());
     this.audio.setCar(this.selected);
     this.audio.setEnvironment(this.selection.stage);
     this.audio.setMode(this.mode);
@@ -840,10 +832,7 @@ export class RallyWorld {
       this.audio?.pause();
       this.blur();
     } else if (this.mode === "garage")
-      void this.ensureAudio().catch(() => {
-        this.muted = true;
-        this.callbacks.audio?.(true);
-      });
+      void this.ensureAudio().catch(()=>this.audioFailed());
   };
   resize() {
     const w = this.host.clientWidth,

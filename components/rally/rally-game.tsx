@@ -118,10 +118,7 @@ export function RallyGame() {
           pad: setNotice,
           select: setSelected,
           best: setBest,
-          audio: (isMuted) => {
-            setMuted(isMuted);
-            if (isMuted) setNotice("Audio stopped. Tap Sound to retry.");
-          },
+          audioError: () => setNotice("Sound couldn't start. Tap again to retry."),
         });
         try{api.current.controls=readControls(JSON.parse(localStorage.getItem("rally-controls")||"null"));}catch{}
         setGhostSource(api.current.ghostSource);setSelection({...api.current.selection});
@@ -207,6 +204,7 @@ export function RallyGame() {
     if (!api.current) return;
     setAudioBusy(true);
     const next = !muted;
+    setMuted(next);
     try {
       await api.current.sound(next);
       setMuted(next);
@@ -216,8 +214,7 @@ export function RallyGame() {
           : "Audio playback started. Adjust your phone’s media volume.",
       );
     } catch {
-      setMuted(true);
-      setNotice("Sound could not start. Tap Sound again to retry.");
+      setNotice("Sound couldn't start. Tap again to retry.");
     } finally {
       setAudioBusy(false);
     }
@@ -227,7 +224,7 @@ export function RallyGame() {
       key={key}
       data-driving-control="true"
       aria-label={name}
-      onPointerDownCapture={()=>{const world=api.current;if(world&&!world.muted)void world.ensureAudio().catch(()=>{world.muted=true;setMuted(true);setNotice("Tap Sound to retry audio.");});}}
+      onPointerDownCapture={()=>{api.current?.unlockAudio();}}
         onContextMenu={(event) => event.preventDefault()}
       onPointerDown={(event) => {
         event.preventDefault();
@@ -318,7 +315,7 @@ export function RallyGame() {
         data-time={timeOfDay(selection)}
         data-steering={controls.steering}
         className={`${styles.game} ${expanded ? styles.expanded : ""}`}
-        onPointerDownCapture={()=>{const world=api.current;if(world&&!world.muted)void world.ensureAudio().catch(()=>{world.muted=true;setMuted(true);setNotice("Tap Sound to retry audio.");});}}
+        onPointerDownCapture={()=>{api.current?.unlockAudio();}}
         onContextMenu={(event) => event.preventDefault()}
         onClickCapture={event=>{const button=(event.target as HTMLElement).closest("button");if(button&&!button.hasAttribute("data-driving-control")&&!button.hasAttribute("data-start-cue"))api.current?.uiCue();}}
         onKeyDown={event=>{

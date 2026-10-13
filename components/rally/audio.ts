@@ -114,7 +114,8 @@ export class RallyAudio {
   }
 
   enable(){
-    if(this.disposed||this.playing)return Promise.resolve();
+    if(this.disposed)return Promise.resolve();
+    if(this.playing)return this.context&&this.context.state!=='running'?this.context.resume():Promise.resolve();
     if(this.enabling)return this.enabling;
     const pending=this.startAudio();this.enabling=pending;
     void pending.finally(()=>{if(this.enabling===pending)this.enabling=null;}).catch(()=>{});return pending;
