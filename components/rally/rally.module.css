@@ -409,3 +409,4 @@
 .standingsFilterDialog footer {display:flex;gap:8px;flex-shrink:0;}
 .standingsFilterDialog footer button {flex:1;}
 .standingsFilterDialog footer button:last-child {background:var(--orange);}
+.menuUtilities {grid-template-columns:repeat(2,minmax(0,1fr));}

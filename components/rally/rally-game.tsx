@@ -45,7 +45,6 @@ export function RallyGame() {
   const [selection, setSelection] = useState<StageSelection>({...initialStage});
   const [allBoards,setAllBoards]=useState(false);
   const [settingsPanel,setSettingsPanel]=useState(false);
-  const [controlPanel,setControlPanel]=useState(false);
   const [controls,setControls]=useState<ControlSettings>({...defaultControls});
   useEffect(()=>{try{setControls(readControls(JSON.parse(localStorage.getItem("rally-controls")||"null")));}catch{}},[]);
   useEffect(()=>{if(api.current)api.current.controls=controls;try{localStorage.setItem("rally-controls",JSON.stringify(controls));}catch{}},[controls]);
@@ -252,7 +251,7 @@ export function RallyGame() {
     requestAnimationFrame(()=>setTimeout(()=>{if(change!==selectionChange.current||!api.current)return;api.current.configure(next);void api.current.prepareRace();},0));
     try{localStorage.setItem("rally-time-of-day",timeOfDay(next));}catch{}
   };
-  const mainMenu=()=>{setSettingsPanel(false);setControlPanel(false);setAllBoards(false);setLeaderboard(false);setOptionPanel(null);setResult(null);run.current=Promise.resolve(null);api.current?.garage();};
+  const mainMenu=()=>{setSettingsPanel(false);setAllBoards(false);setLeaderboard(false);setOptionPanel(null);setResult(null);run.current=Promise.resolve(null);api.current?.garage();};
   const openOptions=(panel:NonNullable<typeof optionPanel>,button:HTMLButtonElement)=>{optionOpener.current=button;setOptionPanel(panel);};
   const closeOptions=()=>{setOptionPanel(null);requestAnimationFrame(()=>optionOpener.current?.focus());};
   const optionTitle=optionPanel==='laps'?'Race laps':optionPanel==='track'?'Choose track':optionPanel==='time'?'Time of day':optionPanel==='stage'?'Choose stage':optionPanel==='weather'?'Choose weather':optionPanel==='direction'?'Route direction':'Ghost rival';
@@ -275,7 +274,7 @@ export function RallyGame() {
       const nestedBack=game.current?.querySelector<HTMLButtonElement>('[data-menu-back]');
       if(nestedBack){nestedBack.click();return;}
       if(api.current?.roomMenuOpen){api.current.onRoomBack?.();return;}
-      if(controlPanel)setControlPanel(false);else if(allBoards)setAllBoards(false);else if(optionPanel)closeOptions();else if(leaderboard)setLeaderboard(false);else if(settingsPanel)setSettingsPanel(false);else if(installHelp)setInstallHelp(false);else if(api.current?.mode==='paused')api.current.pause();else if(api.current?.mode==='finished')mainMenu();
+      if(allBoards)setAllBoards(false);else if(optionPanel)closeOptions();else if(leaderboard)setLeaderboard(false);else if(settingsPanel)setSettingsPanel(false);else if(installHelp)setInstallHelp(false);else if(api.current?.mode==='paused')api.current.pause();else if(api.current?.mode==='finished')mainMenu();
       return;
     }
     const menus=game.current?.querySelectorAll<HTMLElement>('[data-rally-menu]');
@@ -291,10 +290,10 @@ export function RallyGame() {
     buttons[next].focus();
   };
   useEffect(()=>{
-    if(api.current)api.current.menuOpen=api.current.roomMenuOpen||Boolean(optionPanel||leaderboard||installHelp||controlPanel||allBoards||settingsPanel);
+    if(api.current)api.current.menuOpen=api.current.roomMenuOpen||Boolean(optionPanel||leaderboard||installHelp||allBoards||settingsPanel);
     const menus=game.current?.querySelectorAll<HTMLElement>('[data-rally-menu]');const menu=menus?.[menus.length-1];
     (menu?.querySelector<HTMLElement>('[data-menu-default]')||menu?.querySelector<HTMLElement>('button'))?.focus();
-  },[mode,optionPanel,leaderboard,installHelp,ready,controlPanel,allBoards,settingsPanel]);
+  },[mode,optionPanel,leaderboard,installHelp,ready,allBoards,settingsPanel]);
   return (
     <div className={styles.page}>
       <div className={styles.heading}>
@@ -321,12 +320,12 @@ export function RallyGame() {
         onContextMenu={(event) => event.preventDefault()}
         onClickCapture={event=>{const button=(event.target as HTMLElement).closest("button");if(button&&!button.hasAttribute("data-driving-control")&&!button.hasAttribute("data-start-cue"))api.current?.uiCue();}}
         onKeyDown={event=>{
-          if(!(optionPanel||leaderboard||installHelp||controlPanel||allBoards||settingsPanel||mode==='garage'||mode==='paused'||mode==='finished'))return;
+          if(!(optionPanel||leaderboard||installHelp||allBoards||settingsPanel||mode==='garage'||mode==='paused'||mode==='finished'))return;
           if((event.target as HTMLElement).matches('input,select,textarea'))return;
           if(event.key==='ArrowDown'||event.key==='ArrowUp'){
             event.preventDefault();event.stopPropagation();menuAction.current(event.key==='ArrowDown'?'next':'previous');
           }
-          if(event.key==='Tab' && (optionPanel||leaderboard||installHelp||controlPanel||allBoards||settingsPanel||mode==='paused')){
+          if(event.key==='Tab' && (optionPanel||leaderboard||installHelp||allBoards||settingsPanel||mode==='paused')){
             event.preventDefault();const menus=game.current?.querySelectorAll<HTMLElement>('[data-rally-menu]');const menu=menus?.[menus.length-1];const items=Array.from(menu?.querySelectorAll<HTMLElement>('button:not(:disabled),summary,input,select,a[href]')??[]).filter(el=>el.getClientRects().length);if(items.length){const index=items.indexOf(document.activeElement as HTMLElement);items[(index+(event.shiftKey?-1:1)+items.length)%items.length].focus();}
           }
         }}
@@ -340,7 +339,7 @@ export function RallyGame() {
           {Array.from({length:selection.weather==='rain'?8:selection.weather==='snow'?12:3},(_,i)=><i key={i} style={{left:`${i%2===0?2+(i*7)%19:78+(i*7)%19}%`,animationDelay:`${-i*1.3}s`,animationDuration:`${selection.weather==='rain'?5+i%3:8+i%4}s`}}/>)}
         </div>}
         <div className={styles.topbar} aria-label="Game controls">
-          <button aria-label={mode==='finished'?'Toggle background replay':'Toggle driver-seat camera'} title="Camera view" aria-pressed={mode==='finished'?replayEnabled:driverView} onClick={mode==='finished'?()=>{api.current?.toggleReplay();setReplayEnabled(Boolean(api.current?.replayEnabled));}:toggleCamera}><HudIcon name={mode==='finished'?'replay':'wheel'}/></button>
+          {mode!=='garage'&&<button aria-label={mode==='finished'?'Toggle background replay':'Toggle driver-seat camera'} title="Camera view" aria-pressed={mode==='finished'?replayEnabled:driverView} onClick={mode==='finished'?()=>{api.current?.toggleReplay();setReplayEnabled(Boolean(api.current?.replayEnabled));}:toggleCamera}><HudIcon name={mode==='finished'?'replay':'wheel'}/></button>}
           {(mode==='race'||mode==='countdown') && <button data-mobile-pause="true" aria-label="Pause" title="Pause" onClick={()=>api.current?.pause()}><HudIcon name="pause"/></button>}
           <button disabled={!ready||audioBusy} aria-label={muted?'Enable sound':'Mute sound'} title={muted?'Enable sound':'Mute sound'} aria-pressed={!muted} onClick={toggleSound}><HudIcon name={muted?'muted':'sound'}/></button>
           <button aria-label={expanded?'Exit game view':'Fullscreen'} title={expanded?'Exit game view':'Fullscreen'} aria-pressed={expanded} onClick={toggleFullscreen}><HudIcon name={expanded?'contract':'expand'}/></button>
@@ -445,7 +444,7 @@ export function RallyGame() {
                 <button onClick={e=>openOptions('direction',e.currentTarget)}><small>ROUTE</small><strong>{selection.reverse?'Reverse':'Forward'}</strong><span><HudIcon name="next"/></span></button>
                 <button onClick={e=>openOptions('ghost',e.currentTarget)}><small>GHOST</small><strong>{ghostSource==='off'?'Off':ghostSource==='personal'?'My best':'Leaderboard'}</strong><span><HudIcon name="next"/></span></button>
               </div>
-              <div className={styles.secondaryTiles}><button onClick={()=>setSettingsPanel(true)}><HudIcon name="settings"/>Settings</button><button onClick={()=>setAllBoards(true)}><HudIcon name="list"/>Leaderboards</button><button onClick={()=>setControlPanel(true)}><HudIcon name="wheel"/>Controls</button></div>
+              <div className={`${styles.secondaryTiles} ${styles.menuUtilities}`}><button onClick={()=>setSettingsPanel(true)}><HudIcon name="wheel"/>Control</button><button onClick={()=>setAllBoards(true)}><HudIcon name="list"/>Leaderboards</button></div>
               </div><div className={styles.garageActions}>
               <button
                 className={styles.start}
@@ -523,7 +522,7 @@ export function RallyGame() {
               <button className={styles.start} data-menu-default="true" onClick={()=>api.current?.pause()}>RESUME <span><HudIcon name="right"/></span></button>
               <button className={styles.menuButton} disabled={inRoom} onClick={()=>api.current?.start()}>Restart stage <span>↻</span></button>
               <button className={styles.menuButton} onClick={mainMenu}>Main menu <small>Ends this run</small></button>
-            <div className={styles.secondaryTiles}><button onClick={()=>setSettingsPanel(true)}><HudIcon name="settings"/>Settings</button><button onClick={()=>setAllBoards(true)}><HudIcon name="list"/>Leaderboards</button><button onClick={()=>setControlPanel(true)}><HudIcon name="wheel"/>Controls</button></div>
+            <div className={`${styles.secondaryTiles} ${styles.menuUtilities}`}><button onClick={()=>setSettingsPanel(true)}><HudIcon name="wheel"/>Control</button><button onClick={()=>setAllBoards(true)}><HudIcon name="list"/>Leaderboards</button></div>
             </div>
           </div>
         )}
@@ -548,19 +547,16 @@ export function RallyGame() {
           {optionPanel==='ghost'&&ghostStatus&&<p>{ghostStatus}</p>}
           <div className={styles.optionList}>{options.map(o=><button key={o.value} aria-pressed={o.selected} data-menu-default={o.selected||undefined} onClick={()=>selectOption(o.value)}>{["stage","track","weather","time"].includes(optionPanel)&&<img className={styles.optionPreview} alt="" loading="lazy" src={`/rally/previews/${optionPanel==='stage'?`${o.value}-1`:optionPanel==='track'?`${selection.stage}-${o.value}`:optionPanel==='weather'?`weather-${o.value}`:`time-${o.value}`}.webp`}/>}<span>{o.label}<small>{o.detail}</small></span><b>{o.selected?'✓':<HudIcon name="right"/>}</b></button>)}</div>
         </div></div>}
-        {settingsPanel&&<div className={styles.optionScrim}><div className={styles.optionPanel} role="dialog" aria-modal="true" aria-label="Settings" data-rally-menu="true"><header><h2>Settings</h2><button aria-label="Close settings" onClick={()=>setSettingsPanel(false)}>×</button></header><div className={styles.stageChoices}>
-                <button onClick={toggleCamera} aria-pressed={driverView}><small><HudIcon name="wheel"/> CAMERA</small><strong>{driverView?"Driver seat":"Isometric"}</strong></button><button aria-pressed={codriver} disabled={stageVehicle(selection.stage)!==null} onClick={toggleCodriver}><small><HudIcon name="headset"/> CO-DRIVER</small><strong>{!hasCodriver(selection.stage)?'Rally only':codriver?'On':'Off'}</strong></button>
-                <button onClick={changeGraphics} aria-label={`Graphics: ${graphics}. Change quality`}><small><HudIcon name="screen"/> GRAPHICS</small><strong>{graphics==='auto'?'Auto':graphics==='high'?'High':'Low'}</strong></button>
-                <button aria-pressed={screenWeather} onClick={toggleScreenWeather}><small><HudIcon name="screen"/> SCREEN WEATHER</small><strong>{screenWeather?"On":"Off"}</strong></button>
-              </div><div className={styles.secondaryTiles}><button onClick={toggleSound}><HudIcon name={muted?'muted':'sound'}/>{muted?'Sound off':'Sound on'}</button><button onClick={()=>{api.current?.toggleReplay();setReplayEnabled(Boolean(api.current?.replayEnabled));}}><HudIcon name="replay"/>Replay {replayEnabled?'on':'off'}</button><button onClick={toggleFullscreen}><HudIcon name={expanded?'contract':'expand'}/>{expanded?'Exit view':'Fullscreen'}</button></div></div></div>}
-        {controlPanel&&<div className={styles.optionScrim}><div className={styles.optionPanel} role="dialog" aria-modal="true" aria-label="Driving controls" data-rally-menu="true">
-          <header><div><span className={styles.tag}>YOUR CONTROLS</span><h2>Driving controls</h2></div><button onClick={()=>setControlPanel(false)} aria-label="Close controls">×</button></header>
-          <label className={styles.controlRange}>Steering sensitivity <strong>{controls.sensitivity.toFixed(1)}×</strong><input type="range" min="0.5" max="1.5" step="0.1" value={controls.sensitivity} onChange={e=>setControls(c=>({...c,sensitivity:Number(e.target.value)}))}/></label>
+        {settingsPanel&&<div className={styles.optionScrim}><div className={styles.optionPanel} role="dialog" aria-modal="true" aria-label="Control" data-rally-menu="true"><header><h2>Control</h2><button aria-label="Close control" onClick={()=>setSettingsPanel(false)}>×</button></header>          <label className={styles.controlRange}>Steering sensitivity <strong>{controls.sensitivity.toFixed(1)}×</strong><input type="range" min="0.5" max="1.5" step="0.1" value={controls.sensitivity} onChange={e=>setControls(c=>({...c,sensitivity:Number(e.target.value)}))}/></label>
           <button className={styles.menuButton} disabled={hapticSupport==='unavailable'} aria-pressed={controls.haptics} onClick={()=>setControls(c=>({...c,haptics:!c.haptics}))}>{hapticSupport==='controller'?'Controller rumble':hapticSupport==='device'?'Device vibration':'Haptics unavailable'}: {controls.haptics?'On':'Off'}</button>
           <button className={styles.menuButton} disabled={hapticSupport==='unavailable'} onClick={()=>void testHaptics().then(setHapticMessage)}>Test feedback</button><p role="status">{hapticMessage}</p>
           <p className={styles.hint}>Rumble requires a supported controller/browser. Handset vibration is available only where the browser supports it; iPhone and iPad web vibration is not supported.</p>
           <button className={styles.menuButton} onClick={()=>setControls({...defaultControls})}>Reset controls to defaults</button><small>Restores arrows, normal sensitivity and haptics off. Records stay saved.</small>
-        </div></div>}
+<div className={styles.stageChoices}>
+                <button onClick={toggleCamera} aria-pressed={driverView}><small><HudIcon name="wheel"/> CAMERA</small><strong>{driverView?"Driver seat":"Isometric"}</strong></button><button aria-pressed={codriver} disabled={stageVehicle(selection.stage)!==null} onClick={toggleCodriver}><small><HudIcon name="headset"/> CO-DRIVER</small><strong>{!hasCodriver(selection.stage)?'Rally only':codriver?'On':'Off'}</strong></button>
+                <button onClick={changeGraphics} aria-label={`Graphics: ${graphics}. Change quality`}><small><HudIcon name="screen"/> GRAPHICS</small><strong>{graphics==='auto'?'Auto':graphics==='high'?'High':'Low'}</strong></button>
+                <button aria-pressed={screenWeather} onClick={toggleScreenWeather}><small><HudIcon name="screen"/> SCREEN WEATHER</small><strong>{screenWeather?"On":"Off"}</strong></button>
+              </div><div className={styles.secondaryTiles}><button onClick={toggleSound}><HudIcon name={muted?'muted':'sound'}/>{muted?'Sound off':'Sound on'}</button><button onClick={()=>{api.current?.toggleReplay();setReplayEnabled(Boolean(api.current?.replayEnabled));}}><HudIcon name="replay"/>Replay {replayEnabled?'on':'off'}</button><button onClick={toggleFullscreen}><HudIcon name={expanded?'contract':'expand'}/>{expanded?'Exit view':'Fullscreen'}</button></div></div></div>}
         {allBoards&&<Standings onClose={()=>setAllBoards(false)}/>}
         <FriendRaces openRequest={friendsOpen} mode={mode} ready={ready} world={()=>api.current} selection={selection} car={selected} onActive={setInRoom} onSetup={(s,car)=>{const w=api.current;if(!w)return;if(w.mode!=='garage')w.garage();if(boardKey(w.selection)!==boardKey(s))w.configure(s);if(w.selected!==car)w.choose(car);setSelection({...s});setSelected(car);}}/>
         {leaderboard && <Leaderboard selection={selection} result={result} onClose={()=>setLeaderboard(false)} />}
