@@ -410,3 +410,10 @@
 .standingsFilterDialog footer button {flex:1;}
 .standingsFilterDialog footer button:last-child {background:var(--orange);}
 .menuUtilities {grid-template-columns:repeat(2,minmax(0,1fr));}
+.controlFeedback {margin-top:16px;border-top:1px solid var(--edge);}
+.feedbackActions {display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.feedbackActions button,.controlReset button {min-height:44px;padding:8px;font-size:12px;font-weight:650;border-radius:3px;}
+.controlFeedback p,.controlReset small {font-size:11px;line-height:1.45;color:#c6cbb8;}
+.controlFeedback p {margin:8px 0;}
+.controlReset {display:flex;align-items:center;gap:12px;}
+.controlReset button {flex-shrink:0;}
