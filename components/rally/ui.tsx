@@ -1,7 +1,9 @@
 import type {ReactNode} from 'react';
-export type IconName='wheel'|'people'|'settings'|'check'|'invite'|'camera'|'headset'|'screen'|'pause'|'sound'|'muted'|'expand'|'contract'|'ghost'|'recover'|'left'|'right'|'next';
+export type IconName='list'|'replay'|'wheel'|'people'|'settings'|'check'|'invite'|'camera'|'headset'|'screen'|'pause'|'sound'|'muted'|'expand'|'contract'|'ghost'|'recover'|'left'|'right'|'next';
 export function HudIcon({name}:{name:IconName}){
  const paths:Record<IconName,ReactNode>={
+  list:<><path d="M8 5h13M8 12h13M8 19h13M3 5h1M3 12h1M3 19h1"/></>,
+  replay:<><path d="m9 6 10 6-10 6zM4 5v14"/></>,
   wheel:<><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2"/><path d="m3 10 7 2m4 0 7-2m-9 4v7"/></>,
   people:<><circle cx="9" cy="7" r="3"/><path d="M3 21v-4a6 6 0 0 1 12 0v4m2-17a3 3 0 0 1 0 6m1 3q4 1 4 6v2"/></>,
   settings:<><path d="M4 6h16M4 12h16M4 18h16"/><circle cx="8" cy="6" r="2"/><circle cx="16" cy="12" r="2"/><circle cx="10" cy="18" r="2"/></>,

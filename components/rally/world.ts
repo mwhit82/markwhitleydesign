@@ -1080,7 +1080,7 @@ export class RallyWorld {
         count: Math.ceil(this.countdown),
       });
     }
-    const activeCamera=this.driverCamera.update(dt,this.vehicle,this.angle,steer,this.camera,this.mode==='race'||this.mode==='countdown'||this.mode==='paused',this.atmosphere.reduced,this.viewport.width,this.viewport.height,this.selected===8);
+    const activeCamera=this.driverCamera.update(this.mode==='paused'?0:dt,this.vehicle,this.angle,steer,this.camera,this.mode==='race'||this.mode==='countdown'||this.mode==='paused',this.atmosphere.reduced,this.viewport.width,this.viewport.height,this.selected===8,this.velocity.length()*4,this.rpm,this.limited,timeOfDay(this.selection)==='night',cars[this.selected].color);
     const transition=this.driverCamera.blend;this.renderer.domElement.style.filter=!this.atmosphere.reduced&&transition>0&&transition<1?`blur(${Math.sin(transition*Math.PI)*2}px)`:'none';
     if(this.live){if(this.ghostCar)this.ghostCar.visible=false;this.rivals.update(now,(x,z,speed)=>{const nearest=this.nearest(x,z),shoulder=T.MathUtils.clamp((8-nearest.distance)/2.4,0,1);return this.playbackHeight(x,z,elevationPose(this.routeProgress({x,z}),speed,true,this.ramps).y*shoulder+.08);});if(this.mode==='race'&&now-this.sentPose>=100){this.sentPose=now;this.onLivePose?.({x:this.vehicle.position.x,z:this.vehicle.position.z,heading:this.angle,speed:this.velocity.length(),progress:((this.lap-1)+this.checkpoint/18)/lapCount(this.selection)},!this.cleanRun);}}
     this.visual?.update(this.mode==='paused'?0:dt,(this.velocity.x*Math.sin(this.angle)+this.velocity.z*Math.cos(this.angle)),steer,braking,timeOfDay(this.selection)!=='midday');

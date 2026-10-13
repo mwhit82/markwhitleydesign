@@ -75,3 +75,23 @@ test('static scenery uses bounded spatial batches with shared geometry',()=>{
 test('cockpit hides the body while keeping night headlights active',()=>{
  const c=new DriverCamera(),v=new T.Group(),body=new T.Mesh(new T.BoxGeometry(),new T.MeshBasicMaterial()),lamp=new T.SpotLight(),base=new T.PerspectiveCamera();v.add(body,lamp);c.enabled=true;c.update(1,v,0,0,base,true,true,390,844,false);assert.equal(body.visible,false);assert.equal(lamp.visible,true);assert.equal(v.visible,true);c.update(1,v,0,0,base,false,true,390,844,false);assert.equal(body.visible,true);c.dispose();
 });
+
+test('cockpit wheel and instruments animate without frame allocations or excess geometry',()=>{
+ const c=new DriverCamera(),v=new T.Group(),base=new T.PerspectiveCamera();c.enabled=true;
+ c.update(.5,v,0,1,base,true,true,390,700,false,110,4000,false,true);
+ assert.ok(c.wheel.rotation.z>.8);const angle=c.wheel.rotation.z;
+ c.update(0,v,0,-1,base,true,true,390,700,false,110,4000,false,true);assert.equal(c.wheel.rotation.z,angle);
+ c.update(.5,v,0,-1,base,true,true,390,700,false,0,950,false,false);assert.ok(c.wheel.rotation.z<-.8);
+ let triangles=0,meshes=0;c.cockpit.traverse(o=>{if(o.isMesh){meshes++;triangles+=(o.geometry.index?.count??o.geometry.attributes.position.count)/3;}});
+ assert.ok(triangles<5000,`${triangles} triangles`);assert.ok(meshes<=15,`${meshes} meshes`);c.dispose();
+});
+
+test('every route has compact, distinct weather and daylight preview assets',async()=>{
+ const {stat}=await import('node:fs/promises');
+ for(const stage of S.stages)for(const track of stage.id==='nyc'?[1]:[1,2,3]){
+  const hashes=new Set();for(const variant of [...stage.conditions.map(w=>`weather-${w}`),...S.timesOfDay.map(t=>`time-${t}`)]){
+   const path=resolve(`public/rally/previews/v42/${stage.id}-${track}-${variant}.webp`);assert.ok((await stat(path)).size<180000);
+   if(variant.startsWith('weather'))hashes.add((await readFile(path)).toString('base64'));
+  }assert.equal(hashes.size,stage.conditions.length);
+ }
+});

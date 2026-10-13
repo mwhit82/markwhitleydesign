@@ -10,7 +10,7 @@ import {stages,stageDefinition,stageTimes,trackNames} from './stages';
 const rivalColors=['#68c4d0','#e6ad5c','#cfa1e2','#a8ce78'];
 type Session={room:RaceRoom;id:string;token:string};
 export function FriendRaces({openRequest,world,selection,car,ready,mode,onSetup,onActive}:{openRequest:number;world:()=>RallyWorld|null;selection:StageSelection;car:number;ready:boolean;mode:string;onSetup:(s:StageSelection,car:number)=>void;onActive:(active:boolean)=>void}){
- const [open,setOpen]=useState(false),[room,setRoom]=useState<RaceRoom|null>(null),[name,setName]=useState('Driver'),[code,setCode]=useState(''),[error,setError]=useState(''),[connected,setConnected]=useState(false),[busy,setBusy]=useState(false),[liveMenu,setLiveMenu]=useState(false);
+ const [open,setOpen]=useState(false),[room,setRoom]=useState<RaceRoom|null>(null),[name,setName]=useState(''),[code,setCode]=useState(''),[error,setError]=useState(''),[connected,setConnected]=useState(false),[busy,setBusy]=useState(false),[liveMenu,setLiveMenu]=useState(false);
  const [entryStep,setEntryStep]=useState<'choose'|'create'|'join'>('choose'),[setupOpen,setSetupOpen]=useState(false),[draft,setDraft]=useState(selection),[draftCar,setDraftCar]=useState(car),[preparing,setPreparing]=useState(false),[inviteOpen,setInviteOpen]=useState(false);
  useEffect(()=>{if(openRequest)setOpen(true);},[openRequest]);
  const session=useRef<Session|null>(null),socket=useRef<WebSocket|null>(null),generation=useRef(0),attempt=useRef(-1),offset=useRef(0),lostAt=useRef(0),retry=useRef<ReturnType<typeof setTimeout>|null>(null),poses=useRef(new Map<string,LivePose>());
@@ -51,7 +51,7 @@ export function FriendRaces({openRequest,world,selection,car,ready,mode,onSetup,
    ws.onerror=()=>{setError('Live connection unavailable. Solo racing still works.');};
   };boot();
  };
- useEffect(()=>{const invite=new URLSearchParams(location.search).get('room');if(invite){setEntryStep('join');setCode(invite.toUpperCase().slice(0,6));setOpen(true);}try{const saved=localStorage.getItem('rally-room-name');if(saved)setName(saved);}catch{}const currentGeneration=generation;return()=>{currentGeneration.current++;if(retry.current)clearTimeout(retry.current);socket.current?.close();};},[]);
+ useEffect(()=>{const invite=new URLSearchParams(location.search).get('room');if(invite){setEntryStep('join');setCode(invite.toUpperCase().slice(0,6));setOpen(true);}try{const saved=localStorage.getItem('rally-room-name');if(saved&&saved!=='Driver')setName(saved);}catch{}const currentGeneration=generation;return()=>{currentGeneration.current++;if(retry.current)clearTimeout(retry.current);socket.current?.close();};},[]);
  useEffect(()=>{if(!ready)return;const w=callbacks.current.world();if(!w)return;w.onLiveMenu=setLiveMenu;w.onLivePose=(pose,recovered)=>{if(session.current)poses.current.set(session.current.id,{...pose,id:session.current.id,sent:Date.now()});send({type:'pose',pose,recovered});};w.onLiveFinish=(time,trace,practice)=>{pendingFinish.current={type:'finish',attempt:attempt.current,time,trace,practice};send(pendingFinish.current);};return()=>{w.onLiveMenu=null;w.onLivePose=null;w.onLiveFinish=null;};},[ready]);
  useEffect(()=>{const w=callbacks.current.world();if(w){w.roomMenuOpen=open||liveMenu;w.onRoomBack=()=>{setOpen(false);setLiveMenu(false);};w.menuOpen=open||liveMenu;if(w.live)w.liveMenu=open||liveMenu;}},[open,liveMenu,ready]);
  const enter=async(join:boolean)=>{setBusy(true);setError('');try{const response=await fetch('/api/rally/rooms',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,selection,car,...(join?{code}:{})})});const data=await response.json();if(!response.ok)throw Error(data.error||'Room unavailable');try{localStorage.setItem('rally-room-name',name);}catch{}connect(data);}catch(e){setError(e instanceof Error?e.message:'Could not join');}finally{setBusy(false);}};
@@ -66,9 +66,9 @@ export function FriendRaces({openRequest,world,selection,car,ready,mode,onSetup,
    {error&&<p role="status">{error}</p>}
    {!room?<>
     {entryStep==='choose'?<div className={styles.roomChoices}><button disabled={!ready} onClick={()=>setEntryStep('create')}><HudIcon name="people"/> Create race</button><button disabled={!ready} onClick={()=>setEntryStep('join')}><HudIcon name="invite"/> Join race</button></div>:<>
-    <label>Your name<input maxLength={20} value={name} onChange={e=>setName(e.target.value)}/></label>
+    <label>Your name<input placeholder="Driver" autoComplete="nickname" onFocus={e=>{if(name==='Driver')setName('');else e.currentTarget.select();}} maxLength={20} value={name} onChange={e=>setName(e.target.value)}/></label>
     {entryStep==='join'?<label>Friend’s code<input autoCapitalize="characters" maxLength={6} value={code} onChange={e=>setCode(e.target.value.toUpperCase())}/></label>:<p>{trackName(selection)} · {cars[car].name}</p>}
-    <button disabled={busy||(entryStep==='join'&&code.length!==6)} onClick={()=>enter(entryStep==='join')}>{busy?'Connecting…':entryStep==='join'?'Join race':'Create race'}</button></>}
+    <button disabled={busy||name.trim().length<2||(entryStep==='join'&&code.length!==6)} onClick={()=>enter(entryStep==='join')}>{busy?'Connecting…':entryStep==='join'?'Join race':'Create race'}</button></>}
    </>:<>
     <p>{trackName(room.selection)} · {cars[room.car].name} · {weatherNames[room.selection.weather]} · {timeNames[timeOfDay(room.selection)]} · {room.selection.reverse?'Reverse':'Forward'}{isCircuit(room.selection)?` · ${lapCount(room.selection)} laps`:null}</p>
     <ol>{room.members.map(m=><li key={m.id}>{m.name}{m.id===session.current?.id?' · You':''} — {m.time!==undefined?`${formatTime(m.time)}${m.practice?' · Practice':''}`:m.ready?'Ready':m.status==='lobby'?'Getting ready':m.status}</li>)}</ol>
@@ -89,6 +89,7 @@ export function FriendRaces({openRequest,world,selection,car,ready,mode,onSetup,
        <button disabled={!connected} onClick={applySetup}>Apply setup</button></div>}
     </>}
     {room.phase==='results'&&host&&<button onClick={()=>send({type:'again'})}><HudIcon name="recover"/> Race again</button>}
+    {room.phase==='results'&&!host&&<p>Waiting for the host to start a rematch.</p>}
     {room.phase==='racing'&&<><p>The race continues while this menu is open.</p><button onClick={()=>{setOpen(false);setLiveMenu(false);const w=world();if(w)w.liveMenu=false;}}>Resume driving</button></>}
     <button className={styles.tertiary} onClick={leave}><HudIcon name="left"/> Leave room</button>
    </>}

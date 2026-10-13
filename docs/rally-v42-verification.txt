@@ -1,0 +1,17 @@
+Pocket Rally V4.2 — selection cards and cockpit UI
+2026-10-13
+
+Implemented full game-viewport screenshot carousels with draft browsing, explicit Select, arrows, swipe, weather symbols and neighbouring-image preload. Captured 118 actual Three.js scenes at 1280x720, close to the road; all supported track/weather/time combinations have matching files. WebP collection: 2,737,980 bytes total, largest 34,742 bytes; only viewed/adjacent choices load.
+
+Shared visible-viewport intersection handles keyboard pan/resize. Frontmost modal isolates underlying menus. Driver is now a placeholder; saved names select on focus. Settings, leaderboards and controls use square launch tiles. Results have a compact summary, expandable details and three reachable actions; room results no longer compete with solo results. Panel backgrounds use 70% opacity and controls remain opaque.
+
+Shared clay rally dashboard and kart variant: merged static parts, steering spokes/hands, speed and RPM needles, limiter indication and night-readable markings. Wheel smoothing freezes during pause. Aspect-aware cockpit framing keeps the wheel above portrait controls. Shared textures/materials disposed once.
+
+Validation:
+- 84 regression tests passed, including cockpit animation/pause and geometry bounds, all preview files and weather uniqueness.
+- Production build passed; TypeScript and changed-file lint passed (intentional pre-sized image exemption).
+- Chrome desktop, 390x700 portrait, 844x390 landscape and 1024x768 tablet viewport checks. Confirmed draft discard and explicit selection; inspected rain/snow/night images, keyboard-focus name form, compact results and cockpit.
+- Temporary screenshot and results authoring controls removed before release.
+- Existing handling, records, room protocol, replay format and score submission unchanged.
+
+Limitations: browser viewport simulations are not physical iPhone/iPad tests. Actual iOS keyboard/fullscreen behaviour, touch/controller hardware and sustained device performance remain physical-device checks. No claim of physical-device smoothness.
