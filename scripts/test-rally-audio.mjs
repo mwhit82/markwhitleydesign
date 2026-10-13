@@ -75,18 +75,25 @@ test("bounded audio graph: no native media rate mutations, cached decoding, paus
       automation++;
     },
   });
+  let mediaFailure=null, deferMedia=false;
+  const pendingMedia=[];
   class Media {
+    constructor(src){this.src=src;}
+    getAttribute(name){return name==='src'?this.src:null;}
     loop = false;
     paused = true;
-    load() {}
+    load() {for(const reject of pendingMedia.splice(0))reject(new DOMException('Source changed','AbortError'));}
     addEventListener() {}
     removeAttribute() {}
     play() {
       mediaPlays++;
       this.paused = false;
+      if(mediaFailure)return Promise.reject(mediaFailure);
+      if(deferMedia)return new Promise((_,reject)=>pendingMedia.push(reject));
       return Promise.resolve();
     }
     pause() {
+      for(const reject of pendingMedia.splice(0))reject(new DOMException('Playback interrupted','AbortError'));
       mediaPauses++;
       this.paused = true;
     }
@@ -201,6 +208,25 @@ test("bounded audio graph: no native media rate mutations, cached decoding, paus
     audio.dispose();
     assert.equal(timers.size, 0);
     assert.equal(closed, 1);
+    // Reproduce source swaps while the initial media play promise is pending.
+    deferMedia=true;
+    let stageErrors=0;
+    const switching=new RallyAudio(()=>stageErrors++);
+    const initial=switching.enable();switching.setEnvironment('neon');switching.setEnvironment('mountain');
+    await initial;
+    assert.equal(switching.playing,true,'pending/aborted ambience cannot block engine startup');
+    const decoded=decodes;
+    for(const failure of [new DOMException('Source changed','AbortError'),new DOMException('Playback denied','NotAllowedError'),new Error('Missing ambience')]){
+      mediaFailure=failure;
+      for(const stage of ['forest','nyc','mx','mountain'])switching.setEnvironment(stage);
+      await Promise.resolve();await Promise.resolve();
+      assert.equal(switching.playing,true,'ambience rejection must not pause engines');
+      assert.equal(switching.context.state,'running');assert.equal(timers.size,1);
+      assert.equal(decodes,decoded,'changing stages reuses decoded engine and voice buffers');
+    }
+    assert.equal(stageErrors,0,'stage selection must not request global mute');
+    switching.pause();const playsBefore=mediaPlays;switching.setEnvironment('neon');assert.equal(mediaPlays,playsBefore,'changing stage while muted must not autoplay');
+    switching.dispose();deferMedia=false;mediaFailure=null;
     globalThis.fetch=async url=>({ok:!String(url).includes('crowd-')&&!String(url).includes('voice-'),arrayBuffer:async()=>new ArrayBuffer(8)});
     const fallback=new RallyAudio(()=>assert.fail('optional crowd/voice assets must not stop engine audio'));
     await fallback.enable();assert.equal(fallback.layers.length,4);assert.equal(fallback.crowdLoop,null);fallback.setMode("race");fallback.speak(["1-left"]);assert.equal(fallback.voiceLayers.length,0);fallback.dispose();

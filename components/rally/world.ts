@@ -786,6 +786,7 @@ export class RallyWorld {
       if (!this.disposed) this.callbacks.audio?.(true);
     });
     this.audio.setCar(this.selected);
+    this.audio.setEnvironment(this.selection.stage);
     this.audio.setMode(this.mode);
   }
   async ensureAudio() {

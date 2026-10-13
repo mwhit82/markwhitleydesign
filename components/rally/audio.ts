@@ -83,12 +83,6 @@ export class RallyAudio {
     this.ambience.loop = true;
     this.ambience.preload = "auto";
     this.ambience.load();
-    this.ambience.addEventListener("error", () => {
-      if (this.playing) {
-        this.pause();
-        this.onError();
-      }
-    });
     this.preload = this.loadAssets();
   }
 
@@ -148,12 +142,12 @@ export class RallyAudio {
     }
     this.decoding ??= this.decode();
     // Both unlock requests happen directly inside the user's tap, before awaiting data.
-    const media = this.ambience.play();
+    this.playAmbience();
     const resumed = this.context.resume();
     let timeout: number | undefined;
     try {
       await Promise.race([
-        Promise.all([media, resumed, this.decoding]),
+        Promise.all([resumed, this.decoding]),
         new Promise<never>((_, reject) => {
           timeout = window.setTimeout(
             () => reject(new Error("Audio loading timed out")),
@@ -172,11 +166,13 @@ export class RallyAudio {
     } catch (error) {
       if (generation === this.generation) {
         this.pause();
+        this.onError();
         this.decoding = null;
         if (this.buffers.size !== assets.length && !this.disposed)
           this.preload = this.loadAssets();
+        throw error;
       }
-      throw error;
+      // A cancelled startup must not mute a newer session or an explicit mute.
     } finally {
       if (timeout !== undefined) window.clearTimeout(timeout);
     }
@@ -211,6 +207,13 @@ export class RallyAudio {
     });
   }
 
+  private playAmbience() {
+    // Changing src/load() aborts pending HTMLMediaElement playback, notably on iOS.
+    // Ambience is optional: its loading, autoplay or network failure must never
+    // suspend the independent engine/voice graph or change the sound preference.
+    try { void this.ambience.play().catch(() => {}); } catch { /* Optional bed. */ }
+  }
+
   setEnvironment(stage: string) {
     this.indoor=stage==="kart";this.ambience.volume=1;
     const next = ["nyc","neon"].includes(stage) ? "/rally/nyc-ambience.wav" : stage === "forest" || stage === "alpine" || ["kart","mx"].includes(stage) ? "/rally/forest-birds.wav" : "/rally/open-wind.wav";
@@ -218,7 +221,7 @@ export class RallyAudio {
     this.ambience.pause();
     this.ambience.src=next;
     this.ambience.load();
-    if(this.playing) void this.ambience.play().catch(()=>{this.pause();this.onError();});
+    if(this.playing||this.enabling) this.playAmbience();
   }
   setCar(car: number) {
     this.car = [0,1,2,3,1,3,2,0,4,5,6][car]??0;
