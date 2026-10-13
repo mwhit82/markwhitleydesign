@@ -1,4 +1,4 @@
-import {specialVehicle} from './special-vehicle';
+import {specialVehicle,addHoverLights} from './special-vehicle';
 import {stageVehicle} from './stages';
 import {pacedFrame} from './frame-pacing';
 import {RouteIndex} from './route-index';
@@ -167,6 +167,7 @@ export class RallyWorld {
   best: number | null = null;
   observer: ResizeObserver;
   audio: RallyAudio | null = null;
+  private hoverRearLight:T.SpotLight|null=null;
   muted = false;
   padConnected = false;
   disposed = false;
@@ -493,11 +494,11 @@ export class RallyWorld {
     this.release(this.vehicle);
     this.vehicle = new T.Group();
     this.root.add(this.vehicle);
-    this.wheels = [];this.brakeLamps=[];this.brakeHalos=[];
+    this.wheels = [];this.brakeLamps=[];this.brakeHalos=[];this.hoverRearLight=null;
     const c = cars[this.selected];
     if(c.shape==='hover'||c.shape==='bike'){
       this.vehicle.add(specialVehicle(c.shape==='bike'));
-      const lamps=lighting(this.selection).lamps;for(const x of (c.shape==='bike'?[0]:[-.6,.6])){const light=new T.SpotLight('#d9f5ff',lamps,28,Math.PI/5,.65,1);light.position.set(x,1.4,1.2);light.target.position.set(x,0,18);this.vehicle.add(light,light.target);}
+      const lamps=lighting(this.selection).lamps;if(c.shape==='hover')this.hoverRearLight=addHoverLights(this.vehicle,lamps);for(const x of (c.shape==='bike'?[0]:[])){const light=new T.SpotLight('#d9f5ff',lamps,28,Math.PI/5,.65,1);light.position.set(x,1.4,1.2);light.target.position.set(x,0,18);this.vehicle.add(light,light.target);}
     }else if(c.shape==='kart'){
       this.box(2.2,.22,3.3,'#343c3a',0,.43,0,this.vehicle);
       this.box(1.5,.3,.9,c.color,0,.7,1.15,this.vehicle);
@@ -609,7 +610,7 @@ export class RallyWorld {
       const keep=fallback.children.filter(o=>o instanceof T.Light||o.name==='car-mud'||o.name==='car-snow'||o.name==='brake-halo'||fallback.children.some(l=>l instanceof T.SpotLight&&l.target===o));
       for(const o of keep){o.removeFromParent();model.add(o);}
       visual.fitCoatings();model.position.copy(fallback.position);model.quaternion.copy(fallback.quaternion);this.root.remove(fallback);releaseVisual(fallback);this.vehicle=model;this.root.add(model);this.visual=visual;this.host.dataset.visualModel=String(index);this.brakeLamps=visual.rear;this.wheels=[];
-      const maps=clayMaps();textureClay(model,maps);void this.prepareGhost();
+      const maps=clayMaps();textureClay(model,maps);if(index===9)model.traverse(o=>{if(o instanceof T.Mesh)for(const m of Array.isArray(o.material)?o.material:[o.material])if(m instanceof T.MeshStandardMaterial){m.normalScale.set(.025,.025);if(m.name.startsWith('glass'))m.roughness=.35;}});void this.prepareGhost();
     }catch{/* Existing procedural model remains fully playable. */}
   }
   clearGhost() {
@@ -1057,6 +1058,7 @@ export class RallyWorld {
     this.plume.update(effectDt,this.vehicle.position,this.angle,this.velocity.length(),emitting?(hand||Math.abs(steer)>.5?1:.8):0,this.driverCamera.enabled);
     this.fountains.update(effectDt,this.routeProgress(this.vehicle.position),this.mode==='race',this.atmosphere.reduced);
     const braking=this.mode==='race'&&brake>.05;
+    if(this.hoverRearLight)this.hoverRearLight.intensity=braking?10:this.hoverRearLight.userData.runningIntensity;
     for(const lamp of this.brakeLamps)(lamp.material as T.MeshStandardMaterial).emissiveIntensity=braking?3:timeOfDay(this.selection)==='midday'?.15:.65;
     for(const halo of this.brakeHalos){halo.visible=braking&&!this.driverCamera.enabled;(halo.material as T.SpriteMaterial).opacity=braking?(dirt||spray||this.selection.weather==='fog'?.3:.14):0;}
     const target = this.vehicle.position.clone();

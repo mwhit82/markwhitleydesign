@@ -1,7 +1,7 @@
 import * as T from 'three';
 import {GLTFLoader} from 'three/examples/jsm/loaders/GLTFLoader.js';
 import {releaseVisual} from './visual-resources';
-export const vehicleAssets=Array.from({length:11},(_,i)=>`/rally/${i>=9?'v5':'v4'}/car-${i}.glb`);
+export const vehicleAssets=Array.from({length:11},(_,i)=>`/rally/${i===9?'v51':i===10?'v5':'v4'}/car-${i}.glb`);
 // Cache compressed source bytes, not mutable GPU objects. Each owner has its own materials.
 const buffers=new Map<string,Promise<ArrayBuffer>>();
 async function loadScene(path:string){let pending=buffers.get(path);if(!pending){pending=fetch(path,{signal:AbortSignal.timeout(10000)}).then(r=>{if(!r.ok)throw Error('Vehicle unavailable');return r.arrayBuffer();});buffers.set(path,pending);if(buffers.size>3)buffers.delete(buffers.keys().next().value!);pending.catch(()=>buffers.delete(path));}const data=await pending;return (await new GLTFLoader().parseAsync(data.slice(0),path.slice(0,path.lastIndexOf('/')+1))).scene;}

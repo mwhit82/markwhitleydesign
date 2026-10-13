@@ -48,7 +48,7 @@ export const cars = [
   {name:"Peugeot 205 GTI",year:"1990",color:"#eee8d8",accent:"#e14c36",trait:"A featherweight through the bends",grip:6.9,steer:2.45,power:14.2,shape:"peugeot"},
   {name:"Renault Clio Williams",year:"1993",color:"#284e9a",accent:"#d7b357",trait:"Little blue corner hunter",grip:7.4,steer:2.3,power:14.7,shape:"clio"},
   {name:"Pocket Kart",year:"SPECIAL",color:"#414648",accent:"#eceee9",trait:"Country circuits · little driver, big ambition",grip:9.8,steer:2.35,power:14.4,shape:"kart"},
-  {name:"Aster Hover GT",year:"SPECIAL",color:"#7060bc",accent:"#63e0db",trait:"Neon circuits · float above the asphalt",grip:8.2,steer:2.1,power:16,shape:"hover"},
+  {name:"Aster Hover GT",year:"SPECIAL",color:"#171c23",accent:"#63e0db",trait:"Neon circuits · float above the asphalt",grip:8.2,steer:2.1,power:16,shape:"hover"},
   {name:"Mudworks 250",year:"SPECIAL",color:"#d79a38",accent:"#f0e6cc",trait:"Muddy hills · balanced for big air",grip:7.5,steer:2.5,power:15.5,shape:"bike"},
 ] as const;
 export type Mode = "garage" | "countdown" | "race" | "paused" | "finished" | "celebrating";
