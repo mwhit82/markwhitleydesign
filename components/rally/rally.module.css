@@ -385,3 +385,27 @@
 .game[data-stage=neon]{--ink:#292c42;--orange:#754ca3;--gold:#88e2e2;--panel:rgba(32,35,55,.7)}
 .game[data-stage=mx]{--orange:#92621c;--gold:#f0d29a}
 .game[data-stage=kart] .start,.game[data-stage=nyc] .start,.game[data-stage=neon] .start,.game[data-stage=mx] .start{border-color:var(--edge)}
+
+/* Browsing space belongs to the results; filter controls live in their own modal. */
+.game .leaderboard.standings {overflow:hidden;padding:12px;gap:0;}
+.standingsContent {display:flex;flex-direction:column;flex:1;min-height:0;gap:8px;}
+.standings .standingsHeader {position:static;align-items:center;flex-shrink:0;padding:0 0 8px;background:transparent;gap:8px;}
+.standingsHeader>div {flex:1;min-width:0;}
+.standingsHeader h2 {margin:0;font-size:clamp(20px,3vw,28px);}
+.standingsHeader small {display:block;opacity:.8;}
+.standingsHeader button {display:flex;align-items:center;justify-content:center;gap:6px;flex-shrink:0;}
+.standingsHeader svg {width:20px;height:20px;}
+.standings .boardRows {min-height:0;scrollbar-gutter:stable;}
+.otherRanks {padding:12px 8px;font-size:12px;border-top:1px solid #f4ead425;}
+.otherRanks summary {cursor:pointer;min-height:44px;display:flex;align-items:center;}
+.standingsFilterScrim {position:absolute;inset:0;z-index:2;display:flex;align-items:center;justify-content:center;padding:12px;background:#10231ab8;}
+.standingsFilterDialog {width:min(640px,100%);max-height:100%;min-height:0;display:flex;flex-direction:column;background:var(--ink);border:1px solid var(--edge);border-top:4px solid var(--orange);padding:12px;gap:12px;box-sizing:border-box;}
+.standingsFilterDialog header {position:static;align-items:center;flex-shrink:0;padding:0 0 8px;}
+.standingsFilterDialog h2 {margin:0;font-size:24px;}
+.standingsFilterBody {overflow:auto;min-height:0;overscroll-behavior:contain;}
+.standingsFilterBody .boardFilters {grid-template-columns:repeat(2,minmax(0,1fr));margin-top:12px;}
+.standingsFilterBody .boardFilters label:first-child {grid-column:1/-1;}
+.standingsFilterBody input,.standingsFilterBody select {font-size:16px;}
+.standingsFilterDialog footer {display:flex;gap:8px;flex-shrink:0;}
+.standingsFilterDialog footer button {flex:1;}
+.standingsFilterDialog footer button:last-child {background:var(--orange);}

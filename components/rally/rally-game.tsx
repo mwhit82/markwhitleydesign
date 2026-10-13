@@ -272,6 +272,8 @@ export function RallyGame() {
   };
   menuAction.current=action=>{
     if(action==='back'){
+      const nestedBack=game.current?.querySelector<HTMLButtonElement>('[data-menu-back]');
+      if(nestedBack){nestedBack.click();return;}
       if(api.current?.roomMenuOpen){api.current.onRoomBack?.();return;}
       if(controlPanel)setControlPanel(false);else if(allBoards)setAllBoards(false);else if(optionPanel)closeOptions();else if(leaderboard)setLeaderboard(false);else if(settingsPanel)setSettingsPanel(false);else if(installHelp)setInstallHelp(false);else if(api.current?.mode==='paused')api.current.pause();else if(api.current?.mode==='finished')mainMenu();
       return;
