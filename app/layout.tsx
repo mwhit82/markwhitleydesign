@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { Fraunces, Manrope } from "next/font/google";
 import "./globals.css";
 import { FlowFieldBackground } from "@/components/flow-field-background";
+import { PendoScript } from "@/components/pendo-script";
 import { SiteShell } from "@/components/site-shell";
 import { ThemeScript } from "@/components/theme-script";
 
@@ -29,6 +30,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        <PendoScript />
+      </head>
       <body className={`${fraunces.variable} ${manrope.variable}`}>
         <ThemeScript />
         <FlowFieldBackground />
