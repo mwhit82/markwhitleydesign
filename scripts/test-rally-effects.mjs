@@ -14,10 +14,10 @@ const {CheckpointEffects}=await import(await load(resolve('components/rally/chec
 const {stages,timesOfDay,stageTimes}=await import(await load(resolve('components/rally/stages.ts')));
 const paint={fillRect(){},fillText(){},createRadialGradient(){return {addColorStop(){}};}};
 globalThis.document={createElement:()=>({width:0,height:0,getContext:()=>paint})};
-test('384 legacy lighting configurations keep a readable ambient floor and bounded headlights',()=>{
+test('408 legacy lighting configurations keep a readable ambient floor and bounded headlights',()=>{
  let count=0;for(const stage of stages.filter(s=>s.id!=='nyc'))for(const weather of stage.conditions)for(const reverse of [true,false])for(const timeOfDay of stageTimes(stage.id)) for(const track of [1,2,3]){
   const p=lighting({stage:stage.id,weather,reverse,timeOfDay,track});assert.ok(p.ambient>=.5);assert.ok(p.near<p.far);assert.ok(p.lamps<=65);assert.equal(p.lamps===0,timeOfDay==='midday');count++;
- }assert.equal(count,384);
+ }assert.equal(count,408);
 });
 test('weather buffers are reused, bounded, camera-centred and pause cleanly',()=>{
  for(const [type,count] of [['rain',400],['snow',180]]){

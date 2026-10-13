@@ -1,0 +1,44 @@
+Pocket Rally V4.1 — verification and performance notes
+
+Implementation
+- Auto targets 60 presentations/second, including 120 Hz displays; garage/pause target 30. High remains uncapped. Hidden tabs stop scene work.
+- Three Auto tiers reduce resolution, foliage detail, particle coverage and shadows. Touch starts conservatively without focus targets. Upward reset happens in the garage, not mid-race.
+- Race preparation waits for the selected model and optional audio/ghost, prepares three rival clones, uploads textures and compiles shaders. Changes invalidate obsolete preparation; Cancel and asset fallbacks keep racing usable.
+- Spatial nearest-route lookup replaces repeated full scans; viewport/projection caching, isolated HUD subscriptions and cached rival materials reduce CPU work. Source-byte cache holds at most three vehicles.
+- Forest foliage uses spatial instance batches. The extra batches trade additional draw calls for culling; this is not a universal GPU-per-frame reduction.
+- 26 actual game screenshots total approximately 304 KB. No extra live preview scenes. Footer actions remain outside the scrolling setup area.
+- Friends creation/join/invite/setup are staged; ready waits for preparation. Existing setup changes reset readiness on the server. Expanded game layout survives native fullscreen exit.
+- Wheel steering uses authored local transforms; held input survives countdown-to-race. Mountain snowfall uses existing weather record keys.
+
+Checks completed
+- 82 regression tests passed, including exact route lookup across all layouts/directions, cancelled preparation, optional failures, held-start input, bounded rival interpolation/extrapolation, resource ownership and records.
+- Production build and TypeScript check passed.
+- Browser layouts: 390x844 portrait, 844x390 landscape, 820x1180 tablet and desktop. Start remained onscreen. Create/Join reveal, option previews and expanded friends flow checked.
+- Keyboard throttle held through countdown: race accelerated without releasing/repressing. Physical touch/controller confirmation remains outstanding.
+- Four separate live WebSocket clients: capacity, shared countdown, movement, reconnect, incompatible version, practice finish, repeated finish, rematch, host migration and timeout passed before deployment. No public scores submitted.
+
+Performance measurement — limitations matter
+A single ten-minute side-by-side desktop Chrome development comparison ran V4 (c8e18a2) and V4.1 on the same Mac, with fixed 600x650 canvases and focus off. Four 150-second sections: forest clear midday, forest night rain, Mountain snowfall, forest night rain with three simulated rivals. Both scenes shared CPU/GPU resources. This was not four independent ten-minute physical-device tests and does not establish iPhone/iPad performance.
+
+Settled sample medians, excluding the first 20 seconds of each section:
+                       frame ms   p95 ms   p99 ms   CPU ms   GPU ms
+Clear                     16.67     17.5     24.7     1.14     1.32
+Night rain                16.67     17.1     18.1     1.57     2.66
+Mountain snow             16.67     17.4     18.2     1.86     1.48
+Night rain + 3 rivals      16.67     17.5     18.2     2.29     2.01
+
+These are medians of rolling diagnostic windows, not whole-run percentile aggregates. V4 was rendering at approximately 120 Hz; V4.1 at 60 Hz, so per-frame GPU numbers are not a speedup percentage. Some 25 ms frames remained. Phase changes included scene rebuilding and 30 fps garage warmup; their counts were mixed into the initial stall counter. Final diagnostics now count racing frames only and include very long frames rather than discarding them. The simulated rivals did not measure real packet jitter; live room transport was tested separately.
+
+Returning from Mountain to forest restored the forest resource count to 254 geometries/21 textures, including rivals. Selected production GLBs are 301–580 KiB, 10.6k–15.5k triangles and 7–8 materials; all nine total about 3.1 MiB. No new mesh codec was added without evidence its decode tradeoff would help. An isolated 10,000-query route lookup check measured about 54 ms before versus 8 ms with the spatial index.
+
+Still outstanding
+- Physical iPhone, iPad M5 and controller input/audio/GPU measurements; iOS keyboard/native-fullscreen behaviour.
+- Separate matched ten-minute captures for each scenario on those devices, with thermal state and network jitter controlled. Do not infer mobile smoothness from the Mac test.
+- The renderer still has substantial draw counts in dense scenery; further merging should follow device captures rather than claiming this release guarantees 60 fps.
+
+Guidance consulted
+https://threejs.org/docs/pages/WebGLRenderer.html#compileAsync
+https://threejs.org/manual/pages/optimize-lots-of-objects.html
+https://r3f.docs.pmnd.rs/advanced/scaling-performance
+
+Rollback: previous main commit c8e18a2 and its Vercel deployment. Trial GLB edits were deliberately excluded from this release.

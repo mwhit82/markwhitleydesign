@@ -137,6 +137,7 @@ export class Atmosphere {
    const p=this.spectators[i];
    const travel=Math.hypot(p.road.x-p.x,p.road.z-p.z);
    const distance=car?Math.min(car.distanceTo(p.road),Math.hypot(car.x-p.x,car.z-p.z)):0;
+   if(distance>65&&p.progress===0&&this.clock>1)continue;
    p.progress=this.reduced?0:fanProgress(p.progress,travel,distance,Math.abs(speed),dt,Boolean(p.excursion)&&racing&&!this.reduced&&(p.finish||(elapsed+i*1.7)%16<6));
    const x=T.MathUtils.lerp(p.x,p.road.x,p.progress),z=T.MathUtils.lerp(p.z,p.road.z,p.progress);
    const bounce=!this.reduced&&distance<26?Math.max(0,Math.sin(elapsed*7+i))*.3:0;

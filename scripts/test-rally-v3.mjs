@@ -68,8 +68,8 @@ test('NYC pace calls match the route turn direction on both laps',()=>{
  for(const reverse of [false,true]){const s={stage:'nyc',weather:'clear',reverse,circuitVersion:2},points=S.stagePoints(s);for(const n of paceNotes(s)){const a=points[n.index-14],b=points[n.index],c=points[n.index+14],turn=(b.x-a.x)*(c.z-b.z)-(b.z-a.z)*(c.x-b.x);assert.equal(n.clips[0].endsWith('right'),turn>0,`${reverse}:${n.index}:${n.text}`);}}
 });
 const {environmentScenery}=await import(await moduleUrl(resolve('components/rally/v3-scenery.ts')));
-test('new static scenery uses bounded instance batches',()=>{
- for(const stage of ['kart','nyc']){const s={stage,weather:'clear',reverse:false,circuitVersion:2},g=environmentScenery(s,S.stagePoints(s),()=>false);assert.ok(g.children.length<60);assert.ok(g.children.every(o=>o.isInstancedMesh));console.log(stage,'static batches',g.children.length);}
+test('static scenery uses bounded spatial batches with shared geometry',()=>{
+ for(const stage of ['kart','nyc']){const s={stage,weather:'clear',reverse:false,circuitVersion:2},g=environmentScenery(s,S.stagePoints(s),()=>false);assert.ok(g.children.length<120);assert.ok(new Set(g.children.map(o=>o.geometry)).size<40);assert.ok(g.children.every(o=>o.isInstancedMesh));console.log(stage,'static batches',g.children.length);}
 });
 
 test('cockpit hides the body while keeping night headlights active',()=>{

@@ -1,7 +1,12 @@
 import type {ReactNode} from 'react';
-export type IconName='camera'|'headset'|'screen'|'pause'|'sound'|'muted'|'expand'|'contract'|'ghost'|'recover'|'left'|'right'|'next';
+export type IconName='wheel'|'people'|'settings'|'check'|'invite'|'camera'|'headset'|'screen'|'pause'|'sound'|'muted'|'expand'|'contract'|'ghost'|'recover'|'left'|'right'|'next';
 export function HudIcon({name}:{name:IconName}){
  const paths:Record<IconName,ReactNode>={
+  wheel:<><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2"/><path d="m3 10 7 2m4 0 7-2m-9 4v7"/></>,
+  people:<><circle cx="9" cy="7" r="3"/><path d="M3 21v-4a6 6 0 0 1 12 0v4m2-17a3 3 0 0 1 0 6m1 3q4 1 4 6v2"/></>,
+  settings:<><path d="M4 6h16M4 12h16M4 18h16"/><circle cx="8" cy="6" r="2"/><circle cx="16" cy="12" r="2"/><circle cx="10" cy="18" r="2"/></>,
+  check:<path d="m4 12 5 5L20 6"/>,
+  invite:<><path d="M12 16V3m-5 5 5-5 5 5M5 13v8h14v-8"/></>,
   camera:<><rect x="3" y="6" width="18" height="14" rx="2"/><path d="m8 6 2-3h4l2 3"/><circle cx="12" cy="13" r="4"/></>,
   headset:<><path d="M4 13v-2a8 8 0 0 1 16 0v6q0 4-6 4"/><rect x="3" y="11" width="4" height="7" rx="1"/><rect x="17" y="11" width="4" height="7" rx="1"/><path d="M11 21h3"/></>,
   screen:<><rect x="3" y="4" width="18" height="13" rx="1"/><path d="M8 21h8m-4-4v4"/></>,
