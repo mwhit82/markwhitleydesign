@@ -16,7 +16,7 @@ const validation=compile(await readFile(new URL('../lib/rally/validation.ts',imp
 const {validateRun,validName,replayAgrees}=await import(uri(validation));
 test('408 legacy configurations, reversed endpoints, bounded roads and valid completion traces',()=>{
  const keys=new Set();
- for(const stage of stages.filter(s=>s.id!=='nyc')) for(const weather of stage.conditions) for(const reverse of [false,true]) for(const timeOfDay of stageTimes(stage.id)) for(const track of [1,2,3]) {
+ for(const stage of stages.filter(s=>!['nyc','neon','mx'].includes(s.id))) for(const weather of stage.conditions) for(const reverse of [false,true]) for(const timeOfDay of stageTimes(stage.id)) for(const track of [1,2,3]) {
   const selection={stage:stage.id,weather,reverse,timeOfDay,track};
   assert.ok(validSelection(selection));keys.add(boardKey(selection));
   const points=stagePoints(selection),opposite=stagePoints({...selection,reverse:!reverse});
@@ -41,7 +41,7 @@ const effectsUri=uri(compile(await readFile(new URL('../components/rally/rally-e
 const atmosphereCode=compile(await readFile(new URL('../components/rally/atmosphere.ts',import.meta.url),'utf8')).replace("from 'three'",`from '${import.meta.resolve('three')}'`);
 const {Atmosphere,finishLayout,fanProgress}=await import(uri(atmosphereCode.replace("'./rally-effects'",JSON.stringify(effectsUri)).replace('"./kart-venue"',JSON.stringify(kartVenueUri))));
 test('finish areas follow all endpoints; crowd remains outside roads and arrival corridor',()=>{
- for(const stage of stages.filter(s=>s.id!=='nyc'))for(const weather of stage.conditions)for(const reverse of [false,true])for(const track of [1,2,3]){
+ for(const stage of stages.filter(s=>!['nyc','neon','mx'].includes(s.id)))for(const weather of stage.conditions)for(const reverse of [false,true])for(const track of [1,2,3]){
   const points=stagePoints({stage:stage.id,weather,reverse,track}),atmosphere=new Atmosphere(points);
   const layout=finishLayout(points),sin=Math.sin(layout.angle),cos=Math.cos(layout.angle);
   for(const p of points){const x=p.x-layout.center.x,z=p.z-layout.center.z;

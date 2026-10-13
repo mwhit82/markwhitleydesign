@@ -158,7 +158,7 @@ test("bounded audio graph: no native media rate mutations, cached decoding, paus
   try {
     assert.equal(mediaPlays, 0, "preloading must not autoplay");
     const startup=audio.enable();assert.equal(audio.enable(),startup,"concurrent starts share one promise");await startup;
-    assert.equal(decodes, 50);
+    assert.equal(decodes, 56);
     assert.equal(sources, 6, "five ongoing sources plus one completed silent warmup");
     assert.deepEqual(periods, [50]);
     const previous = automation;
@@ -182,14 +182,14 @@ test("bounded audio graph: no native media rate mutations, cached decoding, paus
     const voiceSources=sources;audio.speak(["crest"]);assert.equal(sources,voiceSources,"never overlap calls");
     audio.stopVoice();assert.equal(audio.voiceLayers.length,0);
     audio.setCar(2);
-    assert.equal(decodes, 50);
+    assert.equal(decodes, 56);
     assert.equal(sources, 12);
     audio.setMode("paused");
     assert.equal(timers.size, 0);
     assert.ok(mediaPauses > 0);
     audio.setMode("race");
     await audio.enable();
-    assert.equal(decodes, 50);
+    assert.equal(decodes, 56);
     assert.equal(timers.size, 1);
     audio.cue('select');const selectedCue=audio.uiLayer;audio.cue('start');assert.notEqual(audio.uiLayer,selectedCue);audio.cue('restart');assert.ok(audio.uiLayer);
     audio.setMode('celebrating');const finishSources=sources;audio.setMode('celebrating');assert.equal(sources,finishSources);
@@ -224,7 +224,7 @@ test('recorded engine mix follows actual RPM and cuts load at the limiter', () =
 });
 
 test('all recorded layers are compact valid PCM WAV assets', async () => {
-  for(let car=0;car<5;car++) {
+  for(let car=0;car<7;car++) {
     for(const layer of ['idle','load','lift']) {
       const data = await readFile(new URL(`../public/rally/recorded-car-${car}-${layer}.wav`, import.meta.url));
       assert.equal(data.toString('ascii',0,4), 'RIFF');

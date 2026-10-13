@@ -1,4 +1,5 @@
 "use client";
+import {compatibleCar} from './stages';
 import { useEffect, useRef, useState } from 'react';
 import { cars, formatTime } from './data';
 import { isCircuit, lapCount, boardKey, trackName, weatherNames, timeOfDay, timeNames, type StageSelection } from './stages';
@@ -67,7 +68,7 @@ export function Leaderboard({selection,result,onClose}:{selection:StageSelection
     <BoardPeriodPicker period={period} onChange={setPeriod} window={window}/>
     {result && !submitted && (result.eligible && result.trace.length ? <form onSubmit={submit}><label>Driver name<input value={name} onChange={e=>setName(e.target.value)} minLength={2} maxLength={20} required placeholder="Your name" autoComplete="nickname" /></label><button disabled={busy||loading||Boolean(error)} type="submit">{busy?'Submitting…':`Submit ${formatTime(result.time)}`}</button><small>Public name · best time per driver on this browser. Clearing cookies or switching devices creates a new driver.</small></form>:<p>{result.reasons.map(r=>reasonText[r]).join(" · ")}. Practice time: {formatTime(result.time)}. Complete a clean run to rank.</p>)}
     {message&&<p role="status">{message}</p>}
-    <label className={styles.boardFilter}>Show<select value={filter} onChange={e=>setFilter(e.target.value)} disabled={loading}><option value="">All cars</option>{cars.map((c,i)=>(selection.stage==='kart'?i===8:i<8)&&<option value={i} key={c.name}>{c.name}</option>)}</select></label>
+    <label className={styles.boardFilter}>Show<select value={filter} onChange={e=>setFilter(e.target.value)} disabled={loading}><option value="">All cars</option>{cars.map((c,i)=>compatibleCar(selection,i)&&<option value={i} key={c.name}>{c.name}</option>)}</select></label>
     {error&&<p role="status">{error} <button onClick={()=>setRevision(r=>r+1)}>Retry</button></p>}
     <div className={styles.boardRows} tabIndex={0} aria-label="Ranked times"><ol>{entries.map(entry=><li key={entry.rank} className={entry.mine?styles.myRow:''}>{row(entry)}</li>)}</ol>{!loading&&!error&&!entries.length&&<p>{period==='weekly'?'No times this week yet. Set the first one.':'No all-time records yet. Set the first one.'}</p>}{loading&&<p role="status">Loading times…</p>}{more&&<button disabled={loading} onClick={showMore}>Show 20 more</button>}</div>
     {me&&!entries.some(e=>e.mine)&&<div className={styles.myRank}><small>YOUR POSITION</small><div>{row(me)}</div></div>}

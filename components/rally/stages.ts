@@ -6,6 +6,8 @@ export const stages = [
   { id:'desert', name:'Desert Dash', surface:'Sand', ground:'#cda577', road:'#e0bc86', edge:'#bb8f60', sky:'#e9c997', dust:'#e5c392', grip:.86, conditions:['clear','wind','haze'], points:[[-64,55],[-62,3],[-37,-18],[-62,-49],[-26,-62],[2,-44],[35,-60],[63,-35],[37,-7],[61,16],[49,54],[16,44],[-4,63],[-26,39]] },
   { id:'kart', name:'Countryside Karting', surface:'Outdoor circuit', ground:'#82956a', road:'#4e555b', edge:'#da6642', sky:'#c0cbd0', dust:'#a9aaa1', grip:1.3, conditions:['clear','rain','fog','snow'], points:[[-58,52],[-62,15],[-62,-45],[-32,-58],[5,-56],[5,-25],[-26,-22],[-27,8],[7,13],[29,-10],[55,-45],[64,-17],[56,20],[33,45],[-3,55],[-35,53]] },
   { id:'nyc', name:'NYC Special', surface:'City tarmac', ground:'#98958a', road:'#51595c', edge:'#cbc8b9', sky:'#bfcbd4', dust:'#a8aaa5', grip:1.22, conditions:['clear','rain','fog'], points:[[-55,52],[-55,28],[-55,-10],[-55,-47],[-45,-55],[-12,-55],[-5,-47],[-5,-20],[6,-13],[47,-48],[59,-39],[59,-10],[48,1],[15,1],[7,10],[7,36],[17,44],[49,44],[56,53],[43,59],[-25,59],[-48,59]] },
+  { id:'neon', name:'Neon District', surface:'Hover circuit', ground:'#293044', road:'#33354a', edge:'#7c52ab', sky:'#69758c', dust:'#8794b4', grip:1.22, conditions:['clear','rain','fog'], points:[[-60,54],[-60,15],[-60,-42],[-44,-57],[-12,-57],[4,-45],[4,-13],[25,-13],[53,-47],[63,-28],[63,18],[43,37],[17,37],[0,57],[-35,57]] },
+  { id:'mx', name:'Mudworks MX', surface:'Muddy motocross', ground:'#68774c', road:'#806044', edge:'#685035', sky:'#bdc9be', dust:'#a38b6b', grip:.98, conditions:['clear','rain','fog'], points:[[-60,54],[-61,18],[-59,-30],[-43,-56],[-11,-59],[21,-56],[57,-52],[64,-29],[48,-9],[15,-7],[-22,-6],[-29,13],[-10,29],[27,27],[57,42],[47,60],[14,62],[-23,60]] },
 ] as const;
 export type StageId = typeof stages[number]['id'];
 export type Weather = 'clear'|'rain'|'fog'|'snow'|'wind'|'haze';
@@ -20,9 +22,9 @@ export function stageDefinition(selection: StageSelection) { return stages.find(
 export function validSelection(value: unknown): value is StageSelection {
   if(!value || typeof value !== 'object') return false;
   const s=value as StageSelection;
-  return (s.laps===undefined || (s.circuitVersion===2&&[1,3,5].includes(s.laps))) && (s.circuitVersion===undefined||s.circuitVersion===2) && (isCircuit(s)||(s.laps===undefined&&s.circuitVersion===undefined)) && (s.track===undefined || [1,2,3].includes(s.track)) && (s.stage!=='nyc'||(trackNumber(s)===1&&s.circuitVersion===2)) && (s.timeOfDay===undefined || timesOfDay.includes(s.timeOfDay)) && typeof s.reverse==='boolean' && stages.some(stage=>stage.id===s.stage && (stage.conditions as readonly string[]).includes(s.weather));
+  return (s.laps===undefined || (s.circuitVersion===2&&[1,3,5].includes(s.laps))) && (s.circuitVersion===undefined||s.circuitVersion===2) && (isCircuit(s)||(s.laps===undefined&&s.circuitVersion===undefined)) && (s.track===undefined || [1,2,3].includes(s.track)) && (trackNumber(s)<=trackNames[s.stage]?.length) && (!['nyc','neon','mx'].includes(s.stage)||(trackNumber(s)===1&&s.circuitVersion===2)) && (s.timeOfDay===undefined || timesOfDay.includes(s.timeOfDay)) && typeof s.reverse==='boolean' && stages.some(stage=>stage.id===s.stage && (stage.conditions as readonly string[]).includes(s.weather));
 }
-export function isCircuit(s:Pick<StageSelection,'stage'>){return s.stage==='kart'||s.stage==='nyc';}
+export function isCircuit(s:Pick<StageSelection,'stage'>){return ['kart','nyc','neon','mx'].includes(s.stage);}
 export function boardKey(s:StageSelection){
  if(isCircuit(s)&&s.circuitVersion===2){const key=`v3:${s.stage}:track${trackNumber(s)}:${s.reverse?'reverse':'forward'}:laps${lapCount(s)}`;return s.weather==='clear'&&timeOfDay(s)==='midday'?key:`${key}:${s.weather}:${timeOfDay(s)}`;}
  const key=`v2:${s.stage}:${s.weather}:${s.reverse?'reverse':'forward'}`;const timed=timeOfDay(s)==='midday'?key:`${key}:${timeOfDay(s)}`;return trackNumber(s)===1?timed:`${timed}:track${trackNumber(s)}`;
@@ -36,15 +38,15 @@ export function surfaceGrip(selection: StageSelection) {
   return stageDefinition(selection).grip * (selection.weather==='rain'?.78:selection.weather==='snow'?.82:1);
 }
 
-export function compatibleCar(selection:StageSelection,car:number){return Number.isInteger(car)&&(selection.stage==='kart'?car===8:car>=0&&car<8);}
+export function compatibleCar(selection:StageSelection,car:number){return Number.isInteger(car)&&(stageVehicle(selection.stage)===null?car>=0&&car<8:car===stageVehicle(selection.stage));}
 export function stageTimes(stage:StageId):readonly TimeOfDay[]{return stages.some(s=>s.id===stage)?timesOfDay:[];}
 
 export function trackNumber(s:StageSelection){return s.track??1;}
-export const trackNames:Record<StageId,readonly string[]>={forest:['Forest Run','Fern Valley','Pine Ridge'],mountain:['Mountain Pass','Summit Switchbacks','Quarry Road'],alpine:['Alpine Sprint','Glacier Run','Snowbank Trail'],desert:['Desert Dash','Canyon Run','Dune Loop'],kart:['Meadow Circuit','Hedgerow Ring','Downs Sprint'],nyc:['Times Square Loop']};
+export const trackNames:Record<StageId,readonly string[]>={forest:['Forest Run','Fern Valley','Pine Ridge'],mountain:['Mountain Pass','Summit Switchbacks','Quarry Road'],alpine:['Alpine Sprint','Glacier Run','Snowbank Trail'],desert:['Desert Dash','Canyon Run','Dune Loop'],kart:['Meadow Circuit','Hedgerow Ring','Downs Sprint'],nyc:['Times Square Loop'],neon:['Neon Overdrive'],mx:['Mudworks Grand Loop']};
 export function trackName(s:StageSelection){return trackNames[s.stage][trackNumber(s)-1];}
 // Hand-authored routes, not scaled copies. Existing track-one coordinates are unchanged.
 const extraRoutes:Record<StageId,readonly (readonly (readonly [number,number])[])[]>={
- nyc:[],
+ nyc:[],neon:[],mx:[],
  forest:[
  [[-64,58],[-63,18],[-58,-30],[-32,-59],[7,-58],[50,-49],[62,-18],[38,-4],[9,-20],[-16,-4],[-3,25],[30,28],[58,55]],
  [[-62,57],[-33,53],[-15,28],[-42,8],[-61,-20],[-41,-57],[-4,-55],[12,-30],[43,-54],[63,-29],[53,6],[23,6],[15,40],[53,59]]],
@@ -65,3 +67,8 @@ export function routeControlPoints(s:StageSelection):readonly (readonly [number,
 
 export function lapCount(s:StageSelection){return isCircuit(s)&&s.circuitVersion===2?(s.laps??3):1;}
 export function routeLength(s:StageSelection){const points=stagePoints(s);return points.slice(1).reduce((n,p,i)=>n+p.distanceTo(points[i]),0);}
+
+/** Dedicated special vehicles keep existing rally indices and record keys stable. */
+export function stageVehicle(stage:StageId):number|null{return ({kart:8,neon:9,mx:10} as Partial<Record<StageId,number>>)[stage]??null;}
+export function hasCodriver(stage:StageId){return stageVehicle(stage)===null;}
+export function stageLayouts(stage:StageId){return trackNames[stage].map((_,i)=>(i+1) as 1|2|3);}

@@ -1,9 +1,11 @@
+import {specialVehicle} from './special-vehicle';
+import {stageVehicle} from './stages';
 import {pacedFrame} from './frame-pacing';
 import {RouteIndex} from './route-index';
 import {RenderMetrics} from './render-metrics';
 import {RoomEnvironment} from 'three/examples/jsm/environments/RoomEnvironment.js';
 import {MiniatureRenderer,groundGrain,clayMaps,textureClay,miniatureTrees,roadsideDetails,type Graphics} from './miniature';
-import {VehicleVisual,loadVehicle} from './vehicle-visual';
+import {VehicleVisual,loadVehicle,loadSpecialProps} from './vehicle-visual';
 import {releaseVisual,cloneGhost} from './visual-resources';
 import {selectRamps,type Ramp} from './jumps';
 import {RallyPlume,JumpFountains,internationalFlags,roughShoulders} from './rally-effects';
@@ -80,7 +82,7 @@ export class RallyWorld {
       await this.modelPending;
       if(id!==this.preparationId||this.disposed)return false;
       this.callbacks.preparation?.('Preparing rivals and sound…');
-      await Promise.allSettled([this.prepareGhost(),this.ensureAudio(),this.driverCamera.prepare(this.selected===8)]);
+      await Promise.allSettled([this.prepareGhost(),this.ensureAudio(),this.driverCamera.prepare(this.selected===9?'hover':this.selected===10?'bike':this.selected===8)]);
       if(id!==this.preparationId||this.disposed)return false;
       this.rivals.prewarm(this.vehicle);
       this.callbacks.preparation?.('Warming lights and materials…');
@@ -269,7 +271,7 @@ export class RallyWorld {
   }
   configure(selection: StageSelection) {
     if (this.mode !== "garage") return;
-    if(this.selection.stage!=="kart")this.lastRallyCar=this.selected;
+    if(this.selected<8)this.lastRallyCar=this.selected;
     this.selection = isCircuit(selection)?{...selection,laps:selection.laps??3,circuitVersion:2}:{...selection,laps:undefined,circuitVersion:undefined};
     this.clearGhost();
     this.checkpointEffects?.dispose();
@@ -280,7 +282,7 @@ export class RallyWorld {
     this.checkpoint = 0;
     this.nearestCache.clear();this.points = stagePoints(this.selection);this.routeIndex=new RouteIndex(this.points);
     this.buildStage();
-    this.choose(selection.stage==="kart"?8:this.lastRallyCar);
+    this.choose(stageVehicle(selection.stage)??this.lastRallyCar);
     this.miniature.set(this.miniature.graphics);
     this.audio?.setEnvironment(selection.stage);
   }
@@ -315,15 +317,16 @@ export class RallyWorld {
     });
     // Feather the shoulder outwards while retaining the original 11.2-unit route.
     paint.strokeStyle = stage.ground;
-    if(!isCircuit(this.selection))for(let width=21;width>=13;width-=.7){paint.globalAlpha=.06;paint.lineWidth=width;paint.stroke();}
+    if(!isCircuit(this.selection)||this.selection.stage==='mx')for(let width=21;width>=13;width-=.7){paint.globalAlpha=.06;paint.lineWidth=width;paint.stroke();}
     paint.strokeStyle = stage.edge;
     for(let width=this.selection.stage==='kart'?11.7:15;width>=11.4;width-=.45){paint.globalAlpha=.09;paint.lineWidth=width;paint.stroke();}
     paint.globalAlpha=1;
     paint.strokeStyle = stage.road;
     paint.lineWidth = 11.2;
     paint.stroke();
+    if(this.selection.stage==='mx'){paint.strokeStyle='#493825';paint.globalAlpha=.22;paint.lineWidth=.32;for(const offset of [-1.4,1.4]){paint.beginPath();this.points.forEach((p,i)=>{const q=this.points[Math.min(i+1,650)],a=Math.atan2(q.x-p.x,q.z-p.z),x=p.x+Math.cos(a)*offset,z=p.z-Math.sin(a)*offset;if(i)paint.lineTo(x,z);else paint.moveTo(x,z);});paint.stroke();}paint.globalAlpha=1;}
     // Irregular biome-coloured shoulder flecks break the uniform road outline.
-    if(!isCircuit(this.selection))for(let i=0;i<this.points.length-1;i+=2){
+    if(!isCircuit(this.selection)||this.selection.stage==='mx')for(let i=0;i<this.points.length-1;i+=2){
       const p=this.points[i],q=this.points[i+1],a=Math.atan2(q.x-p.x,q.z-p.z);
       for(const side of [-1,1]){const d=5.6+(Math.sin(i*17)*.5+.5)*2;paint.fillStyle=stage.ground;paint.globalAlpha=.58;paint.beginPath();paint.ellipse(p.x+Math.cos(a)*side*d,p.z-Math.sin(a)*side*d,.3+(i%5)*.17,.55,a,0,Math.PI*2);paint.fill();}
     }paint.globalAlpha=1;
@@ -388,7 +391,7 @@ export class RallyWorld {
       treePlaces.push({x,z,h});
     }
     this.root.add(miniatureTrees(treePlaces,stage.id==='alpine'));
-    this.root.add(roadsideDetails(this.points,(x,z)=>this.atmosphere.reserved(x,z),stage.id==='desert'?'#b39a70':stage.id==='alpine'?'#cbd4c9':'#82905b'));
+    if(this.selection.stage!=='neon')this.root.add(roadsideDetails(this.points,(x,z)=>this.atmosphere.reserved(x,z),stage.id==='desert'?'#b39a70':stage.id==='alpine'?'#cbd4c9':'#82905b'));
     for (let i = 0; i < (isCircuit(this.selection)?0:90); i++) {
       const x = (random() - 0.5) * 150,
         z = (random() - 0.5) * 140;
@@ -418,7 +421,7 @@ export class RallyWorld {
         const flag=this.box(2, 1.5, 0.12, i === 17 ? "#e4bb48" : "#d65c3f", x, 2.3+rise, z);flag.rotation.y=Math.PI/4;this.checkpointEffects.register(i,flag);
       }
     });
-    for (const idx of (this.selection.stage==="kart"?[650]:[0,650])) {
+    for (const idx of (isCircuit(this.selection)?[650]:[0,650])) {
       const p = this.points[idx];
       const gate = new T.Group();
       gate.position.copy(p);
@@ -483,7 +486,7 @@ export class RallyWorld {
   choose(index: number) {
     this.cancelPreparation();
     this.clearGhost();this.visualGeneration++;this.visual=null;this.host.dataset.visualModel="procedural";
-    this.selected = this.selection.stage==="kart"?8:((index%8)+8)%8;
+    this.selected = stageVehicle(this.selection.stage)??((index%8)+8)%8;
     this.audio?.setCar(this.selected);
     this.callbacks.select(this.selected);
     this.root.remove(this.vehicle);
@@ -492,7 +495,10 @@ export class RallyWorld {
     this.root.add(this.vehicle);
     this.wheels = [];this.brakeLamps=[];this.brakeHalos=[];
     const c = cars[this.selected];
-    if(c.shape==='kart'){
+    if(c.shape==='hover'||c.shape==='bike'){
+      this.vehicle.add(specialVehicle(c.shape==='bike'));
+      const lamps=lighting(this.selection).lamps;for(const x of (c.shape==='bike'?[0]:[-.6,.6])){const light=new T.SpotLight('#d9f5ff',lamps,28,Math.PI/5,.65,1);light.position.set(x,1.4,1.2);light.target.position.set(x,0,18);this.vehicle.add(light,light.target);}
+    }else if(c.shape==='kart'){
       this.box(2.2,.22,3.3,'#343c3a',0,.43,0,this.vehicle);
       this.box(1.5,.3,.9,c.color,0,.7,1.15,this.vehicle);
       for(const x of [-.85,.85])this.box(.4,.45,1.8,c.color,x,.7,-.1,this.vehicle);
@@ -551,7 +557,7 @@ export class RallyWorld {
 
     }
     }
-    for (const x of [-1.08, 1.08])
+    for (const x of (this.selected>=9?[]:[-1.08, 1.08]))
       for (const z of [-1.3, 1.3]) {
         const wheel = new T.Mesh(
           new T.CylinderGeometry(0.52, 0.52, 0.42, 12),
@@ -578,14 +584,21 @@ export class RallyWorld {
     } catch {
       this.best = null;
     }
-    this.mud=this.selected===8?createKartCoating(false):createMud(this.selection.stage==="alpine"?"#8b8b79":this.selection.stage==="desert"?"#a17c47":"#6b5035",[5,6,7].includes(this.selected)?3.65:this.selected===4?4.5:4.1);if(this.mud)this.vehicle.add(this.mud);
-    this.snow=this.selected===8?createKartCoating(true):createSnow([5,6,7].includes(this.selected)?3.65:this.selected===4?4.5:4.1);if(this.snow)this.vehicle.add(this.snow);
+    this.mud=this.selected>=9?null:this.selected===8?createKartCoating(false):createMud(this.selection.stage==="alpine"?"#8b8b79":this.selection.stage==="desert"?"#a17c47":"#6b5035",[5,6,7].includes(this.selected)?3.65:this.selected===4?4.5:4.1);if(this.mud)this.vehicle.add(this.mud);
+    this.snow=this.selected>=9?null:this.selected===8?createKartCoating(true):createSnow([5,6,7].includes(this.selected)?3.65:this.selected===4?4.5:4.1);if(this.snow)this.vehicle.add(this.snow);
     this.callbacks.best(this.best);
     const glowCanvas=document.createElement('canvas');glowCanvas.width=glowCanvas.height=32;const gp=glowCanvas.getContext('2d')!;const gradient=gp.createRadialGradient(16,16,1,16,16,16);gradient.addColorStop(0,'rgba(255,80,50,.8)');gradient.addColorStop(1,'rgba(255,30,10,0)');gp.fillStyle=gradient;gp.fillRect(0,0,32,32);const glowTexture=new T.CanvasTexture(glowCanvas);
     for(const rear of this.brakeLamps){const halo=new T.Sprite(new T.SpriteMaterial({map:glowTexture,color:'#ff4935',transparent:true,depthWrite:false,opacity:0}));halo.name='brake-halo';halo.position.copy(rear.position);halo.position.z-=.08;halo.scale.set(1.6,1.6,1);this.vehicle.add(halo);this.brakeHalos.push(halo);}
     this.resetPosition();if(this.selection.stage==='nyc'&&this.mode==='garage')this.vehicle.position.copy(this.atmosphere.layout.center);
     void this.prepareGhost();
-    this.modelPending=this.installVehicle(this.selected,this.visualGeneration,this.vehicle);
+    this.modelPending=Promise.all([this.installVehicle(this.selected,this.visualGeneration,this.vehicle),this.installSpecialProps(this.visualGeneration)]).then(()=>{});
+  }
+  private async installSpecialProps(generation:number){
+    const stage=this.selection.stage;if(stage!=='neon'&&stage!=='mx')return;
+    try{const props=await loadSpecialProps(stage);if(this.disposed||generation!==this.visualGeneration){releaseVisual(props);return;}
+      const old=this.root.getObjectByName('special-service-props');if(old){old.removeFromParent();releaseVisual(old);}
+      props.name='special-service-props';props.position.copy(this.atmosphere.layout.center).add(new T.Vector3(10,0,0).applyAxisAngle(new T.Vector3(0,1,0),this.atmosphere.layout.angle));props.rotation.y=this.atmosphere.layout.angle;this.root.add(props);
+    }catch{/* The procedural service area is the offline fallback. */}
   }
   private async installVehicle(index:number,generation:number,fallback:T.Group){
     try{const model=await loadVehicle(index);if(this.disposed||generation!==this.visualGeneration||this.vehicle!==fallback){releaseVisual(model);return;}
@@ -636,14 +649,15 @@ export class RallyWorld {
       this.ghostCar.visible=false;this.root.add(this.ghostCar);this.callbacks.ghost?.(label);
     }catch{if(generation===this.ghostGeneration)this.callbacks.ghost?.("Ghost unavailable · racing still works");}
   }
+  private replaySample(time:number){const p=this.vehicle.position,s=[time,Number(p.x.toFixed(2)),Number(p.z.toFixed(2)),Number(this.angle.toFixed(4))];if(this.selected>=9)s.push(Number(p.y.toFixed(3)),Number(this.vehicle.rotation.x.toFixed(4)),Number(this.vehicle.rotation.z.toFixed(4)));return s;}
   completeRun(){
     if(this.mode!=="race")return;
     if(this.time>600)this.markPractice("time-limit");
     if((this.trace.at(-1)?.[0] ?? -1)>=this.time){this.trace.pop();this.replaySamples.pop();}
     this.trace.push([this.time,this.vehicle.position.x,this.vehicle.position.z]);
-    this.replaySamples.push([this.time,Number(this.vehicle.position.x.toFixed(2)),Number(this.vehicle.position.z.toFixed(2)),Number(this.angle.toFixed(4))]);
-    const replay:Replay|undefined=this.cleanRun && this.time<=600 && this.replaySamples.length<=2600 ? {version:1,selection:{...this.selection},car:this.selected,time:this.time,samples:this.replaySamples}:undefined;
-    this.resultReplay={version:1,selection:{...this.selection},car:this.selected,time:this.time,samples:this.replaySamples.map(s=>[...s])};this.replayClock=0;
+    this.replaySamples.push(this.replaySample(this.time));
+    const replay:Replay|undefined=this.cleanRun && this.time<=600 && this.replaySamples.length<=2600 ? {version:this.selected>=9?2:1,selection:{...this.selection},car:this.selected,time:this.time,samples:this.replaySamples}:undefined;
+    this.resultReplay={version:this.selected>=9?2:1,selection:{...this.selection},car:this.selected,time:this.time,samples:this.replaySamples.map(s=>[...s])};this.replayClock=0;
     const personalBest=this.cleanRun && (!this.best || this.time < this.best);
     this.audio?.finishResult(this.cleanRun,Boolean(personalBest));
     if (personalBest) {
@@ -686,7 +700,7 @@ export class RallyWorld {
     const idx = this.checkpoint ? this.checkpoints[this.checkpoint - 1] : 0;
     const p = this.points[idx],
       next = this.points[Math.min(idx + 3, 650)];
-    this.vehicle.position.copy(p);
+    this.vehicle.position.copy(p);this.vehicle.position.y=rampHeight(idx,this.ramps)+(this.selected===9?.85:.08);
     this.angle = Math.atan2(next.x - p.x, next.z - p.z);
     this.vehicle.rotation.set(0,this.angle,0,'XYZ');
     this.velocity.set(0, 0, 0);
@@ -727,7 +741,7 @@ export class RallyWorld {
     this.clearFeedback();
     this.atmosphere.reset();
     this.setMode("garage");
-    if(!this.visual)this.modelPending=this.installVehicle(this.selected,this.visualGeneration,this.vehicle);
+    if(!this.visual)this.modelPending=Promise.all([this.installVehicle(this.selected,this.visualGeneration,this.vehicle),this.installSpecialProps(this.visualGeneration)]).then(()=>{});
     void this.prepareGhost();
     this.checkpoint = 0;
     this.resetPosition();
@@ -941,7 +955,7 @@ export class RallyWorld {
       this.velocity.lerp(longitudinal, 1 - Math.exp(-tuning.grip * dt));
       const acceleration = (this.limited ? 0 : throttle * c.power) - brake * (speed > 1 ? (c.shape === "kart" ? 28 : 25) : 8);
       this.velocity.addScaledVector(forward, acceleration * dt);
-      this.velocity.multiplyScalar(this.surfaceEffects.drag.step(dt,this.vehicle.position,this.surfaceEffects.puddles));
+      if(this.selected!==9)this.velocity.multiplyScalar(this.surfaceEffects.drag.step(dt,this.vehicle.position,this.surfaceEffects.puddles));
       this.velocity.multiplyScalar(
         Math.exp(-tuning.drag * dt),
       );
@@ -980,9 +994,10 @@ export class RallyWorld {
         );
         this.velocity.multiplyScalar(0.3);
       }
+      if(this.selected>=9){const profile=elevationPose(this.routeProgress(this.vehicle.position),this.velocity.length(),this.atmosphere.reduced,this.ramps),shoulder=T.MathUtils.clamp((7.8-this.nearest(this.vehicle.position.x,this.vehicle.position.z).distance)/2.2,0,1);this.vehicle.position.y=this.playbackHeight(this.vehicle.position.x,this.vehicle.position.z,profile.y*shoulder+.08)+(this.selected===9?.85:0);this.vehicle.rotation.x=profile.pitch;this.vehicle.rotation.z=profile.roll+steer*Math.min(.28,this.velocity.length()*.012);}
       if(this.time >= this.traceAt && this.time<=600 && this.trace.length<2599) {
         this.trace.push([Number(this.time.toFixed(3)), Number(this.vehicle.position.x.toFixed(2)), Number(this.vehicle.position.z.toFixed(2))]);
-        this.replaySamples.push([Number(this.time.toFixed(3)),Number(this.vehicle.position.x.toFixed(2)),Number(this.vehicle.position.z.toFixed(2)),Number(this.angle.toFixed(4))]);
+        this.replaySamples.push(this.replaySample(Number(this.time.toFixed(3))));
         this.traceAt=this.time+.25;
       }
       if(this.selection.circuitVersion===2&&this.vehicle.position.distanceTo(this.points[0])>14)this.circuitFinishArmed=true;
@@ -996,7 +1011,7 @@ export class RallyWorld {
       }
       if(passage.finished){
         this.lapTimes.push(this.time-this.lapTimes.reduce((a,b)=>a+b,0));
-        if(this.lap<lapCount(this.selection)){this.lap++;this.checkpoint=0;this.circuitFinishArmed=false;this.checkpointEffects.reset();this.pace=new PaceScheduler(paceNotes(this.selection));}
+        if(this.lap<lapCount(this.selection)){this.lap++;this.checkpoint=0;this.circuitFinishArmed=false;this.checkpointEffects.reset();this.fountains.reset();this.pace=new PaceScheduler(paceNotes(this.selection));}
         else this.completeRun();
       }
 
@@ -1015,13 +1030,13 @@ export class RallyWorld {
     if(this.mode==="finished"&&this.replayEnabled&&this.resultReplay){
       this.replayClock=(this.replayClock+dt)%this.resultReplay.time;
       const pose=replayPose(this.resultReplay,this.replayClock);
-      if(pose){const profile=elevationPose(this.routeProgress(pose),pose.speed,this.atmosphere.reduced,this.ramps);const shoulder=T.MathUtils.clamp((8-this.nearest(pose.x,pose.z).distance)/2.4,0,1);this.vehicle.position.set(pose.x,this.playbackHeight(pose.x,pose.z,profile.y*shoulder+.08),pose.z);this.vehicle.rotation.set(profile.pitch,pose.angle,profile.roll);}
+      if(pose){const profile=elevationPose(this.routeProgress(pose),pose.speed,this.atmosphere.reduced,this.ramps);const shoulder=T.MathUtils.clamp((8-this.nearest(pose.x,pose.z).distance)/2.4,0,1);this.vehicle.position.set(pose.x,this.playbackHeight(pose.x,pose.z,profile.y*shoulder+.08)+(this.selected===9?.85:0),pose.z);if(pose.y!==undefined)this.vehicle.position.y=this.playbackHeight(pose.x,pose.z,pose.y);this.vehicle.rotation.set(pose.pitch??profile.pitch,pose.angle,pose.roll??profile.roll);}
     }
-    if(this.mode==="race"){const profile=elevationPose(this.routeProgress(this.vehicle.position),this.velocity.length(),this.atmosphere.reduced,this.ramps),shoulder=T.MathUtils.clamp((7.8-this.nearest(this.vehicle.position.x,this.vehicle.position.z).distance)/2.2,0,1);this.vehicle.position.y=this.playbackHeight(this.vehicle.position.x,this.vehicle.position.z,profile.y*shoulder+.08);this.vehicle.rotation.x=profile.pitch;this.vehicle.rotation.z+=profile.roll;}
+    if(this.mode==="race"&&this.selected<9){const profile=elevationPose(this.routeProgress(this.vehicle.position),this.velocity.length(),this.atmosphere.reduced,this.ramps),shoulder=T.MathUtils.clamp((7.8-this.nearest(this.vehicle.position.x,this.vehicle.position.z).distance)/2.2,0,1);this.vehicle.position.y=this.playbackHeight(this.vehicle.position.x,this.vehicle.position.z,profile.y*shoulder+.08)+(this.selected===9?.85:0);this.vehicle.rotation.x=profile.pitch;this.vehicle.rotation.z+=profile.roll;}
     if(this.ghostCar){
       const pose=this.ghostReplay && (this.mode==="race"||this.mode==="paused")?replayPose(this.ghostReplay,this.time):null;
       this.ghostCar.visible=Boolean(pose && this.ghostVisible);
-      if(pose){const profile=elevationPose(this.routeProgress(pose),pose.speed,this.atmosphere.reduced,this.ramps);const shoulder=T.MathUtils.clamp((8-this.nearest(pose.x,pose.z).distance)/2.4,0,1);this.ghostCar.position.set(pose.x,this.playbackHeight(pose.x,pose.z,profile.y*shoulder+.08),pose.z);this.ghostCar.rotation.set(profile.pitch,pose.angle,profile.roll);}
+      if(pose){const profile=elevationPose(this.routeProgress(pose),pose.speed,this.atmosphere.reduced,this.ramps);const shoulder=T.MathUtils.clamp((8-this.nearest(pose.x,pose.z).distance)/2.4,0,1);this.ghostCar.position.set(pose.x,this.playbackHeight(pose.x,pose.z,profile.y*shoulder+.08)+(this.selected===9?.85:0),pose.z);if(pose.y!==undefined)this.ghostCar.position.y=this.playbackHeight(pose.x,pose.z,pose.y);this.ghostCar.rotation.set(pose.pitch??profile.pitch,pose.angle,pose.roll??profile.roll);}
     }
     if(this.mode==="race"&&this.codriverEnabled){
       const note=this.pace?.update(this.paceDistance(),this.velocity.length(),this.time);
@@ -1030,14 +1045,14 @@ export class RallyWorld {
     }
     if(this.notifications.tick(dt,this.mode==="paused"))this.callbacks.checkpoints?.([...this.notifications.items]);
     this.scenery.update(this.mode==="paused"?0:dt,this.atmosphere.reduced);
-    this.surfaceEffects.update(this.mode==="paused"?0:dt,this.vehicle.position,this.angle,this.velocity.length(),this.mode==="race");
+    this.surfaceEffects.update(this.mode==="paused"?0:dt,this.vehicle.position,this.angle,this.velocity.length(),this.mode==="race"&&this.selected!==9);
     if(this.mud)(this.mud.material as T.MeshStandardMaterial).opacity=this.surfaceEffects.mud*.95;
     if(this.snow)(this.snow.material as T.MeshStandardMaterial).opacity=this.surfaceEffects.snow*.95;
     this.atmosphere.update(this.mode==="paused"?0:dt,now/1000,this.vehicle.position,this.velocity.length(),this.mode==="race");
     this.checkpointEffects.update(this.mode==="paused"?0:dt);
     if(this.mode!=="paused")this.updateWeather(dt);
     const effectDt=this.mode==='paused'?0:dt;
-    const spray=this.selection.weather==='rain'||this.selection.weather==='snow',dirt=!['kart','nyc','mountain'].includes(this.selection.stage),emitting=this.mode==='race'&&(dirt||spray);
+    const spray=this.selection.weather==='rain'||this.selection.weather==='snow',dirt=!['kart','nyc','neon','mountain'].includes(this.selection.stage),emitting=this.mode==='race'&&this.selected!==9&&(dirt||spray);
     this.plume.update(effectDt,this.vehicle.position,this.angle,this.velocity.length(),emitting?(hand||Math.abs(steer)>.5?1:.8):0,this.driverCamera.enabled);
     this.fountains.update(effectDt,this.routeProgress(this.vehicle.position),this.mode==='race',this.atmosphere.reduced);
     const braking=this.mode==='race'&&brake>.05;
@@ -1081,9 +1096,9 @@ export class RallyWorld {
         count: Math.ceil(this.countdown),
       });
     }
-    const activeCamera=this.driverCamera.update(this.mode==='paused'?0:dt,this.vehicle,this.angle,steer,this.camera,this.mode==='race'||this.mode==='countdown'||this.mode==='paused',this.atmosphere.reduced,this.viewport.width,this.viewport.height,this.selected===8,this.velocity.length()*4,this.rpm,this.limited,timeOfDay(this.selection)==='night',cars[this.selected].color);
+    const activeCamera=this.driverCamera.update(this.mode==='paused'?0:dt,this.vehicle,this.angle,steer,this.camera,this.mode==='race'||this.mode==='countdown'||this.mode==='paused',this.atmosphere.reduced,this.viewport.width,this.viewport.height,(this.selected===8||this.selected===10),this.velocity.length()*4,this.rpm,this.limited,timeOfDay(this.selection)==='night',cars[this.selected].color);
     const transition=this.driverCamera.blend;this.renderer.domElement.style.filter=!this.atmosphere.reduced&&transition>0&&transition<1?`blur(${Math.sin(transition*Math.PI)*2}px)`:'none';
-    if(this.live){if(this.ghostCar)this.ghostCar.visible=false;this.rivals.update(now,(x,z,speed)=>{const nearest=this.nearest(x,z),shoulder=T.MathUtils.clamp((8-nearest.distance)/2.4,0,1);return this.playbackHeight(x,z,elevationPose(this.routeProgress({x,z}),speed,true,this.ramps).y*shoulder+.08);});if(this.mode==='race'&&now-this.sentPose>=100){this.sentPose=now;this.onLivePose?.({x:this.vehicle.position.x,z:this.vehicle.position.z,heading:this.angle,speed:this.velocity.length(),progress:((this.lap-1)+this.checkpoint/18)/lapCount(this.selection)},!this.cleanRun);}}
+    if(this.live){if(this.ghostCar)this.ghostCar.visible=false;this.rivals.update(now,(x,z,speed)=>{const nearest=this.nearest(x,z),shoulder=T.MathUtils.clamp((8-nearest.distance)/2.4,0,1);return this.playbackHeight(x,z,elevationPose(this.routeProgress({x,z}),speed,true,this.ramps).y*shoulder+.08)+(this.selected===9?.85:0);});if(this.mode==='race'&&now-this.sentPose>=100){this.sentPose=now;this.onLivePose?.({...(this.selected>=9?{y:this.vehicle.position.y,pitch:this.vehicle.rotation.x,roll:this.vehicle.rotation.z}:{}),x:this.vehicle.position.x,z:this.vehicle.position.z,heading:this.angle,speed:this.velocity.length(),progress:((this.lap-1)+this.checkpoint/18)/lapCount(this.selection)},!this.cleanRun);}}
     this.visual?.update(this.mode==='paused'?0:dt,(this.velocity.x*Math.sin(this.angle)+this.velocity.z*Math.cos(this.angle)),steer,braking,timeOfDay(this.selection)!=='midday');
     this.metrics.begin();this.miniature.render(activeCamera,frameDt,this.mode==='race');this.metrics.end(frameDt,this.mode==='race');
   };

@@ -33,7 +33,7 @@ export class SurfaceEffects {
   material.customProgramCacheKey=()=> 'rally-trail-v1';
   this.tracks=new T.InstancedMesh(geometry,material,TRACK_CAP);this.tracks.frustumCulled=false;this.tracks.renderOrder=2;this.tracks.instanceMatrix.setUsage(T.DynamicDrawUsage);this.group.add(this.tracks);
   this.splashes=new T.InstancedMesh(new T.IcosahedronGeometry(.13,0),new T.MeshBasicMaterial({color:'#d2e8ea',transparent:true,opacity:.65,depthWrite:false}),SPLASH_CAP);this.splashes.frustumCulled=false;this.splashes.instanceMatrix.setUsage(T.DynamicDrawUsage);this.group.add(this.splashes);
-  if(selection.weather==='rain'){
+  if(selection.weather==='rain'||selection.stage==='mx'){
    const geo=new T.CircleGeometry(1,18),mat=new T.MeshStandardMaterial({color:'#7d9b9d',roughness:.12,metalness:.15,transparent:true,opacity:.65,depthWrite:false});
    // Five small depressions inside the existing road, safely away from gates.
    for(const index of [83,197,395,427,592]){
@@ -55,7 +55,7 @@ export class SurfaceEffects {
    this.mud=accumulation.mud;this.snow=accumulation.snow;
    if(this.clock>=.06&&distance>.28&&distance<5){
     const dx=car.x-this.previous.x,dz=car.z-this.previous.z;
-    for(const side of [-1,1]){
+    for(const side of (this.selection.stage==='mx'?[0]:[-1,1])){
      const i=this.cursor++%TRACK_CAP;
      const nearest=this.routePoints.reduce((best,p,j)=>Math.hypot(p.x-car.x,p.z-car.z)<Math.hypot(this.routePoints[best].x-car.x,this.routePoints[best].z-car.z)?j:best,0);
      this.object.position.set((car.x+this.previous.x)/2+Math.cos(angle)*side,.073+rampHeight(nearest,this.ramps),(car.z+this.previous.z)/2-Math.sin(angle)*side);
@@ -63,11 +63,11 @@ export class SurfaceEffects {
     }
     this.travelled+=distance;this.tracks.instanceMatrix.needsUpdate=true;this.previous.copy(car);this.clock=0;
    }
-   if(this.splashClock<=0&&this.puddles.some(p=>[-1,1].some(side=>insidePuddle(p,car.x+Math.cos(angle)*side,car.z-Math.sin(angle)*side)))){
+   if(this.splashClock<=0&&this.puddles.some(p=>(this.selection.stage==='mx'?[0]:[-1,1]).some(side=>insidePuddle(p,car.x+Math.cos(angle)*side,car.z-Math.sin(angle)*side)))){
     this.splashClock=.12;
     for(let n=0;n<(this.reduced?4:Math.min(28,10+Math.floor(speed)));n++){
      const i=this.splashCursor++%SPLASH_CAP,j=i*3,side=n%2?1:-1;
-     this.life[i]=.85;this.positions.set([car.x+Math.cos(angle)*side,.2,car.z-Math.sin(angle)*side],j);
+     this.life[i]=.85;this.positions.set([car.x+Math.cos(angle)*side*(this.selection.stage==='mx'?.2:1),.2,car.z-Math.sin(angle)*side],j);
      this.velocities.set([Math.cos(angle)*side*(3+speed*.25),3.5+Math.random()*3,-Math.sin(angle)*side*(3+speed*.25)],j);
     }
    }

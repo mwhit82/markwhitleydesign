@@ -2,7 +2,7 @@ import {advanceCheckpoints,segmentDistance} from '../../components/rally/checkpo
 import { matchingReplay } from "../../components/rally/replay";
 import { lapCount, checkpointIndices, stagePoints, validSelection, compatibleCar, type StageSelection } from '../../components/rally/stages';
 export function validName(name: unknown): name is string { return typeof name==='string' && /^[\p{L}\p{N} _.-]{2,20}$/u.test(name.trim()); }
-export function validCar(car: unknown,selection?:StageSelection): car is number { return Number.isInteger(car) && Number(car)>=0 && Number(car)<9 && (!selection||compatibleCar(selection,Number(car))); }
+export function validCar(car: unknown,selection?:StageSelection): car is number { return Number.isInteger(car) && Number(car)>=0 && Number(car)<11 && (!selection||compatibleCar(selection,Number(car))); }
 export function validateRun(selection: StageSelection, time: unknown, trace: unknown, elapsed: number) {
   if(!validSelection(selection) || typeof time!=='number' || !Number.isFinite(time) || time<15 || time>600 || time>elapsed+1) return false;
   if(!Array.isArray(trace) || trace.length<20 || trace.length>2600) return false;

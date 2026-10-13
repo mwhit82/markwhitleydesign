@@ -48,7 +48,7 @@ export class Atmosphere {
  private roofs:T.Mesh[]=[];
  reduced=typeof matchMedia!=='undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches;
  constructor(points:T.Vector3[],selection?:StageSelection) {
-  const kart=selection?.stage==='kart',city=selection?.stage==='nyc';
+  const kart=selection?.stage==='kart',city=selection?.stage==='nyc',neon=selection?.stage==='neon';
   this.layout=kart?kartFinishLayout(points,selection):finishLayout(points);
   this.reservedPath=this.layout.approach.getPoints(24);
   const {center,angle}=this.layout;
@@ -57,12 +57,16 @@ export class Atmosphere {
    const mesh=new T.Mesh(new RoundedBoxGeometry(w,h,d,1,Math.min(.15,w*.15,h*.15,d*.15)),mat(color));mesh.position.set(x,y,z);mesh.receiveShadow=true;parent.add(mesh);return mesh;
   };
   const tent=new T.Group();tent.position.copy(center);tent.rotation.y=angle;this.group.add(tent);
-  box(17,.12,18,kart||city?'#4e555b':'#cfbd92',0,.02,0,tent);
+  box(17,.12,18,kart||city||neon?'#4e555b':'#cfbd92',0,.02,0,tent);
   const approach=Array.from({length:81},(_,i)=>this.layout.approach.getPointAt(i/80)),vertices:number[]=[],indices:number[]=[];
   approach.forEach((p,i)=>{const tangent=this.layout.approach.getTangentAt(i/80),right=new T.Vector3(tangent.z,0,-tangent.x).normalize().multiplyScalar(kart?4:5.6);vertices.push(p.x-right.x,p.y+.075,p.z-right.z,p.x+right.x,p.y+.075,p.z+right.z);if(i<80){const n=i*2;indices.push(n,n+2,n+1,n+1,n+2,n+3);}});
   const laneGeometry=new T.BufferGeometry();laneGeometry.setAttribute('position',new T.Float32BufferAttribute(vertices,3));laneGeometry.setIndex(indices);laneGeometry.computeVertexNormals();
-  const lane=new T.Mesh(laneGeometry,mat(kart||city?'#4e555b':'#cfbd92'));lane.receiveShadow=true;this.group.add(lane);
-  if(city){
+  const lane=new T.Mesh(laneGeometry,mat(kart||city||neon?'#4e555b':'#cfbd92'));lane.receiveShadow=true;this.group.add(lane);
+  if(neon){
+   for(const x of [-7,7])box(.7,5.6,12,'#44465e',x,2.8,0,tent);
+   const roof=box(15,.6,13,'#594c78',0,5.6,0,tent);this.roofs.push(roof);
+   for(const x of [-6.6,6.6])box(.14,.25,12,'#64d9db',x,4.8,0,tent);
+  }else if(city){
    for(const x of [-6,6])for(const z of [-5,5])box(.6,6,.6,'#e7dfc8',x,3,z,tent);
    const roof=box(16,.7,15,'#d95637',0,6,0,tent);this.roofs.push(roof);box(16,.3,15,'#eee4c9',0,5.6,0,tent);
    for(const x of [-6,6])for(const z of [-3,3]){box(1,1.8,.8,'#eee4c9',x,.9,z,tent);box(.7,.5,.85,'#2e4445',x,1.35,z,tent);box(.15,1.2,.2,'#242e2b',x+.6,.8,z,tent);}

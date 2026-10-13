@@ -4,7 +4,7 @@ export type PaceNote={index:number;distance:number;clips:string[];text:string};
 import {routeNotes} from './pace-notes';
 /** Explicit per-route notes; weather and light never change the route. */
 export function paceNotes(selection:StageSelection):PaceNote[]{
- if(selection.stage==='kart')return [];
+ if(['kart','neon','mx'].includes(selection.stage))return [];
  const points=stagePoints(selection),distances=[0];
  for(let i=1;i<points.length;i++)distances.push(distances[i-1]+points[i].distanceTo(points[i-1]));
  return (routeNotes[`${selection.stage}:${selection.track??1}:${selection.reverse?'reverse':'forward'}`]??[]).map(([index,clip])=>{

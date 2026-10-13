@@ -1,4 +1,5 @@
 'use client';
+import {stageVehicle,compatibleCar} from './stages';
 import {useCallback,useEffect,useRef,useState} from 'react';
 import type {RallyWorld} from './world';
 import type {RaceRoom,LivePose} from './room-types';
@@ -21,7 +22,7 @@ export function FriendRaces({openRequest,world,selection,car,ready,mode,onSetup,
  useEffect(()=>{if(open||liveMenu)card.current?.querySelector<HTMLElement>('input,button')?.focus();},[open,liveMenu,confirmLeave]);
  useEffect(()=>{if(!hasRoom)return;const timer=setInterval(()=>refreshStandings(n=>n+1),1000);return()=>clearInterval(timer);},[hasRoom]);
  const callbacks=useRef({world,onSetup,onActive});callbacks.current={world,onSetup,onActive};
- const send=(payload:Record<string,unknown>)=>{if(socket.current?.readyState===WebSocket.OPEN)socket.current.send(JSON.stringify({version:1,...payload}));};
+ const send=(payload:Record<string,unknown>)=>{if(socket.current?.readyState===WebSocket.OPEN)socket.current.send(JSON.stringify({version:2,...payload}));};
  const leave=()=>{
   const departing=socket.current,id=session.current?.id;
   if(departing?.readyState===WebSocket.OPEN){
@@ -37,11 +38,11 @@ export function FriendRaces({openRequest,world,selection,car,ready,mode,onSetup,
   const boot=()=>{
    if(rev!==generation.current)return;
    const ws=new WebSocket(`${location.protocol==='https:'?'wss':'ws'}://${location.host}/api/rally/rooms/socket?code=${entry.room.code}`);socket.current=ws;
-   ws.onopen=()=>{if(rev!==generation.current){ws.close();return;}ws.send(JSON.stringify({version:1,type:'hello',id:entry.id,token:entry.token}));};
+   ws.onopen=()=>{if(rev!==generation.current){ws.close();return;}ws.send(JSON.stringify({version:2,type:'hello',id:entry.id,token:entry.token}));};
    ws.onmessage=e=>{if(rev!==generation.current)return;let m;try{m=JSON.parse(e.data);}catch{return;}
     if(m.type==='error'){setError(m.error);return;}
     if(m.type==='pose'){const p=m.pose as LivePose;if(p.id!==entry.id){poses.current.set(p.id,p);const w=callbacks.current.world();if(w&&w.live)w.rivals.receive(p,w.vehicle,rivalColors[Math.max(0,entry.room.members.findIndex(m=>m.id===p.id))]);}return;}
-    if(m.type!=='room')return;setConnected(true);lostAt.current=0;setError('');offset.current=m.now-Date.now();const r=m.room as RaceRoom;if(r.version!==1){setError('Game updated. Refresh to join.');return;}const previousPhase=entry.room.phase;entry.room=r;setRoom(r);
+    if(m.type!=='room')return;setConnected(true);lostAt.current=0;setError('');offset.current=m.now-Date.now();const r=m.room as RaceRoom;if(r.version!==2){setError('Game updated. Refresh to join.');return;}const previousPhase=entry.room.phase;entry.room=r;setRoom(r);
     try{sessionStorage.setItem('rally-room',JSON.stringify(entry));}catch{}
     const w=callbacks.current.world();if(!w)return;
     if(r.phase==='lobby'){if(w.mode!=='garage')w.garage();if(r.host!==entry.id&&(boardKey(w.selection)!==boardKey(r.selection)||w.selected!==r.car))callbacks.current.onSetup(r.selection,r.car);if(previousPhase!=='lobby')setOpen(true);w.live=false;}
@@ -56,7 +57,7 @@ export function FriendRaces({openRequest,world,selection,car,ready,mode,onSetup,
  useEffect(()=>{const invite=new URLSearchParams(location.search).get('room');if(invite){setEntryStep('join');setCode(invite.toUpperCase().slice(0,6));setOpen(true);}try{const saved=localStorage.getItem('rally-room-name');if(saved&&saved!=='Driver')setName(saved);}catch{}const currentGeneration=generation;return()=>{currentGeneration.current++;if(retry.current)clearTimeout(retry.current);socket.current?.close();};},[]);
  useEffect(()=>{if(!ready)return;const w=callbacks.current.world();if(!w)return;w.onLiveMenu=setLiveMenu;w.onLivePose=(pose,recovered)=>{if(session.current)poses.current.set(session.current.id,{...pose,id:session.current.id,sent:Date.now()});send({type:'pose',pose,recovered});};w.onLiveFinish=(time,trace,practice)=>{pendingFinish.current={type:'finish',attempt:attempt.current,time,trace,practice};send(pendingFinish.current);};return()=>{w.onLiveMenu=null;w.onLivePose=null;w.onLiveFinish=null;};},[ready]);
  useEffect(()=>{const w=callbacks.current.world();if(w){w.roomMenuOpen=open||liveMenu;w.onRoomBack=requestBack;w.menuOpen=open||liveMenu;if(w.live)w.liveMenu=open||liveMenu;}},[open,liveMenu,ready,requestBack]);
- const enter=async(join:boolean)=>{setBusy(true);setError('');try{const response=await fetch('/api/rally/rooms',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,selection,car,...(join?{code}:{})})});const data=await response.json();if(!response.ok)throw Error(data.error||'Room unavailable');try{localStorage.setItem('rally-room-name',name);}catch{}connect(data);}catch(e){setError(e instanceof Error?e.message:'Could not join');}finally{setBusy(false);}};
+ const enter=async(join:boolean)=>{setBusy(true);setError('');try{const response=await fetch('/api/rally/rooms',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({version:2,name,selection,car,...(join?{code}:{})})});const data=await response.json();if(!response.ok)throw Error(data.error||'Room unavailable');try{localStorage.setItem('rally-room-name',name);}catch{}connect(data);}catch(e){setError(e instanceof Error?e.message:'Could not join');}finally{setBusy(false);}};
  const me=room?.members.find(p=>p.id===session.current?.id),host=room?.host===session.current?.id;
  const readyUp=async()=>{if(me?.ready){send({type:'ready',ready:false});return;}setPreparing(true);try{if(await world()?.prepareRace())send({type:'ready',ready:true});}finally{setPreparing(false);}};
  const applySetup=()=>{onSetup(draft,draftCar);send({type:'setup',selection:draft,car:draftCar});setSetupOpen(false);};
@@ -82,9 +83,9 @@ export function FriendRaces({openRequest,world,selection,car,ready,mode,onSetup,
       {inviteOpen&&<><strong>{room.code}</strong><button onClick={async()=>{try{await navigator.clipboard.writeText(`${location.origin}/playground/rally?room=${room.code}`);setError('Invite copied.');}catch{setError(`Share code ${room.code}`);}}}>Copy invitation</button></>}
       {host&&<button onClick={()=>{setDraft(room.selection);setDraftCar(room.car);setSetupOpen(!setupOpen);}}><HudIcon name="settings"/> Setup</button>}
       {host&&setupOpen&&<div className={styles.roomSetup}>
-       <label>Environment<select value={draft.stage} onChange={e=>{const stage=stages.find(s=>s.id===e.target.value)!;setDraft({...draft,stage:stage.id,track:1,weather:'clear',laps:['kart','nyc'].includes(stage.id)?3:undefined,circuitVersion:['kart','nyc'].includes(stage.id)?2:undefined});setDraftCar(stage.id==='kart'?8:0);}}>{stages.map(s=><option key={s.id} value={s.id}>{s.name}</option>)}</select></label>
+       <label>Environment<select value={draft.stage} onChange={e=>{const stage=stages.find(s=>s.id===e.target.value)!;setDraft({...draft,stage:stage.id,track:1,weather:'clear',timeOfDay:stage.id==='neon'?'night':'midday',laps:['kart','nyc','neon','mx'].includes(stage.id)?3:undefined,circuitVersion:['kart','nyc','neon','mx'].includes(stage.id)?2:undefined});setDraftCar(stageVehicle(stage.id)??0);}}>{stages.map(s=><option key={s.id} value={s.id}>{s.name}</option>)}</select></label>
        <label>Track<select value={draft.track??1} onChange={e=>setDraft({...draft,track:Number(e.target.value) as 1|2|3})}>{trackNames[draft.stage].map((n,i)=><option key={n} value={i+1}>{n}</option>)}</select></label>
-       <label>Car<select value={draftCar} onChange={e=>setDraftCar(Number(e.target.value))}>{cars.map((c,i)=>(draft.stage==='kart'?i===8:i<8)&&<option key={i} value={i}>{c.name}</option>)}</select></label>
+       <label>Car<select value={draftCar} onChange={e=>setDraftCar(Number(e.target.value))}>{cars.map((c,i)=>compatibleCar(draft,i)&&<option key={i} value={i}>{c.name}</option>)}</select></label>
        <label>Weather<select value={draft.weather} onChange={e=>setDraft({...draft,weather:e.target.value as StageSelection['weather']})}>{stageDefinition(draft).conditions.map(w=><option key={w} value={w}>{weatherNames[w]}</option>)}</select></label>
        <label>Time<select value={timeOfDay(draft)} onChange={e=>setDraft({...draft,timeOfDay:e.target.value as StageSelection['timeOfDay']})}>{stageTimes(draft.stage).map(t=><option key={t} value={t}>{timeNames[t]}</option>)}</select></label>
        <button onClick={()=>setDraft({...draft,reverse:!draft.reverse})}>Direction: {draft.reverse?'Reverse':'Forward'}</button>

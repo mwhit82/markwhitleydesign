@@ -22,7 +22,7 @@ export class LiveRivals{
   const t=a===b?0:T.MathUtils.clamp((target-a.received)/Math.max(1,b.received-a.received),0,1);
   let x=T.MathUtils.lerp(a.pose.x,b.pose.x,t),z=T.MathUtils.lerp(a.pose.z,b.pose.z,t);const heading=headingBetween(a.pose.heading,b.pose.heading,t);
   if(target>last.received){const seconds=Math.min(100,target-last.received)/1000;x+=Math.sin(heading)*last.pose.speed*seconds;z+=Math.cos(heading)*last.pose.speed*seconds;}
-  r.car.position.set(x,height(x,z,last.pose.speed),z);r.car.rotation.set(0,heading,0);
+  const recorded=a.pose.y!==undefined&&b.pose.y!==undefined;const y=recorded?T.MathUtils.lerp(a.pose.y!,b.pose.y!,t):height(x,z,last.pose.speed);r.car.position.set(x,recorded?Math.max(y,height(x,z,last.pose.speed)):y,z);r.car.rotation.set(recorded?T.MathUtils.lerp(a.pose.pitch??0,b.pose.pitch??0,t):0,heading,recorded?T.MathUtils.lerp(a.pose.roll??0,b.pose.roll??0,t):0);
   const opacity=.48*Math.max(0,Math.min(1,(2000-age)/1000,(now-r.fadeAt)/200));for(const m of r.materials)m.opacity=opacity;
  }for(const r of this.pool)r.car.visible=false;}
  clear(){for(const r of [...this.cars.values(),...this.pool])releaseVisual(r.car);this.cars.clear();this.pool=[];this.group.clear();}

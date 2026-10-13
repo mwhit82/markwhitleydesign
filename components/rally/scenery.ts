@@ -1,3 +1,4 @@
+import {specialScenery} from './special-scenery';
 import {environmentScenery} from './v3-scenery';
 import {kartBarrierSegments} from "./kart-venue";
 import * as T from 'three';
@@ -14,6 +15,7 @@ export class StageScenery {
   this.group.name="stage-scenery";
   const mat=(color:string)=>new T.MeshStandardMaterial({color,roughness:.9});
   const box=(w:number,h:number,d:number,color:string,x:number,y:number,z:number,parent=this.group)=>{const m=new T.Mesh(new T.BoxGeometry(w,h,d),mat(color));m.position.set(x,y,z);m.receiveShadow=true;m.castShadow=true;parent.add(m);return m;};
+  if(selection.stage==='neon'||selection.stage==='mx'){this.group.add(specialScenery(selection,points,reserved));return;}
   if(selection.stage==='nyc'){this.group.add(environmentScenery(selection,points,reserved));return;}
   if(selection.stage==='kart'){
    this.group.add(environmentScenery(selection,points,reserved));

@@ -376,3 +376,10 @@
 .preparationBar button{pointer-events:auto;background:none;border:0;color:inherit;min-width:28px;min-height:28px;font-size:18px;}.preparationBar i{position:absolute;bottom:0;left:0;height:2px;width:35%;background:var(--gold);animation:preparingSweep 1.4s ease-in-out infinite alternate;}@keyframes preparingSweep{to{left:65%}}@media(max-width:600px){.preparationBar{top:calc(var(--safe-top) + 48px);width:calc(100% - 24px)}}@media(prefers-reduced-motion:reduce){.preparationBar i{animation:none;width:100%}}
 
 .cardImage button{z-index:2;isolation:isolate;}.cardImage button svg{position:relative;z-index:1;}
+
+/* Category accents retain semantic checkpoint and warning colours. */
+.game[data-stage=kart]{--orange:#397453;--gold:#c4d7a4}
+.game[data-stage=nyc]{--orange:#376ca3;--gold:#b7d3ee}
+.game[data-stage=neon]{--ink:#292c42;--orange:#754ca3;--gold:#88e2e2;--panel:rgba(32,35,55,.7)}
+.game[data-stage=mx]{--orange:#92621c;--gold:#f0d29a}
+.game[data-stage=kart] .start,.game[data-stage=nyc] .start,.game[data-stage=neon] .start,.game[data-stage=mx] .start{border-color:var(--edge)}

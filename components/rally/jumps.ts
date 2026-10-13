@@ -15,7 +15,7 @@ export function selectRamps(points:T.Vector3[],selection:StageSelection):Ramp[]{
   if(!valid)continue;
   // Avoid another section of road running through the supporting embankment.
   if(points.some((p,j)=>Math.abs(j-i)>clear&&p.distanceTo(points[i])<18))continue;
-  chosen.push({index:i,height:selection.stage==='nyc'?1.35:chosen.length===0?2.8:1.6,half,show:selection.stage!=='nyc'&&chosen.length===0});if(chosen.length===3)break;
+  chosen.push({index:i,height:selection.stage==='nyc'?1.35:selection.stage==='mx'?4:selection.stage==='neon'?1.8:chosen.length===0?2.8:1.6,half,show:selection.stage!=='nyc'&&chosen.length===0});if(chosen.length===(selection.stage==='mx'?5:3))break;
  }
  return chosen;
 }

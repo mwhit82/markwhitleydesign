@@ -10,7 +10,7 @@ export function sweepRoom(r:RaceRoom,now:number){
 export function roomAction(r:RaceRoom,id:string,m:Record<string,unknown>,now:number){
  const seat=r.members.find(p=>p.id===id);if(!seat||seat.status==='retired'||seat.status==='disconnected')throw Error('Expired membership');seat.seen=now;
  if(m.type==='ready'&&r.phase==='lobby')seat.ready=m.ready===true;
- else if(m.type==='setup'&&r.phase==='lobby'&&r.host===id){if(!validSelection(m.selection)||!compatibleCar(m.selection,m.car as number))throw Error('Invalid setup');r.selection=m.selection;r.car=m.car as number;for(const p of r.members)p.ready=false;}
+ else if(m.type==='setup'&&r.phase==='lobby'&&r.host===id){if((r.version===1&&Number(m.car)>=9)||!validSelection(m.selection)||!compatibleCar(m.selection,m.car as number))throw Error('Invalid setup');r.selection=m.selection;r.car=m.car as number;for(const p of r.members)p.ready=false;}
  else if(m.type==='start'&&r.phase==='lobby'&&r.host===id){if(r.members.length<2||!r.members.every(p=>p.ready&&p.status==='lobby'))throw Error('All drivers must be ready');r.phase='racing';r.attempt++;r.startAt=now+(r.selection.stage==='nyc'?7000:4000);for(const p of r.members){p.status='racing';delete p.time;delete p.practice;}}
  else if(m.type==='finish'&&r.phase==='racing'&&seat.status==='racing'){if(m.attempt!==r.attempt||typeof m.time!=='number'||!Number.isFinite(m.time)||m.time<=0||m.time>600||m.time>(now-r.startAt)/1000+2)throw Error('Invalid finish');seat.time=m.time;seat.practice=m.practice===true||!validateRun(r.selection,m.time,m.trace,(now-r.startAt)/1000);seat.status='finished';}
  else if(m.type==='leave'){seat.status='retired';seat.ready=false;}

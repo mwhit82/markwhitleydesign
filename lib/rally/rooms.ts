@@ -17,13 +17,13 @@ export async function changeRoom(code:string,fn:(r:StoredRoom)=>void){
  }throw Error('Room busy. Please retry.');
 }
 export function authenticate(r:StoredRoom,id:string,token:string){return r.secrets[id]===digest(token)&&r.members.some(m=>m.id===id);}
-export async function enterRoom(body:{code?:string;name:string;selection:unknown;car:number}){
+export async function enterRoom(body:{version?:number;code?:string;name:string;selection:unknown;car:number}){
  const token=randomBytes(24).toString('hex'),id=randomUUID(),now=Date.now();
  const member={id,name:body.name.trim(),ready:false,seen:now,status:'lobby' as const};
- if(body.code){const code=body.code.toUpperCase();if(!/^[A-Z2-9]{6}$/.test(code))throw Error('Enter the six-character room code.');const r=await changeRoom(code,r=>{if(r.phase!=='lobby')throw Error('This race has started. Join after the rematch.');r.members=r.members.filter(m=>m.status!=='disconnected'&&m.status!=='retired');if(r.members.length>=4)throw Error('Room full — four drivers maximum.');r.members.push(member);r.secrets[id]=digest(token);});return {room:publicRoom(r),id,token};}
- if(!validSelection(body.selection)||!compatibleCar(body.selection,body.car))throw Error('Invalid race setup.');
+ if(body.code){const code=body.code.toUpperCase();if(!/^[A-Z2-9]{6}$/.test(code))throw Error('Enter the six-character room code.');const r=await changeRoom(code,r=>{if(r.version!==(body.version===2?2:1))throw Error('Game version changed. Refresh to join.');if(r.phase!=='lobby')throw Error('This race has started. Join after the rematch.');r.members=r.members.filter(m=>m.status!=='disconnected'&&m.status!=='retired');if(r.members.length>=4)throw Error('Room full — four drivers maximum.');r.members.push(member);r.secrets[id]=digest(token);});return {room:publicRoom(r),id,token};}
+ if((body.version!==2&&body.car>=9)||!validSelection(body.selection)||!compatibleCar(body.selection,body.car))throw Error('Invalid race setup.');
  const alphabet='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
- for(let i=0;i<8;i++){const code=Array.from(randomBytes(6),b=>alphabet[b%alphabet.length]).join('');const r:StoredRoom={version:1,code,host:id,selection:body.selection,car:body.car,phase:'lobby',attempt:0,startAt:0,members:[member],secrets:{[id]:digest(token)}};
+ for(let i=0;i<8;i++){const code=Array.from(randomBytes(6),b=>alphabet[b%alphabet.length]).join('');const r:StoredRoom={version:body.version===2?2:1,code,host:id,selection:body.selection,car:body.car,phase:'lobby',attempt:0,startAt:0,members:[member],secrets:{[id]:digest(token)}};
  if(await roomRedis().set(key(code),JSON.stringify(r),{nx:true,ex:1800}))return {room:publicRoom(r),id,token};}
  throw Error('Could not create room. Retry.');
 }

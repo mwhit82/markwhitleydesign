@@ -25,7 +25,7 @@ export function soundMix(drive: DriveSound, mode: Mode, car: number) {
     load: mode === "race" ? throttle * (drive.limited ? 0.06 : 0.48) + Math.min(speed / 24, 1) * 0.018 : 0,
     lift: mode === "race" ? Math.min(speed/10,1)*(1-throttle)*.14 : 0,
     gravel:
-      mode === "race"
+      mode === "race" && car!==5
         ? Math.min(speed / 12, 1) *
           (0.025 + (drive.sliding ? 0.16 : 0) + brake * 0.055)
         : 0,
@@ -36,7 +36,7 @@ type Layer = { source: AudioBufferSourceNode; gain: GainNode };
 const voiceNames = [...[1,2,3,4,5].flatMap(n=>[`${n}-left`,`${n}-right`]),"crest","hairpin-left","hairpin-right","finish"];
 const assets = [
   ...voiceNames.flatMap(n=>n==="finish"?[`voice-${n}`]:[`voice-${n}`,`voice-into-${n}`]),
-  ...Array.from({ length: 5 }, (_, i) => [
+  ...Array.from({ length: 7 }, (_, i) => [
     `recorded-car-${i}-idle`,
     `recorded-car-${i}-load`,
     `recorded-car-${i}-lift`,
@@ -99,7 +99,7 @@ export class RallyAudio {
           signal: this.abort.signal,
         });
         if (!response.ok) throw new Error("Audio asset unavailable");
-        return [name, await response.arrayBuffer()] as const;}catch(error){if(name.startsWith('crowd-')||name.startsWith('ui-')||name.startsWith('voice-'))return null;throw error;}
+        return [name, await response.arrayBuffer()] as const;}catch(error){if(name.startsWith('crowd-')||name.startsWith('ui-')||name.startsWith('voice-')||/^recorded-car-[56]-/.test(name))return null;throw error;}
       }),
     )
       .then((entries) => new Map(entries.filter((entry):entry is readonly [string,ArrayBuffer]=>entry!==null)))
@@ -114,7 +114,7 @@ export class RallyAudio {
     await Promise.all(
       [...encoded].map(async ([name, data]) => {
         if (this.buffers.has(name)) return;
-        try {this.diagnostics.decodeCount++;const buffer = await context.decodeAudioData(data.slice(0));this.buffers.set(name, buffer);}catch(error){if(!name.startsWith("crowd-")&&!name.startsWith("ui-")&&!name.startsWith("voice-"))throw error;}
+        try {this.diagnostics.decodeCount++;const buffer = await context.decodeAudioData(data.slice(0));this.buffers.set(name, buffer);}catch(error){if(!name.startsWith("crowd-")&&!name.startsWith("ui-")&&!name.startsWith("voice-")&&!/^recorded-car-[56]-/.test(name))throw error;}
       }),
     );
   }
@@ -200,7 +200,7 @@ export class RallyAudio {
       `recorded-car-${this.car}-lift`,
     ].map((name) => {
       const source = context.createBufferSource();
-      source.buffer = this.buffers.get(name)!;
+      source.buffer = this.buffers.get(name)??this.buffers.get(name.replace(/^recorded-car-[56]-/,'recorded-car-0-'))!;
       source.loop = true;
       const gain = context.createGain();
       gain.gain.value = 0;
@@ -213,7 +213,7 @@ export class RallyAudio {
 
   setEnvironment(stage: string) {
     this.indoor=stage==="kart";this.ambience.volume=1;
-    const next = stage === "nyc" ? "/rally/nyc-ambience.wav" : stage === "forest" || stage === "alpine" || stage === "kart" ? "/rally/forest-birds.wav" : "/rally/open-wind.wav";
+    const next = ["nyc","neon"].includes(stage) ? "/rally/nyc-ambience.wav" : stage === "forest" || stage === "alpine" || ["kart","mx"].includes(stage) ? "/rally/forest-birds.wav" : "/rally/open-wind.wav";
     if (this.ambience.getAttribute("src") === next) return;
     this.ambience.pause();
     this.ambience.src=next;
@@ -221,7 +221,7 @@ export class RallyAudio {
     if(this.playing) void this.ambience.play().catch(()=>{this.pause();this.onError();});
   }
   setCar(car: number) {
-    this.car = [0,1,2,3,1,3,2,0,4][car]??0;
+    this.car = [0,1,2,3,1,3,2,0,4,5,6][car]??0;
     if (this.playing) this.installLayers();
   }
   private crowdSource(name:string,volume:number,loop=false):Layer|null{

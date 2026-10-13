@@ -1,0 +1,17 @@
+Pocket Rally V5 — special stages and tighter rally cabin
+2026-10-13
+
+Added Neon District / Neon Overdrive with Aster Hover GT, and Mudworks MX / Mudworks Grand Loop with Mudworks 250 and rider. Both have forward/reverse, 1/3/5 laps, clear/rain/fog and four times. Neon defaults to night; MX to midday. Vehicle selection is restricted to each stage's dedicated vehicle. Kart, NYC, Neon and MX have distinct UI accents.
+
+Rally cockpit: lowered roof, smaller side windows, padded roof/door/rear roll cage. New editable Blender sources and separate rally, kart, hover and bike cockpit exports. Original production vehicles and trial assets retained. Special vehicles and scenery props are original procedural Blender designs; no Cyberpunk game assets copied.
+
+MX: four validated jumps per direction, raised road and supporting terrain, irregular shoulders, ruts, puddles, clay trees, distant hills and paddock. Hover vehicle follows the marked circuit above the surface with no free-flight controls. It has no wheel marks or puddle drag. Neon uses four instanced city/beacon batches and no extra scenery lights. Both reuse bounded weather/effects and existing lap/checkpoint validation.
+
+Assets: hover 85,712 bytes / 2,856 triangles; bike 143,412 bytes / 3,816 triangles. Service props about 24/48 KB. Cockpits 107–258 KB. Selected special vehicle + cockpit + props stays below 0.4 MB, excluding shared game files/audio. Two new offline edited CC0 engine families reuse the four-source mixer; 56 audio buffers decode once. Credits updated.
+
+Compatibility: original board keys and route centre lines preserved. New stages use independent keys. Replay v2 adds height/pitch/roll for vehicles 9/10; v1 remains accepted. Room protocol v2 carries optional bounded elevation, with explicit version mismatch rejection. Old v1 rooms remain served for old clients; new clients must refresh together. Public score submission remains explicit.
+
+Verification: 94 regression tests pass; production build passes. Coverage includes both directions and lap choices, ordered finish validation, all supported selection/lighting combinations, jump clearance, legacy and new replay validation, bounded instancing, named GLB parts, asset sizes, and 14 actual game screenshot previews. Track cards use route outlines. Existing rally/kart suites remain passing.
+Browser inspection: desktop High, 390x700 portrait and 844x390 landscape; rally cage, bike cockpit and launch, hover silhouette and night city, garage actions and category accents. Short Mac Chrome MX cockpit sample: frame p95 10.4 ms, p99 10.5 ms, CPU about 0.9 ms, GPU about 2.8 ms, zero reported stalls. This is not a ten-minute benchmark or physical mobile performance claim. Weather captures include all four times and supported weather.
+Outstanding: physical iPhone/iPad/controller checks, sustained mobile thermal/performance testing, subjective new-engine listening. Browser viewports do not replace physical checks.
+Rollback: preceding main commit fec1651. Unrelated trial GLB modifications excluded.

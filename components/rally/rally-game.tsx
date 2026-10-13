@@ -1,5 +1,6 @@
 /* eslint-disable @next/next/no-img-element -- Locally captured, pre-sized WebP previews need no image service. */
 "use client";
+import {stageVehicle,hasCodriver} from './stages';
 import {useModalViewport,useModalIsolation} from "./modal-viewport";
 import {PreparationBar} from './preparation-bar';
 import {SelectionCard} from "./selection-card";
@@ -263,7 +264,7 @@ export function RallyGame() {
     optionPanel==='direction'?[{value:'forward',label:'Forward',detail:'Original route',selected:!selection.reverse},{value:'reverse',label:'Reverse',detail:'Same stage, other direction',selected:selection.reverse}]:
     [{value:'off',label:'Off',detail:'Just you and the stage',selected:ghostSource==='off'},{value:'personal',label:'My best',detail:'Your fastest clean run on this device',selected:ghostSource==='personal'},{value:'leader',label:'Leaderboard best',detail:'Fastest submitted run · same car and conditions',selected:ghostSource==='leader'}];
   const selectOption=(value:string)=>{
-    if(optionPanel==='stage')changeStage({...selection,stage:value as StageSelection['stage'],weather:'clear',timeOfDay:timeOfDay(selection),track:1});
+    if(optionPanel==='stage')changeStage({...selection,stage:value as StageSelection['stage'],weather:'clear',timeOfDay:value==='neon'?'night':value==='mx'?'midday':timeOfDay(selection),track:1});
     if(optionPanel==='laps')changeStage({...selection,laps:Number(value) as 1|3|5,circuitVersion:2});
     if(optionPanel==='track')changeStage({...selection,track:Number(value) as 1|2|3});
     if(optionPanel==='time')changeStage({...selection,timeOfDay:value as TimeOfDay});
@@ -299,7 +300,7 @@ export function RallyGame() {
     <div className={styles.page}>
       <div className={styles.heading}>
         <div>
-          <p className={styles.eyebrow}>MARK WHITLEY / POCKET RALLY V4.3</p>
+          <p className={styles.eyebrow}>MARK WHITLEY / POCKET RALLY V5</p>
           <h1>
             POCKET<span>RALLY.</span>
           </h1>
@@ -404,12 +405,12 @@ export function RallyGame() {
             <div className={styles.garageCopy}>
               <span className={styles.tag}>THE SERVICE PARK</span>
               <h2>
-                Small car.
+                {selection.stage==='mx'?'Big air.':selection.stage==='neon'?'City lights.':'Small car.'}
                 <br />
-                Big sideways.
+                {selection.stage==='mx'?'Deep mud.':selection.stage==='neon'?'Neon nights.':'Big sideways.'}
               </h2>
               <p>
-                Six worlds. Sixteen tracks. Race your friends.
+                Eight worlds. Eighteen tracks. Race your friends.
                 <br />Find your place on the leaderboard.
               </p>
             </div>
@@ -417,27 +418,27 @@ export function RallyGame() {
               <div className={styles.garageScroll}>
               <div className={styles.carSelect}>
                 <button
-                  disabled={selection.stage==='kart'} aria-label="Previous car"
+                  disabled={stageVehicle(selection.stage)!==null} aria-label="Previous car"
                   onClick={() => api.current?.choose(selected - 1)}
                 >
                   <HudIcon name="left"/>
                 </button>
                 <div>
                   <span className={styles.eyebrow}>
-                    {selection.stage==='kart'?'COUNTRYSIDE KART':`${car.year} / ${String(selected + 1).padStart(2,"0")} OF 08`}
+                    {stageVehicle(selection.stage)!==null?'SPECIAL STAGE':`${car.year} / ${String(selected + 1).padStart(2,"0")} OF 08`}
                   </span>
                   <h3>{car.name}</h3>
                   <p>{car.trait}</p>
                 </div>
                 <button
-                  disabled={selection.stage==='kart'} aria-label="Next car"
+                  disabled={stageVehicle(selection.stage)!==null} aria-label="Next car"
                   onClick={() => api.current?.choose(selected + 1)}
                 >
                   <HudIcon name="right"/>
                 </button>
               </div>
               <div className={styles.stageChoices}>
-                <button onClick={e=>openOptions('stage',e.currentTarget)}><small>ENVIRONMENT</small><strong>{stage.name}</strong><span>{stage.surface} <HudIcon name="next"/></span></button>
+                <button onClick={e=>openOptions('stage',e.currentTarget)}><small>ENVIRONMENT</small><strong>{stage.name}</strong><span><HudIcon name="next"/></span></button>
                 <button onClick={e=>openOptions('track',e.currentTarget)}><small>TRACK {trackNumber(selection)} / {trackNames[selection.stage].length}</small><strong>{trackName(selection)}</strong><HudIcon name="next"/></button>
                 <button onClick={e=>openOptions("weather",e.currentTarget)}><small>WEATHER</small><strong>{weatherNames[selection.weather]}</strong><HudIcon name="next"/></button>
                 <button onClick={e=>openOptions("time",e.currentTarget)}><small>TIME OF DAY</small><strong>{timeNames[timeOfDay(selection)]}</strong><HudIcon name="next"/></button>
@@ -549,7 +550,7 @@ export function RallyGame() {
           <div className={styles.optionList}>{options.map(o=><button key={o.value} aria-pressed={o.selected} data-menu-default={o.selected||undefined} onClick={()=>selectOption(o.value)}>{["stage","track","weather","time"].includes(optionPanel)&&<img className={styles.optionPreview} alt="" loading="lazy" src={`/rally/previews/${optionPanel==='stage'?`${o.value}-1`:optionPanel==='track'?`${selection.stage}-${o.value}`:optionPanel==='weather'?`weather-${o.value}`:`time-${o.value}`}.webp`}/>}<span>{o.label}<small>{o.detail}</small></span><b>{o.selected?'✓':<HudIcon name="right"/>}</b></button>)}</div>
         </div></div>}
         {settingsPanel&&<div className={styles.optionScrim}><div className={styles.optionPanel} role="dialog" aria-modal="true" aria-label="Settings" data-rally-menu="true"><header><h2>Settings</h2><button aria-label="Close settings" onClick={()=>setSettingsPanel(false)}>×</button></header><div className={styles.stageChoices}>
-                <button onClick={toggleCamera} aria-pressed={driverView}><small><HudIcon name="wheel"/> CAMERA</small><strong>{driverView?"Driver seat":"Isometric"}</strong></button><button aria-pressed={codriver} disabled={selection.stage==='kart'} onClick={toggleCodriver}><small><HudIcon name="headset"/> CO-DRIVER</small><strong>{selection.stage==='kart'?'Rally only':codriver?'On':'Off'}</strong></button>
+                <button onClick={toggleCamera} aria-pressed={driverView}><small><HudIcon name="wheel"/> CAMERA</small><strong>{driverView?"Driver seat":"Isometric"}</strong></button><button aria-pressed={codriver} disabled={stageVehicle(selection.stage)!==null} onClick={toggleCodriver}><small><HudIcon name="headset"/> CO-DRIVER</small><strong>{!hasCodriver(selection.stage)?'Rally only':codriver?'On':'Off'}</strong></button>
                 <button onClick={changeGraphics} aria-label={`Graphics: ${graphics}. Change quality`}><small><HudIcon name="screen"/> GRAPHICS</small><strong>{graphics==='auto'?'Auto':graphics==='high'?'High':'Low'}</strong></button>
                 <button aria-pressed={screenWeather} onClick={toggleScreenWeather}><small><HudIcon name="screen"/> SCREEN WEATHER</small><strong>{screenWeather?"On":"Off"}</strong></button>
               </div><div className={styles.secondaryTiles}><button onClick={toggleSound}><HudIcon name={muted?'muted':'sound'}/>{muted?'Sound off':'Sound on'}</button><button onClick={()=>{api.current?.toggleReplay();setReplayEnabled(Boolean(api.current?.replayEnabled));}}><HudIcon name="replay"/>Replay {replayEnabled?'on':'off'}</button><button onClick={toggleFullscreen}><HudIcon name={expanded?'contract':'expand'}/>{expanded?'Exit view':'Fullscreen'}</button></div></div></div>}

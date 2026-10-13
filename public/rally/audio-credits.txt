@@ -102,3 +102,10 @@ Licence: CC0 1.0 https://creativecommons.org/publicdomain/zero/1.0/
 Source preview: https://cdn.freesound.org/previews/214/214319_1175748-hq.mp3
 Retrieved 11 October 2026. Excerpt, mono 22050Hz, gentle EQ, level reduction
 and loop crossfade. Source retained in scripts/audio-source.
+
+V5 special-stage voices: Aster Hover GT and Mudworks 250.
+Derived from the existing domasx2 CC0 recording listed above, using offline
+resampling, layered harmonics (hover), mild saturation (bike), low-pass filtering,
+DC removal, loop-boundary crossfade and conservative peak normalisation.
+Original stylised effects; no Cyberpunk 2077 audio is used.
+Rebuild: python3 scripts/prepare-rally-special-audio.py.
