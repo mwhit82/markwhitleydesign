@@ -402,7 +402,7 @@ export function RallyGame({immersive=false}:{immersive?:boolean}={}) {
         )}
         {ready && mode === "garage" && (
           <>
-            <div className={styles.garageCopy}><img src="/rally/pocket-rally-logo.svg" alt="Pocket Rally"/><p>Small cars. Big sideways.</p></div>
+            <div className={styles.garageCopy}><img src="/rally/pocket-rally-logo.svg" alt="Pocket Rally"/></div>
             <div className={styles.garage} data-rally-menu="true">
               <div className={styles.garageScroll}>
               <div className={styles.carSelect}>

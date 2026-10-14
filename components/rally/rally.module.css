@@ -440,3 +440,6 @@
 .game .carSelect p {display:block;height:auto;min-height:0;margin:0;line-height:1.4;overflow:visible;}
 .raceSetup {width:100%;display:flex;align-items:center;gap:12px;margin-top:14px;padding:14px 12px;min-height:64px;text-align:left;background:var(--ink);border:1px solid var(--edge);border-radius:3px;color:var(--cream);}
 .raceSetup>span {flex:1;min-width:0;}.raceSetup strong {display:block;font-size:16px;}.raceSetup small {display:block;margin-top:4px;font-size:11px;line-height:1.4;color:#c5cab5;}.raceSetup svg {width:22px;height:22px;flex-shrink:0;}
+
+.game .roomCard .roomBack {padding:10px 16px;gap:10px;min-height:44px;display:inline-flex;align-items:center;}
+.game .roomCard .roomBack svg {flex-shrink:0;}
