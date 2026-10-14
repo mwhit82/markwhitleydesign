@@ -5,7 +5,7 @@ import {stageVehicle,hasCodriver} from './stages';
 import {useModalViewport,useModalIsolation} from "./modal-viewport";
 import {PreparationBar} from './preparation-bar';
 import {SelectionCard} from "./selection-card";
-import {previewImage,weatherIcons} from "./preview-manifest";
+import {previewImage} from "./preview-manifest";
 import {HudStore,HudRead} from "./hud-store";
 import {FriendRaces} from "./friend-races";
 import { useEffect, useRef, useState } from "react";
@@ -40,6 +40,7 @@ export function RallyGame({immersive=false}:{immersive?:boolean}={}) {
   const [expanded, setExpanded] = useState(immersive);
   const [installHelp, setInstallHelp] = useState(false);
   const [standalone, setStandalone] = useState(false);
+  const [audioPlaying,setAudioPlaying]=useState(false);
   const [audioBusy, setAudioBusy] = useState(false);
   const [notice, setNotice] = useState("");
   const api = useRef<import("./world").RallyWorld | null>(null);
@@ -119,6 +120,7 @@ export function RallyGame({immersive=false}:{immersive?:boolean}={}) {
           pad: setNotice,
           select: setSelected,
           best: setBest,
+          audioPlayback:setAudioPlaying,
           audioError: () => setNotice("Sound couldn't start. Tap again to retry."),
         });
         try{api.current.controls=readControls(JSON.parse(localStorage.getItem("rally-controls")||"null"));}catch{}
@@ -205,7 +207,7 @@ export function RallyGame({immersive=false}:{immersive?:boolean}={}) {
   const toggleSound = async () => {
     if (!api.current) return;
     setAudioBusy(true);
-    const next = !muted;
+    const next = !muted && (audioPlaying || mode==='paused');
     setMuted(next);
     try {
       await api.current.sound(next);
@@ -226,7 +228,7 @@ export function RallyGame({immersive=false}:{immersive?:boolean}={}) {
       key={key}
       data-driving-control="true"
       aria-label={name}
-      onPointerDownCapture={()=>{api.current?.unlockAudio();}}
+      onPointerDownCapture={event=>{if(!(event.target as HTMLElement).closest("[data-sound-toggle]"))api.current?.unlockAudio();}}
         onContextMenu={(event) => event.preventDefault()}
       onPointerDown={(event) => {
         event.preventDefault();
@@ -235,7 +237,7 @@ export function RallyGame({immersive=false}:{immersive?:boolean}={}) {
         if(api.current)api.current.touchActive=event.pointerType==="touch";
         api.current?.keys.add(key);
       }}
-      onPointerUp={e => {delete e.currentTarget.dataset.held;api.current?.keys.delete(key);}}
+      onPointerUp={e => {api.current?.unlockAudio();delete e.currentTarget.dataset.held;api.current?.keys.delete(key);}}
       onPointerCancel={e => {delete e.currentTarget.dataset.held;api.current?.keys.delete(key);}}
       onLostPointerCapture={e => {delete e.currentTarget.dataset.held;api.current?.keys.delete(key);}}
     >
@@ -319,9 +321,9 @@ export function RallyGame({immersive=false}:{immersive?:boolean}={}) {
         data-time={timeOfDay(selection)}
         data-steering={controls.steering}
         className={`${styles.game} ${expanded ? styles.expanded : ""}`}
-        onPointerDownCapture={()=>{api.current?.unlockAudio();}}
+        onPointerDownCapture={event=>{if(!(event.target as HTMLElement).closest("[data-sound-toggle]"))api.current?.unlockAudio();}}
         onContextMenu={(event) => event.preventDefault()}
-        onClickCapture={event=>{api.current?.unlockAudio();const button=(event.target as HTMLElement).closest("button");if(button&&!button.hasAttribute("data-driving-control")&&!button.hasAttribute("data-start-cue"))api.current?.uiCue();}}
+        onClickCapture={event=>{if((event.target as HTMLElement).closest("[data-sound-toggle]"))return;api.current?.unlockAudio();const button=(event.target as HTMLElement).closest("button");if(button&&!button.hasAttribute("data-driving-control")&&!button.hasAttribute("data-start-cue"))api.current?.uiCue();}}
         onKeyDown={event=>{
           if(!(optionPanel||leaderboard||installHelp||allBoards||settingsPanel||mode==='garage'||mode==='paused'||mode==='finished'))return;
           if((event.target as HTMLElement).matches('input,select,textarea'))return;
@@ -344,7 +346,8 @@ export function RallyGame({immersive=false}:{immersive?:boolean}={}) {
         <div className={styles.topbar} aria-label="Game controls">
           {mode!=='garage'&&<button aria-label={mode==='finished'?'Toggle background replay':'Toggle driver-seat camera'} title="Camera view" aria-pressed={mode==='finished'?replayEnabled:driverView} onClick={mode==='finished'?()=>{api.current?.toggleReplay();setReplayEnabled(Boolean(api.current?.replayEnabled));}:toggleCamera}><HudIcon name={mode==='finished'?'replay':'wheel'}/></button>}
           {(mode==='race'||mode==='countdown') && <button data-mobile-pause="true" aria-label="Pause" title="Pause" onClick={()=>api.current?.pause()}><HudIcon name="pause"/></button>}
-          <button disabled={!ready||audioBusy} aria-label={muted?'Enable sound':'Mute sound'} title={muted?'Enable sound':'Mute sound'} aria-pressed={!muted} onClick={toggleSound}><HudIcon name={muted?'muted':'sound'}/></button>
+          {mode==='garage'&&<><button aria-label="Control" title="Control" onClick={()=>setSettingsPanel(true)}><HudIcon name="wheel"/></button><button aria-label="Leaderboards" title="Leaderboards" onClick={()=>setAllBoards(true)}><HudIcon name="list"/></button></>}
+          <button data-sound-toggle disabled={!ready||audioBusy} aria-label={muted?'Enable sound':audioPlaying||mode==='paused'?'Mute sound':'Start sound'} title={muted?'Enable sound':audioPlaying||mode==='paused'?'Mute sound':'Tap to start sound'} aria-pressed={!muted&&(audioPlaying||mode==='paused')} onClick={toggleSound}><HudIcon name={muted?'muted':'sound'}/>{!muted&&!audioPlaying&&mode==='garage'&&<span className={styles.audioPrompt}>Tap for sound</span>}</button>
           <button aria-label={expanded?'Exit game view':'Fullscreen'} title={expanded?'Exit game view':'Fullscreen'} aria-pressed={expanded} onClick={toggleFullscreen}><HudIcon name={expanded?'contract':'expand'}/></button>
           {!inRoom && (mode==='race'||mode==='countdown') && ghostSource!=='off' && <button aria-label={ghostShown?'Hide ghost':'Show ghost'} title="Ghost · G" aria-pressed={ghostShown} onClick={()=>api.current?.toggleGhost()}><HudIcon name="ghost"/></button>}
         </div>
@@ -403,18 +406,7 @@ export function RallyGame({immersive=false}:{immersive?:boolean}={}) {
         )}
         {ready && mode === "garage" && (
           <>
-            <div className={styles.garageCopy}>
-              <span className={styles.tag}>THE SERVICE PARK</span>
-              <h2>
-                {selection.stage==='mx'?'Big air.':selection.stage==='neon'?'City lights.':'Small car.'}
-                <br />
-                {selection.stage==='mx'?'Deep mud.':selection.stage==='neon'?'Neon nights.':'Big sideways.'}
-              </h2>
-              <p>
-                Eight worlds. Eighteen tracks. Race your friends.
-                <br />Find your place on the leaderboard.
-              </p>
-            </div>
+            <div className={styles.garageCopy}><img src="/rally/pocket-rally-logo.svg" alt="Pocket Rally"/><p>Small cars. Big sideways.</p></div>
             <div className={styles.garage} data-rally-menu="true">
               <div className={styles.garageScroll}>
               <div className={styles.carSelect}>
@@ -447,7 +439,7 @@ export function RallyGame({immersive=false}:{immersive?:boolean}={}) {
                 <button onClick={e=>openOptions('direction',e.currentTarget)}><small>ROUTE</small><strong>{selection.reverse?'Reverse':'Forward'}</strong><span><HudIcon name="next"/></span></button>
                 <button onClick={e=>openOptions('ghost',e.currentTarget)}><small>GHOST</small><strong>{ghostSource==='off'?'Off':ghostSource==='personal'?'My best':'Leaderboard'}</strong><span><HudIcon name="next"/></span></button>
               </div>
-              <div className={`${styles.secondaryTiles} ${styles.menuUtilities}`}><button onClick={()=>setSettingsPanel(true)}><HudIcon name="wheel"/>Control</button><button onClick={()=>setAllBoards(true)}><HudIcon name="list"/>Leaderboards</button></div>
+              
               </div><div className={styles.garageActions}>
               <button
                 className={styles.start}
@@ -479,6 +471,12 @@ export function RallyGame({immersive=false}:{immersive?:boolean}={}) {
               {isCircuit(selection)&&<span className={styles.mobileLap}>LAP {Math.min(stats.lap,lapCount(selection))} / {lapCount(selection)}</span>}
               {!isCircuit(selection)&&<div className={styles.progress} aria-label="Stage progress"><div style={{width:`${stats.progress*100}%`}}/></div>}
               {practice.length>0 && <em className={styles.practice}>! PRACTICE RUN</em>}
+            <button
+              className={styles.recover}
+              onClick={() => api.current?.resetPosition()}
+            >
+              <HudIcon name="recover"/> Recover +1.5s
+            </button>
             </div>
             <div className={styles.speed}>
               <strong>{stats.speed}</strong>
@@ -502,12 +500,7 @@ export function RallyGame({immersive=false}:{immersive?:boolean}={}) {
                 {touchButton("KeyW", "Go", "Accelerate")}
               </div>
             </div>
-            <button
-              className={styles.recover}
-              onClick={() => api.current?.resetPosition()}
-            >
-              <HudIcon name="recover"/> Recover +1.5s
-            </button>
+
 
           </>
         )}
@@ -543,7 +536,7 @@ export function RallyGame({immersive=false}:{immersive?:boolean}={}) {
           </div>)}
         </div>}
         {<div className={styles.codriverSubtitle} role="status" style={{visibility:mode==='race'&&subtitle?'visible':'hidden'}}><small><HudIcon name="headset"/> CO-DRIVER</small>{subtitle}</div>}
-        {optionPanel && ["stage","track","weather","time"].includes(optionPanel) && <SelectionCard key={optionPanel} title={optionTitle} options={options.map(o=>({...o,image:previewImage(optionPanel,o.value,selection),icon:optionPanel==='weather'?weatherIcons[o.value]:undefined}))} onSelect={selectOption} onClose={closeOptions}/> }
+        {optionPanel && ["stage","track","weather","time"].includes(optionPanel) && <SelectionCard key={optionPanel} title={optionTitle} options={options.map(o=>({...o,image:previewImage(optionPanel,o.value,selection)}))} onSelect={selectOption} onClose={closeOptions}/> }
         {optionPanel && !["stage","track","weather","time"].includes(optionPanel) && <div className={styles.optionScrim}><div className={styles.optionPanel} role="dialog" aria-modal="true" aria-label={optionTitle} data-rally-menu="true">
           <header><div><span className={styles.tag}>SERVICE PARK / SELECT</span><h2>{optionTitle}</h2></div><button aria-label="Close options" onClick={closeOptions}>×</button></header>
           {(optionPanel==='weather'||optionPanel==='time')&&<small>Illustrative game screenshots</small>}
@@ -554,7 +547,7 @@ export function RallyGame({immersive=false}:{immersive?:boolean}={}) {
                 <button onClick={toggleCamera} aria-pressed={driverView}><small><HudIcon name="wheel"/> CAMERA</small><strong>{driverView?"Driver seat":"Isometric"}</strong></button><button aria-pressed={codriver} disabled={stageVehicle(selection.stage)!==null} onClick={toggleCodriver}><small><HudIcon name="headset"/> CO-DRIVER</small><strong>{!hasCodriver(selection.stage)?'Rally only':codriver?'On':'Off'}</strong></button>
                 <button onClick={changeGraphics} aria-label={`Graphics: ${graphics}. Change quality`}><small><HudIcon name="screen"/> GRAPHICS</small><strong>{graphics==='auto'?'Auto':graphics==='high'?'High':'Low'}</strong></button>
                 <button aria-pressed={screenWeather} onClick={toggleScreenWeather}><small><HudIcon name="screen"/> SCREEN WEATHER</small><strong>{screenWeather?"On":"Off"}</strong></button>
-              </div><div className={styles.secondaryTiles}><button onClick={toggleSound}><HudIcon name={muted?'muted':'sound'}/>{muted?'Sound off':'Sound on'}</button><button onClick={()=>{api.current?.toggleReplay();setReplayEnabled(Boolean(api.current?.replayEnabled));}}><HudIcon name="replay"/>Replay {replayEnabled?'on':'off'}</button><button onClick={toggleFullscreen}><HudIcon name={expanded?'contract':'expand'}/>{expanded?'Exit view':'Fullscreen'}</button></div><section className={styles.controlFeedback} aria-label="Steering and feedback">
+              </div><div className={styles.secondaryTiles}><button data-sound-toggle onClick={toggleSound}><HudIcon name={muted?'muted':'sound'}/>{muted?'Sound off':'Sound on'}</button><button onClick={()=>{api.current?.toggleReplay();setReplayEnabled(Boolean(api.current?.replayEnabled));}}><HudIcon name="replay"/>Replay {replayEnabled?'on':'off'}</button><button onClick={toggleFullscreen}><HudIcon name={expanded?'contract':'expand'}/>{expanded?'Exit view':'Fullscreen'}</button></div><section className={styles.controlFeedback} aria-label="Steering and feedback">
           <label className={styles.controlRange}>Steering sensitivity <strong>{controls.sensitivity.toFixed(1)}×</strong><input type="range" min="0.5" max="1.5" step="0.1" value={controls.sensitivity} onChange={e=>setControls(c=>({...c,sensitivity:Number(e.target.value)}))}/></label>
           <div className={styles.feedbackActions}>
             <button disabled={hapticSupport==='unavailable'} aria-pressed={controls.haptics} onClick={()=>setControls(c=>({...c,haptics:!c.haptics}))}>{hapticSupport==='controller'?'Controller rumble':hapticSupport==='device'?'Device vibration':'Haptics unavailable'}{hapticSupport!=='unavailable'?`: ${controls.haptics?'On':'Off'}`:''}</button>

@@ -73,13 +73,14 @@ export class RallyAudio {
   private generation = 0;
   private disposed = false;
   private playing = false;
+  private recovering=false;
   private car = 0;
   private indoor=false;
   private mode: Mode = "garage";
   // The render loop only publishes these numbers. Audio work is bounded to 20 Hz.
   drive: DriveSound = { speed: 0, throttle: 0, brake: 0, sliding: false };
 
-  constructor(private onError: () => void) {
+  constructor(private onError: () => void, private onPlayback: (active:boolean)=>void = ()=>{}) {
     this.ambience.loop = true;
     this.ambience.preload = "auto";
     this.ambience.load();
@@ -115,7 +116,11 @@ export class RallyAudio {
 
   enable(){
     if(this.disposed)return Promise.resolve();
-    if(this.playing)return this.context&&this.context.state!=='running'?this.context.resume():Promise.resolve();
+    if(this.playing){
+      if(this.ambience.paused)this.playAmbience();
+      const resumed=this.context&&this.context.state!=='running'?this.context.resume():Promise.resolve();
+      return resumed.then(()=>this.reportPlayback());
+    }
     if(this.enabling){
       // Safari can leave the initial resume pending until a later trusted tap.
       // Reissue it inside that gesture without starting another decode/graph.
@@ -141,6 +146,15 @@ export class RallyAudio {
     }
     if (!this.context) {
       this.context = new AudioContext({ latencyHint: "interactive" });
+      this.context.onstatechange=()=>{
+        this.reportPlayback();
+        // A browser interruption is not a mute. Try once, then allow the next
+        // trusted input to retry if the OS is still holding the audio session.
+        if(this.playing&&!this.disposed&&!this.recovering&&this.context?.state!=='running'&&this.context?.state!=='closed'&&(typeof document==='undefined'||!document.hidden)){
+          this.recovering=true;
+          void this.context!.resume().then(()=>{if(this.playing&&this.ambience.paused)this.playAmbience();this.reportPlayback();}).catch(()=>{}).finally(()=>{this.recovering=false;});
+        }
+      };
       this.master = this.context.createGain();
       this.master.gain.value = 0.45;
       this.master.connect(this.context.destination);
@@ -166,6 +180,7 @@ export class RallyAudio {
       if(generation!==this.generation||this.disposed)return;
       this.installLayers();
       this.playing = true;
+      this.reportPlayback();
       if(!this.crowdLoop)this.crowdLoop=this.crowdSource("crowd-bed",0,true);
       this.update();
       this.interval = window.setInterval(() => this.update(), 50);
@@ -183,6 +198,8 @@ export class RallyAudio {
       if (timeout !== undefined) window.clearTimeout(timeout);
     }
   }
+
+  private reportPlayback(){this.onPlayback(!this.disposed&&this.playing&&this.context?.state==='running');}
 
   private installLayers() {
     if (!this.context || !this.master) return;
@@ -301,6 +318,7 @@ export class RallyAudio {
     this.stopVoice();
     this.generation++;
     this.playing = false;
+    this.reportPlayback();
     if (this.interval !== null) window.clearInterval(this.interval);
     this.interval = null;
     this.ambience.pause();
@@ -321,6 +339,7 @@ export class RallyAudio {
     if(this.uiLayer){this.uiLayer.source.stop();this.uiLayer.source.disconnect();this.uiLayer.gain.disconnect();this.uiLayer=null;}
     if(this.crowdLoop){this.crowdLoop.source.stop();this.crowdLoop.source.disconnect();this.crowdLoop.gain.disconnect();this.crowdLoop=null;}
     this.voiceBus?.disconnect();this.voiceBus=null;
+    if(this.context)this.context.onstatechange=null;
     void this.context?.close();
     this.ambience.removeAttribute("src");
     this.ambience.load();

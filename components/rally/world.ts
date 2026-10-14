@@ -48,6 +48,7 @@ type Callbacks = {
   select: (i: number) => void;
   best: (n: number | null) => void;
   audioError?: () => void;
+  audioPlayback?: (active:boolean)=>void;
   start?: () => void;
   finish?: (time: number, trace: number[][], replay: Replay | undefined, eligibility:Eligibility) => void;
   checkpoints?: (notices:CheckpointNotice[]) => void;
@@ -779,7 +780,7 @@ export class RallyWorld {
   unlockAudio() { this.audioUnlocked=true;void this.ensureAudio().catch(()=>this.audioFailed()); }
   prepareAudio() {
     if (this.audio) return;
-    this.audio = new RallyAudio(()=>this.audioFailed());
+    this.audio = new RallyAudio(()=>this.audioFailed(),active=>this.callbacks.audioPlayback?.(active));
     this.audio.setCar(this.selected);
     this.audio.setEnvironment(this.selection.stage);
     this.audio.setMode(this.mode);
@@ -835,7 +836,7 @@ export class RallyWorld {
     if (document.hidden) {
       this.audio?.pause();
       this.blur();
-    } else if (this.mode === "garage")
+    } else if (this.mode !== "paused")
       void this.ensureAudio().catch(()=>this.audioFailed());
   };
   resize() {
