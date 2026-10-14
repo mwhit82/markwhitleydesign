@@ -18,7 +18,7 @@ const send=(c,m)=>c.ws.send(JSON.stringify({version,...m}));
 try{
  let code;
  for(let i=0;i<4;i++){
-  const res=await fetch(origin+'/api/rally/rooms',{method:'POST',headers:{Origin:origin,'Content-Type':'application/json'},body:JSON.stringify({name:`V5 Test ${i+1}`,version,selection:{stage,track:1,weather:'clear',reverse:false,timeOfDay:'midday',laps:1,circuitVersion:2},car,...(code?{code}:{})})});
+  const res=await fetch(origin+'/api/rally/rooms',{method:'POST',headers:{Origin:origin,'Content-Type':'application/json'},body:JSON.stringify({name:`V5 Test ${i+1}`,version,selection:{stage,track:1,weather:'clear',reverse:false,timeOfDay:'midday',...(['kart','nyc','neon','mx'].includes(stage)?{laps:1,circuitVersion:2}:{})},car,...(code?{code}:{})})});
   const entry=await res.json();assert.equal(res.status,200,JSON.stringify(entry));assert.ok(!entry.room.secrets);code=entry.room.code;clients.push(await connect(entry));
  }
  await wait(()=>clients.every(c=>c.room.members.length===4),'four-member snapshots');
