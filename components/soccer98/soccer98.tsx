@@ -33,21 +33,43 @@ function draw(canvas: HTMLCanvasElement, match: Match) {
     c.fillStyle = "#263b34"; c.fillRect(x - 1, y - 2, 3, 3); c.fillRect(x - 4, y + 2, 2, 2); c.fillRect(x + 2, y - 4, 2, 2);
   }
   [...match.players].reverse().forEach((p, reverseIndex) => {
-    const leader = reverseIndex === match.players.length - 1;
+    const identity = match.players.length - 1 - reverseIndex;
+    const leader = identity === 0;
+    const skins = ["#edbd8d", "#945c3c", "#c98c60", "#633d2b", "#e1a47c"];
+    const hairs = ["#39271e", "#161719", "#a56b34", "#5d3927", "#d4b36c"];
+    const skin = leader ? "#edbd8d" : skins[(identity - 1) % skins.length];
+    const hair = leader ? "#68412c" : hairs[(identity - 1 + Math.floor((identity - 1) / skins.length)) % hairs.length];
     const x = PAD + p.x * CELL + 8, y = PAD + p.y * CELL + 8;
     const stride = (p.x + p.y) % 2 ? 1 : -1;
     c.fillStyle = "#24563d"; c.fillRect(x - 5, y + 5, 12, 3);
-    c.fillStyle = "#172d30"; c.fillRect(x - 4, y + 4 + stride, 3, 3); c.fillRect(x + 2, y + 4 - stride, 3, 3);
-    c.fillStyle = leader ? "#faf3cd" : "#263451"; c.fillRect(x - 4, y + 2, 8, 3);
-    c.fillStyle = "#e4aa79"; c.fillRect(x - 6, y - 3, 2, 5); c.fillRect(x + 4, y - 3, 2, 5);
-    c.fillStyle = leader ? "#f4d655" : "#e77565"; c.fillRect(x - 4, y - 4, 8, 6);
-    c.fillStyle = "#edbd8d"; c.fillRect(x - 3, y - 8, 6, 5);
-    c.fillStyle = "#342e2c"; c.fillRect(x - 3, y - 9, 6, 2);
+    c.fillStyle = leader ? "#141719" : "#de3939"; c.fillRect(x - 4, y + 4 + stride, 3, 3); c.fillRect(x + 2, y + 4 - stride, 3, 3);
+    c.fillStyle = leader ? "#141719" : "#de3939"; c.fillRect(x - 4, y + 2, 8, 3);
+    c.fillStyle = skin; c.fillRect(x - 6, y - 3, 2, 5); c.fillRect(x + 4, y - 3, 2, 5);
+    c.fillStyle = leader ? "#f8f6ed" : "#ee4646"; c.fillRect(x - 4, y - 4, 8, 6);
+    if (leader) { c.fillStyle = "#141719"; c.fillRect(x - 3, y - 4, 2, 6); c.fillRect(x + 1, y - 4, 2, 6); }
+    c.fillStyle = skin; c.fillRect(x - 3, y - 8, 6, 5);
+    c.fillStyle = hair; c.fillRect(x - 3, y - 9, 6, 2);
     if (leader) { c.fillStyle = "#fff5b9"; c.fillRect(x - 1, y - 14, 3, 2); c.fillRect(x, y - 12, 1, 2); }
   });
 }
 
 export function Soccer98() {
+  const surface = useRef<HTMLDivElement>(null);
+  const swipe = useRef<{ id: number; x: number; y: number } | null>(null);
+  const [fullscreen, setFullscreen] = useState(false);
+  const [screenHint, setScreenHint] = useState("");
+  const toggleFullscreen = async () => {
+    try {
+      if (document.fullscreenElement) await document.exitFullscreen();
+      else if (surface.current?.requestFullscreen) await surface.current.requestFullscreen();
+      else setScreenHint("For edge-to-edge play on iPad, use Safari’s Share → Add to Home Screen, then open Soccer98 there.");
+    } catch { setScreenHint("For edge-to-edge play on iPad, use Safari’s Share → Add to Home Screen, then open Soccer98 there."); }
+  };
+  useEffect(() => {
+    const change = () => setFullscreen(!!document.fullscreenElement);
+    document.addEventListener("fullscreenchange", change);
+    return () => document.removeEventListener("fullscreenchange", change);
+  }, []);
   const canvas = useRef<HTMLCanvasElement>(null);
   const game = useRef<Match>(newMatch());
   const queue = useRef<Direction[]>([]);
@@ -83,17 +105,23 @@ export function Soccer98() {
     return () => { clearInterval(timer); window.removeEventListener("keydown", keydown); window.removeEventListener("blur", hide); document.removeEventListener("visibilitychange", visibility); };
   }, [pause, publish, start, turn]);
   const active = match.status === "playing";
-  return <div className={styles.page}>
-    <nav className={styles.nav}><Link href="/">← Back to AI experiments</Link><span>EXPERIMENT 02 / 1998 ENERGY</span></nav>
-    <header className={styles.header}><p>THE BEAUTIFUL GAME. ONE VERY LONG CHASE.</p><h1>SOCCER<span>98</span><sup>™</sup></h1><p>Collect the ball. Lose the defenders. Keep running.</p></header>
+  return <div ref={surface} className={styles.page}>
+    <nav className={styles.nav}><Link href="/">← Exit</Link><h1>SOCCER<span>98</span></h1><button onClick={toggleFullscreen}>{fullscreen ? "Exit full screen" : "Full screen ⛶"}</button></nav>
+    {screenHint && <div className={styles.screenHint} role="status">{screenHint}<button aria-label="Dismiss full screen help" onClick={() => setScreenHint("")}>×</button></div>}
+    <div className={styles.stage}>
     <div className={styles.cabinet}>
       <div className={styles.scoreboard}><div><small>BALLS</small><strong>{String(match.score).padStart(2, "0")}</strong></div><div className={styles.live}><span className={styles.dot}/> {active ? "IN PLAY" : match.status === "paused" ? "PAUSED" : "SOCCER98"}</div><div><small>PERSONAL BEST</small><strong>{String(best).padStart(2, "0")}</strong></div></div>
-      <div className={styles.pitch}><canvas ref={canvas} width={WIDTH} height={HEIGHT} role="img" aria-label={`Football pitch. You wear yellow. ${match.score} defenders are chasing you.`}/>
-        {!active && <div className={styles.overlay}><div><span>★ SOCCER98 ★</span><h2>{match.status === "ready" ? "Ready for kick-off?" : match.status === "paused" ? "Half-time." : match.status === "won" ? "Pitch perfect!" : "Full-time."}</h2><p>{match.status === "ready" ? "Every ball adds a defender to your trail. Stay clear of them and the touchlines." : match.status === "paused" ? "Take a breather. The chase can wait." : `${match.score} balls collected. ${match.score} defenders on your heels.`}</p><button onClick={match.status === "paused" ? pause : start}>{match.status === "ready" ? "KICK OFF →" : match.status === "paused" ? "RESUME →" : "PLAY AGAIN →"}</button></div></div>}
+      <div className={styles.pitch}
+        onPointerDown={e => { if (!active || (e.target instanceof Element && e.target.closest("button"))) return; swipe.current = { id: e.pointerId, x: e.clientX, y: e.clientY }; e.currentTarget.setPointerCapture(e.pointerId); }}
+        onPointerMove={e => { const origin = swipe.current; if (!origin || origin.id !== e.pointerId) return; const dx = e.clientX - origin.x, dy = e.clientY - origin.y; if (Math.max(Math.abs(dx), Math.abs(dy)) < 20) return; turn(Math.abs(dx) > Math.abs(dy) ? dx > 0 ? "right" : "left" : dy > 0 ? "down" : "up"); swipe.current = { id: e.pointerId, x: e.clientX, y: e.clientY }; }}
+        onPointerUp={() => { swipe.current = null; }} onPointerCancel={() => { swipe.current = null; }} onLostPointerCapture={() => { swipe.current = null; }}
+      ><canvas ref={canvas} width={WIDTH} height={HEIGHT} role="img" aria-label={`Football pitch. You wear black and white stripes. ${match.score} defenders are chasing you.`}/>
+        {!active && <div className={styles.overlay}><div><span>★ SOCCER98 ★</span><h2>{match.status === "ready" ? "Ready for kick-off?" : match.status === "paused" ? "Half-time." : match.status === "won" ? "Pitch perfect!" : "Full-time."}</h2><p>{match.status === "ready" ? "Swipe anywhere on the pitch or tap the arrows. Every ball adds a defender. Avoid them and the touchlines." : match.status === "paused" ? "Take a breather. The chase can wait." : `${match.score} ${match.score === 1 ? "ball" : "balls"} collected. ${match.score} ${match.score === 1 ? "defender" : "defenders"} on your heels.`}</p><button onClick={match.status === "paused" ? pause : start}>{match.status === "ready" ? "KICK OFF →" : match.status === "paused" ? "RESUME →" : "PLAY AGAIN →"}</button></div></div>}
       </div>
       <div className={styles.bottom}><span><i/> YOU <i/> DEFENDERS</span><button onClick={pause} disabled={!["playing", "paused"].includes(match.status)}>{match.status === "paused" ? "Resume" : "Pause"} <kbd>P</kbd></button></div>
     </div>
-    <div className={styles.controls}><p>Arrow keys / WASD to move<br/><span>Space to pause · No U-turns</span></p><div className={styles.pad} aria-label="Direction controls">{([['up','↑'],['left','←'],['down','↓'],['right','→']] as const).map(([direction, label]) => <button key={direction} className={styles[direction]} aria-label={`Move ${direction}`} onClick={() => turn(direction)} disabled={!active}>{label}</button>)}</div><p>A little football. A little Snake.<br/><span>A simple playable idea.</span></p></div>
+    <div className={styles.controls}><p>SWIPE THE PITCH<br/><span>or tap to turn</span></p><div className={styles.pad} aria-label="Touch direction controls">{([['up','↑'],['left','←'],['down','↓'],['right','→']] as const).map(([direction, label]) => <button key={direction} className={styles[direction]} aria-label={`Move ${direction}`} onPointerDown={e => { e.preventDefault(); turn(direction); }} onClick={e => { if (e.detail === 0) turn(direction); }} disabled={!active}>{label}</button>)}</div><p className={styles.keyboard}>Arrow keys / WASD<br/><span>Space to pause</span></p></div>
+    </div>
     <p className={styles.sr} aria-live="polite">{match.status === "over" || match.status === "won" ? `Match ended. ${match.score} balls collected.` : match.status === "paused" ? "Game paused." : ""}</p>
   </div>;
 }
