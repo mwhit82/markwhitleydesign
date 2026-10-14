@@ -91,7 +91,8 @@
 .finishResults .start {margin-top:0;padding:12px 16px;}
 .practiceReason {color:#f4c676;}
 .arrival {position:absolute;z-index:30;bottom:var(--safe-bottom);left:50%;transform:translateX(-50%);background:var(--ink);color:var(--cream);border-left:4px solid var(--orange);border-radius:3px;padding:12px 18px;text-align:center;display:grid;gap:8px;width:max-content;max-width:90%;font-size:13px;}
-.arrival button {min-height:44px;font-size:12px;color:#edc37a;}
+.arrival {pointer-events:none;}
+.raceHudStack {display:contents;}
 .notice {position:absolute;z-index:65;left:50%;top:70px;transform:translateX(-50%);width:max-content;max-width:90%;background:var(--ink);color:var(--cream);border-left:3px solid #edc37a;padding:10px 14px;border-radius:3px;font-size:12px;pointer-events:none;text-align:center;}
 .optionScrim {position:absolute;inset:0;z-index:75;display:grid;place-items:center;padding:16px;background:#15251ed9;}
 .optionPanel {width:min(460px,100%);max-height:100%;overflow:auto;background:var(--ink);color:var(--cream);padding:20px;border:1px solid #f4ead438;border-top:4px solid var(--orange);border-radius:4px;}
@@ -274,7 +275,7 @@
 
 /* Touch HUD: one top instrument and a shared bottom control region. */
 .mobileLap {display:none!important;}
-@media (pointer:coarse),(max-width:650px),(orientation:landscape) and (max-height:550px) {
+@media (any-pointer:coarse),(max-width:650px),(orientation:landscape) and (max-height:550px) {
  .game {--drive-height:64px;--drive-gap:6px;--utility-height:44px;--instrument-height:66px;}
  .game[data-practice=true] {--instrument-height:82px;}
  .game[data-mode=race] .topbar,.game[data-mode=countdown] .topbar {display:flex;flex-wrap:nowrap;max-width:none;}
@@ -287,9 +288,13 @@
  .timer .bestTime,.timer .progress,.lapCard {display:none;}
  .timer .mobileLap {display:block!important;font-size:10px;letter-spacing:.5px;}
  .timer .practice {font-size:9px;margin:1px 0 0;}
- .game .checkpointStack {top:calc(var(--safe-top) + var(--instrument-height) + var(--drive-gap));left:var(--safe-left);right:auto;width:min(230px,calc(100% - var(--safe-left) - var(--safe-right)));min-width:0;gap:0;}
- .game[data-mode=race] .notice,.game[data-mode=countdown] .notice {top:calc(var(--safe-top) + var(--instrument-height) + var(--drive-gap));left:var(--safe-left);transform:none;width:230px;max-width:calc(100% - var(--safe-left) - var(--safe-right));padding:5px 7px;font-size:10px;text-align:left;}
- .game[data-mode=race]:has(.checkpointToast[data-mobile-visible=true]) .notice {visibility:hidden;}
+ .raceHudStack {position:absolute;z-index:16;top:var(--safe-top);left:var(--safe-left);width:min(230px,calc(100% - var(--safe-left) - var(--safe-right) - 104px));display:flex;flex-direction:column;align-items:flex-start;gap:var(--drive-gap);pointer-events:none;}
+ .raceHudStack .timer {position:static;flex-shrink:0;width:min(152px,100%);}
+ .game:has(.roomStandings) .raceHudStack {max-width:calc(50% - 20px);}
+ .game .roomStandings {max-width:calc(50% - 20px);}
+ .game .raceHudStack .checkpointStack {position:static;width:100%;min-width:0;gap:0;}
+ .game .raceHudStack .notice {position:static;transform:none;width:100%;max-width:100%;padding:5px 7px;font-size:10px;text-align:left;}
+ .game[data-mode=race]:has(.checkpointToast[data-mobile-visible=true]) .notice {display:none;}
  .game .checkpointToast {gap:5px;padding:5px 7px;box-shadow:none;animation:none;}
  .game .checkpointToast:not([data-mobile-visible=true]) {display:none;}
  .game .checkpointSymbol {width:14px;font-size:15px;}
@@ -428,7 +433,7 @@
 .game[data-mode=garage] .topbar button {order:0;}
 .topbar button {position:relative;}
 .audioPrompt {position:absolute;right:0;top:calc(100% + 7px);white-space:nowrap;background:var(--ink);padding:5px 8px;font:10px ui-monospace,monospace;border:1px solid var(--edge);pointer-events:none;}
-.game .timer .recover {position:static;bottom:auto;min-height:44px;margin-top:8px;width:100%;justify-content:center;padding:6px;font-size:10px;}
+.game .timer .recover {position:static;bottom:auto;min-height:44px;margin-top:8px;width:100%;justify-content:center;padding:6px;font-size:10px;pointer-events:auto;touch-action:manipulation;}
 .game .selectionCard {width:min(1200px,100%,calc((var(--modal-height,100dvh) - 180px) * 2.6667));height:auto;max-height:100%;grid-template-rows:auto minmax(0,1fr) auto;}
 .game .cardImage {aspect-ratio:16/6;width:100%;max-height:calc(var(--modal-height,100dvh) - 170px);}
 @media(max-width:700px) and (orientation:portrait){.game .garageCopy{top:calc(var(--safe-top) + 45px);left:var(--safe-left);width:150px;z-index:3}.game .garageCopy p{font-size:8px;padding:3px 6px;margin:3px 0}.game .garage{max-height:calc(100% - var(--safe-top) - var(--safe-bottom) - 142px)}.game .rotateHint{display:none}}
@@ -453,3 +458,12 @@
 .readyBadge[data-ready=true] {background:#73b99b30;color:#c4f4da;}
 .roomCode {display:block;margin:6px 0 12px;font-size:12px;}
 .roomCode strong {letter-spacing:.12em;user-select:all;}
+
+/* Tablet driving targets only: preserve the rest of the HUD scale. */
+@media (any-pointer:coarse) and (min-width:700px) and (min-height:600px) {
+ .game {--drive-height:96px;}
+ .touchControls {display:flex;}
+ .touchControls button,.pedalPad button:first-child {width:104px;height:96px;min-height:96px;}
+}
+
+.raceHudStack .checkpointStack:empty {display:none;}

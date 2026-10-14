@@ -294,6 +294,12 @@ export function RallyGame({immersive=false}:{immersive?:boolean}={}) {
     const menus=game.current?.querySelectorAll<HTMLElement>('[data-rally-menu]');const menu=menus?.[menus.length-1];
     (menu?.querySelector<HTMLElement>('[data-menu-default]')||menu?.querySelector<HTMLElement>('button'))?.focus();
   },[mode,optionPanel,setupPanel,leaderboard,installHelp,ready,allBoards,settingsPanel]);
+  const checkpointHud=<div className={styles.checkpointStack} data-paused={mode==='paused'} aria-live="polite" aria-atomic="false">
+          {checkpointNotices.map(n=><div key={n.id} data-mobile-visible={n.id===mobileCheckpoint?.id} className={`${styles.checkpointToast} ${n.outcome==='missed'?styles.missedToast:''}`} style={{animationDuration:`${n.duration}s`}}>
+            <span className={styles.checkpointSymbol}>{n.outcome==='missed'?'!':'✓'}</span>
+            <div><strong>{n.outcome==='missed'?'MISSED CHECKPOINT':'CHECKPOINT'} {String(n.checkpoints[0]).padStart(2,'0')}{n.checkpoints.length>1?`–${String(n.checkpoints.at(-1)).padStart(2,'0')}`:n.outcome==='accepted'?'/18':''}</strong><small>{n.outcome==='missed'?'Practice run':formatTime(n.time)}</small>{n.delta!==undefined&&<small className={n.delta<=0?styles.ahead:styles.behind}>≈ {n.delta<=0?'−':'+'}{Math.abs(n.delta).toFixed(2)} {n.delta<=0?'ahead':'behind'}</small>}</div>
+          </div>)}
+        </div>;
   return (
     <div className={`${styles.page} ${immersive?styles.immersivePage:""}`}>
       <div className={styles.heading}>
@@ -383,7 +389,7 @@ export function RallyGame({immersive=false}:{immersive?:boolean}={}) {
             </button>
           </div>
         )}
-        {notice && (
+        {notice && mode!=='race' && mode!=='countdown' && (
           <div className={styles.notice} role="status">
             {notice}
           </div>
@@ -448,10 +454,10 @@ export function RallyGame({immersive=false}:{immersive?:boolean}={}) {
           <span className={styles.lastLap}>LAST LAP <b>{stats.lastLap>0?formatTime(stats.lastLap):'—'}</b></span>
         </div>}
         </>}</HudRead>
-        {mode === "celebrating" && <div className={styles.arrival}><strong>{result?.eligible?"STAGE COMPLETE":"PRACTICE FINISH"} · {formatTime(result?.time ?? stats.time)}</strong><button onClick={()=>api.current?.skipCelebration()}>Skip celebration <HudIcon name="right"/></button></div>}
+        {mode === "celebrating" && <div className={styles.arrival} role="status"><strong>{result?.eligible?"STAGE COMPLETE":"PRACTICE FINISH"} · {formatTime(result?.time ?? stats.time)}</strong></div>}
         {(mode === "race" || mode === "countdown") && (
           <>
-            <HudRead store={hud}>{stats=><><div className={styles.timer}>
+            <HudRead store={hud}>{stats=><><div className={styles.raceHudStack}><div className={styles.timer}>
               <small>{isCircuit(selection)?'RACE TIME':'STAGE TIME'}</small>
               <strong>{formatTime(stats.time)}</strong>
               <span className={styles.bestTime}>BEST <b>{best ? formatTime(best) : "—"}</b></span>
@@ -464,6 +470,9 @@ export function RallyGame({immersive=false}:{immersive?:boolean}={}) {
             >
               <HudIcon name="recover"/> Recover +1.5s
             </button>
+            </div>
+            {mode==='race'&&checkpointHud}
+            {notice&&<div className={styles.notice} role="status">{notice}</div>}
             </div>
             <div className={styles.speed}>
               <strong>{stats.speed}</strong>
@@ -514,14 +523,9 @@ export function RallyGame({immersive=false}:{immersive?:boolean}={}) {
           <div className={styles.resultSummary}><small>{result?.eligible?'STAGE COMPLETE':'PRACTICE FINISH'}</small><h2>{formatTime(result?.time??stats.time)}</h2><p>{trackName(selection)} · {car.name}</p>
           {result&&!result.eligible?<p className={styles.practiceReason}>{result.reasons.map(r=>reasonText[r]).join(' · ')} — not ranked</p>:<p>{best?'Best '+formatTime(best):'First finish'}</p>}
           <details><summary>Details</summary><p>{weatherNames[selection.weather]} · {timeNames[timeOfDay(selection)]} · {selection.reverse?'Reverse':'Forward'}{isCircuit(selection)?` · ${lapCount(selection)} laps`:''}</p>{Boolean(result?.penalty)&&<p>Recovery +{result!.penalty!.toFixed(2)}s included</p>}<p>Last lap: {stats.lastLap?formatTime(stats.lastLap):'—'}</p></details></div>
-          <div className={styles.resultActions}><button className={styles.start} data-menu-default disabled={Boolean(preparing)} onClick={()=>void api.current?.requestStart()}>Race again <HudIcon name="right"/></button><button onClick={()=>setLeaderboard(true)}><HudIcon name="list"/>Leaderboard</button><button onClick={mainMenu}><HudIcon name="left"/>Main menu</button></div>
+          <div className={styles.resultActions}><button className={styles.start} data-menu-default disabled={Boolean(preparing)} onClick={()=>void api.current?.requestStart()}>Race again <HudIcon name="right"/></button><button onClick={()=>setLeaderboard(true)}><HudIcon name="list"/>Submit score</button><button onClick={mainMenu}><HudIcon name="left"/>Main menu</button></div>
         </div>}
-        {(mode==='race'||mode==='paused'||mode==='celebrating') && <div className={styles.checkpointStack} data-paused={mode==='paused'} aria-live="polite" aria-atomic="false">
-          {checkpointNotices.map(n=><div key={n.id} data-mobile-visible={n.id===mobileCheckpoint?.id} className={`${styles.checkpointToast} ${n.outcome==='missed'?styles.missedToast:''}`} style={{animationDuration:`${n.duration}s`}}>
-            <span className={styles.checkpointSymbol}>{n.outcome==='missed'?'!':'✓'}</span>
-            <div><strong>{n.outcome==='missed'?'MISSED CHECKPOINT':'CHECKPOINT'} {String(n.checkpoints[0]).padStart(2,'0')}{n.checkpoints.length>1?`–${String(n.checkpoints.at(-1)).padStart(2,'0')}`:n.outcome==='accepted'?'/18':''}</strong><small>{n.outcome==='missed'?'Practice run':formatTime(n.time)}</small>{n.delta!==undefined&&<small className={n.delta<=0?styles.ahead:styles.behind}>≈ {n.delta<=0?'−':'+'}{Math.abs(n.delta).toFixed(2)} {n.delta<=0?'ahead':'behind'}</small>}</div>
-          </div>)}
-        </div>}
+        {(mode==='paused'||mode==='celebrating')&&checkpointHud}
         {<div className={styles.codriverSubtitle} role="status" style={{visibility:mode==='race'&&subtitle?'visible':'hidden'}}><small><HudIcon name="headset"/> CO-DRIVER</small>{subtitle}</div>}
         {setupPanel&&<div className={styles.optionScrim}><section className={styles.optionPanel} role="dialog" aria-modal="true" aria-label="Race setup" data-rally-menu="true"><header><h2>Race setup</h2><button aria-label="Close race setup" onClick={()=>setSetupPanel(false)}>×</button></header>
               <div className={styles.stageChoices}>
