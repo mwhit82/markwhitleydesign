@@ -108,3 +108,12 @@ test('member-specific rival preparation is bounded and empty prewarmed ghosts up
  }finally{rivals.clear();globalThis.fetch=fetchBefore;}
  assert.equal(rivals.group.children.length,0);
 });
+
+test('hover pods tilt with steering, preserve authored cant, freeze and reset',async()=>{
+ const {VehicleVisual}=await import(await moduleUrl(resolve('components/rally/vehicle-visual.ts')));
+ const group=new T.Group();for(const end of ['front','rear'])for(const side of ['left','right']){const pod=new T.Group();pod.name=`hover_pod_${end}_${side}`;pod.rotation.z=side==='left'?.2:-.2;group.add(pod);}
+ const bases=group.children.map(p=>p.quaternion.clone()),visual=new VehicleVisual(group).bind();
+ for(const steer of [-1,1]){visual.resetPods();for(let i=0;i<30;i++)visual.update(1/60,5,steer,false,true);group.children.forEach((pod,i)=>{const delta=pod.quaternion.clone().multiply(bases[i].clone().invert());const up=new T.Vector3(0,1,0).applyQuaternion(delta),forward=new T.Vector3(0,0,1).applyQuaternion(delta);assert.ok(up.x*steer<0);assert.ok(forward.x*steer<0);assert.ok(delta.angleTo(new T.Quaternion())<.18);});}
+ const held=group.children[0].quaternion.clone();visual.update(0,0,-1,false,false);assert.ok(held.angleTo(group.children[0].quaternion)<1e-7);
+ visual.resetPods();group.children.forEach((p,i)=>assert.ok(p.quaternion.angleTo(bases[i])<1e-7));visual.update(.016,0,-1,false,false,true);const direct=group.children[0].quaternion.clone();visual.update(.016,0,-1,false,false,true);assert.ok(direct.angleTo(group.children[0].quaternion)<1e-7);
+});

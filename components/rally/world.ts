@@ -600,6 +600,7 @@ export class RallyWorld {
     for(const rear of this.brakeLamps){const halo=new T.Sprite(new T.SpriteMaterial({map:glowTexture,color:'#ff4935',transparent:true,depthWrite:false,opacity:0}));halo.name='brake-halo';halo.position.copy(rear.position);halo.position.z-=.08;halo.scale.set(1.6,1.6,1);this.vehicle.add(halo);this.brakeHalos.push(halo);}
     this.resetPosition();if(this.selection.stage==='nyc'&&this.mode==='garage')this.vehicle.position.copy(this.atmosphere.layout.center);
     void this.prepareGhost();
+    if(this.selected===9)this.visual=new VehicleVisual(this.vehicle).bind();
     this.modelPending=Promise.all([this.installVehicle(this.selected,this.visualGeneration,this.vehicle),this.installSpecialProps(this.visualGeneration)]).then(()=>{});
   }
   private async installSpecialProps(generation:number){
@@ -704,6 +705,7 @@ export class RallyWorld {
   toggleReplay(){this.replayEnabled=!this.replayEnabled;if(!this.replayEnabled){this.vehicle.position.copy(this.atmosphere.layout.center);this.vehicle.rotation.set(0,this.atmosphere.layout.angle,0);}}
   clearFeedback(){this.plume?.reset();this.fountains?.reset();this.resultReplay=null;this.replayClock=0;this.surfaceEffects?.reset();if(this.mud)(this.mud.material as T.MeshStandardMaterial).opacity=0;if(this.snow)(this.snow.material as T.MeshStandardMaterial).opacity=0;this.checkpointEffects?.reset();this.splitReference=[];this.notifications.clear();this.callbacks.checkpoints?.([]);this.reasons=[];this.callbacks.practice?.([]);}
   resetPosition() {
+    this.visual?.resetPods();
     this.surfaceEffects?.drag.reset();
     if(this.mode === "race"){this.markPractice('car-recovered');this.time+=1.5;this.recoveryPenalty+=1.5;this.callbacks.pad(`RECOVER +1.50s · Total penalty +${this.recoveryPenalty.toFixed(2)}s · Practice run`);}
     const idx = this.checkpoint ? this.checkpoints[this.checkpoint - 1] : 0;
@@ -1103,7 +1105,7 @@ export class RallyWorld {
     const activeCamera=this.driverCamera.update(this.mode==='paused'?0:dt,this.vehicle,this.angle,steer,this.camera,this.mode==='race'||this.mode==='countdown'||this.mode==='paused',this.atmosphere.reduced,this.viewport.width,this.viewport.height,(this.selected===8||this.selected===10),this.velocity.length()*4,this.rpm,this.limited,timeOfDay(this.selection)==='night',cars[this.selected].color);
     const transition=this.driverCamera.blend;this.renderer.domElement.style.filter=!this.atmosphere.reduced&&transition>0&&transition<1?`blur(${Math.sin(transition*Math.PI)*2}px)`:'none';
     if(this.live){if(this.ghostCar)this.ghostCar.visible=false;this.rivals.update(now,(x,z,speed)=>{const nearest=this.nearest(x,z),shoulder=T.MathUtils.clamp((8-nearest.distance)/2.4,0,1);return this.playbackHeight(x,z,elevationPose(this.routeProgress({x,z}),speed,true,this.ramps).y*shoulder+.08)+(this.selected===9?.85:0);});if(this.mode==='race'&&now-this.sentPose>=100){this.sentPose=now;this.onLivePose?.({...(this.selected>=9?{y:this.vehicle.position.y,pitch:this.vehicle.rotation.x,roll:this.vehicle.rotation.z}:{}),x:this.vehicle.position.x,z:this.vehicle.position.z,heading:this.angle,speed:this.velocity.length(),progress:((this.lap-1)+this.checkpoint/18)/lapCount(this.selection)},!this.cleanRun);}}
-    this.visual?.update(this.mode==='paused'?0:dt,(this.velocity.x*Math.sin(this.angle)+this.velocity.z*Math.cos(this.angle)),steer,braking,timeOfDay(this.selection)!=='midday');
+    this.visual?.update(this.mode==='paused'?0:dt,(this.velocity.x*Math.sin(this.angle)+this.velocity.z*Math.cos(this.angle)),steer,braking,timeOfDay(this.selection)!=='midday',this.atmosphere.reduced);
     this.metrics.begin();this.miniature.render(activeCamera,frameDt,this.mode==='race');this.metrics.end(frameDt,this.mode==='race');
   };
   resizeCamera() {
