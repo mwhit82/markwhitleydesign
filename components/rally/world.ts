@@ -246,6 +246,9 @@ export class RallyWorld {
     document.addEventListener("visibilitychange", this.visibility);
     try{this.codriverEnabled=localStorage.getItem("rally-codriver")!=="false";}catch{}
     this.prepareAudio();
+    // Browsers that allow autoplay can start immediately. A blocked attempt
+    // stays silent and the existing trusted-input handlers retry automatically.
+    if(!this.muted&&!document.hidden)void this.audio?.enable().catch(()=>{});
     this.frame = requestAnimationFrame(this.tick);
   }
   material(color: string) {
@@ -774,7 +777,7 @@ export class RallyWorld {
   }
   private audioFailed() {
     // Playback availability is separate from the player's remembered mute choice.
-    if (!this.disposed && !this.muted) this.callbacks.audioError?.();
+    if (!this.disposed && !this.muted && this.audioUnlocked) this.callbacks.audioError?.();
   };
   private audioUnlocked=false;
   unlockAudio() { this.audioUnlocked=true;void this.ensureAudio().catch(()=>this.audioFailed()); }
