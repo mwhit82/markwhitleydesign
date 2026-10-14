@@ -929,7 +929,7 @@ export class RallyWorld {
 
       if (this.countdown <= 0) this.setMode("race");
     }
-    if(this.live&&this.liveMenu){throttle=0;steer=0;brake=1;hand=false;}
+    if(this.live&&(this.liveMenu||this.menuOpen)){throttle=0;steer=0;brake=1;hand=false;}
     if (this.mode === "race") {
       this.movementFrom.copy(this.vehicle.position);
       this.time = this.live?Math.max(this.time,(Date.now()-this.liveStartAt)/1000+this.recoveryPenalty):this.time+dt;

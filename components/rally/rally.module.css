@@ -278,7 +278,7 @@
  .game {--drive-height:64px;--drive-gap:6px;--utility-height:44px;--instrument-height:66px;}
  .game[data-practice=true] {--instrument-height:82px;}
  .game[data-mode=race] .topbar,.game[data-mode=countdown] .topbar {display:flex;flex-wrap:nowrap;max-width:none;}
- .game[data-mode=race] .topbar button:not([data-mobile-pause]),.game[data-mode=countdown] .topbar button:not([data-mobile-pause]) {display:none;}
+ .game[data-mode=race] .topbar button:not([data-mobile-pause]):not([data-mobile-control]),.game[data-mode=countdown] .topbar button:not([data-mobile-pause]):not([data-mobile-control]) {display:none;}
  .game[data-mode=paused] .topbar {display:none;}
  .topbar button {min-width:44px;min-height:44px;}
  .timer {width:152px;min-height:var(--instrument-height);padding:6px 9px;gap:1px;pointer-events:none;}
