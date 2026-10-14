@@ -1,66 +1,85 @@
-/** Tiny pre-rendered arcade sounds. No network requests or synthesis in the game loop. */
+type Cue = "turn" | "cheer";
+const files: Record<Cue, string> = { turn: "/soccer98/audio/kick-v2.wav", cheer: "/soccer98/audio/cheer-v2.wav" };
+/** Recorded CC0 clips, fetched early and decoded once outside the movement loop. */
 export class SoccerAudio {
   private context: AudioContext | null = null;
   private master: GainNode | null = null;
-  private buffers = new Map<"turn" | "cheer", AudioBuffer>();
-  private voices = new Set<AudioBufferSourceNode>();
+  private buffers = new Map<Cue, AudioBuffer>();
+  private voices = new Map<Cue, { source: AudioBufferSourceNode; gain: GainNode }>();
   private muted = false;
+  private disposed = false;
+  private decoding: Promise<void> | null = null;
+  private abort = new AbortController();
+  private preload = Promise.all((Object.keys(files) as Cue[]).map(async kind => {
+    try {
+      const response = await fetch(files[kind], { signal: this.abort.signal });
+      if (!response.ok) return null;
+      return { kind, bytes: await response.arrayBuffer() };
+    } catch { return null; }
+  }));
 
   unlock() {
+    if (this.disposed) return;
     try {
       if (!this.context) {
-        const context = new AudioContext();
-        this.context = context;
-        this.master = context.createGain();
-        this.master.gain.value = this.muted ? 0 : .5;
-        this.master.connect(context.destination);
-        for (const kind of ["turn", "cheer"] as const) {
-          const duration = kind === "turn" ? .055 : .65;
-          const buffer = context.createBuffer(1, Math.ceil(context.sampleRate * duration), context.sampleRate);
-          const data = buffer.getChannelData(0);
-          let noise = 0;
-          for (let i = 0; i < data.length; i++) {
-            const t = i / context.sampleRate, progress = t / duration;
-            if (i % 6 === 0) noise = Math.random() * 2 - 1;
-            const envelope = Math.min(1, t / .008) * Math.pow(1 - progress, kind === "turn" ? 2 : .7);
-            // A soft boot-tap; a noisy, rising stadium cheer with an arcade chord.
-            const tone = kind === "turn" ? Math.sin(2 * Math.PI * (180 * t - 700 * t * t)) :
-              (Math.sin(2 * Math.PI * 392 * t) + Math.sin(2 * Math.PI * 494 * t) + Math.sin(2 * Math.PI * 587 * t)) / 3;
-            data[i] = envelope * (kind === "turn" ? .5 * noise + .25 * tone : .42 * noise * (.7 + .3 * Math.sin(t * 38)) + .18 * tone);
-          }
-          this.buffers.set(kind, buffer);
-        }
+        this.context = new AudioContext({ latencyHint: "interactive" });
+        this.master = this.context.createGain();
+        this.master.gain.value = this.muted ? 0 : .8;
+        this.master.connect(this.context.destination);
       }
-      if (this.context.state !== "running") void this.context.resume().catch(() => {});
-    } catch { /* Audio is optional; gameplay must remain available. */ }
+      const context = this.context;
+      // Resume synchronously from the user's gesture; don't wait for network/decode.
+      if (context.state !== "running") void context.resume().catch(() => {});
+      if (!this.decoding) this.decoding = this.preload.then(async clips => {
+        await Promise.all(clips.map(async clip => {
+          if (!clip || this.disposed) return;
+          try {
+            const buffer = await context.decodeAudioData(clip.bytes);
+            if (!this.disposed) this.buffers.set(clip.kind, buffer);
+          } catch { /* One missing clip must not disable the other. */ }
+        }));
+      }).catch(() => {});
+    } catch { /* Audio is optional; gameplay remains available. */ }
   }
 
-  play(kind: "turn" | "cheer") {
-    if (this.muted || this.context?.state !== "running" || !this.master) return;
+  private stopVoice(kind: Cue) {
+    const voice = this.voices.get(kind);
+    if (!voice) return;
+    try { voice.source.stop(); } catch {}
+    voice.source.disconnect(); voice.gain.disconnect();
+    this.voices.delete(kind);
+  }
+  play(kind: Cue) {
+    const buffer = this.buffers.get(kind);
+    if (!buffer || this.muted || this.disposed || this.context?.state !== "running" || !this.master) return;
     try {
-      if (this.voices.size >= 6) return;
-      const source = this.context.createBufferSource();
-      source.buffer = this.buffers.get(kind) ?? null;
-      source.connect(this.master);
-      this.voices.add(source);
-      source.onended = () => { source.disconnect(); this.voices.delete(source); };
+      // At most one kick and one cheer; each pickup gets a fresh cheer.
+      this.stopVoice(kind);
+      const source = this.context.createBufferSource(), gain = this.context.createGain();
+      source.buffer = buffer;
+      gain.gain.value = kind === "cheer" ? 1 : this.voices.has("cheer") ? .25 : .55;
+      if (kind === "cheer") {
+        const kick = this.voices.get("turn");
+        if (kick) kick.gain.gain.value = .25;
+      }
+      source.connect(gain); gain.connect(this.master);
+      this.voices.set(kind, { source, gain });
+      source.onended = () => {
+        source.disconnect(); gain.disconnect();
+        if (this.voices.get(kind)?.source === source) this.voices.delete(kind);
+      };
       source.start();
-    } catch { /* A suspended audio device must never break the simulation. */ }
+    } catch { /* Device interruptions must never break the simulation. */ }
   }
   setMuted(muted: boolean) {
     this.muted = muted;
-    if (this.master) this.master.gain.value = muted ? 0 : .5;
+    if (this.master) this.master.gain.value = muted ? 0 : .8;
     if (muted) this.stop();
   }
-  stop() {
-    for (const source of this.voices) { try { source.stop(); source.disconnect(); } catch {} }
-    this.voices.clear();
-  }
+  stop() { for (const kind of this.voices.keys()) this.stopVoice(kind); }
   dispose() {
-    this.stop();
+    this.disposed = true; this.abort.abort(); this.stop();
     if (this.context) void this.context.close().catch(() => {});
-    this.context = null;
-    this.master = null;
-    this.buffers.clear();
+    this.context = null; this.master = null; this.buffers.clear();
   }
 }

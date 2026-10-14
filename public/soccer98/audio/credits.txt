@@ -1,0 +1,20 @@
+Soccer98 recorded sound effects — retrieved 15 October 2026
+
+kick-v2.wav: Ball Kicked, Joseph SARDIN / BigSoundBank, sound 1044.
+https://bigsoundbank.com/ball-kicked-s1044.html
+https://bigsoundbank.com/UPLOAD/bwf-en/1044.wav
+CC0 1.0: https://creativecommons.org/publicdomain/zero/1.0/
+Excerpt: 5.18–5.38 seconds, mono 22050 Hz PCM16, peak normalization,
+3 ms attack / 40 ms release fades. Selected an unclipped kick.
+
+cheer-v2.wav: Crowd Cheer 5, Krizin, from Crowd Cheer Sports Game.
+https://freesound.org/people/Krizin/packs/36296/
+https://freesound.org/people/Krizin/sounds/651646/
+https://cdn.freesound.org/previews/651/651646_5315864-hq.mp3
+CC0 1.0: https://creativecommons.org/publicdomain/zero/1.0/
+Excerpt: 0.10–1.60 seconds of the author's high-quality preview,
+mono 22050 Hz PCM16, peak normalization, 3 ms attack / 200 ms release fades.
+
+No synthesized effects or music. Both recordings permit modification and
+commercial use. Credits are retained voluntarily. The originally considered
+Signature Sounds storefront pack was not downloaded or used.

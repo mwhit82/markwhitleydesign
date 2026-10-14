@@ -24,22 +24,23 @@ assert.equal(step({...match,players:[{x:2,y:2},{x:3,y:2},{x:3,y:3}],direction:'u
 assert.equal(step({...match,status:'paused'},'right').status,'paused');
 const full=Array.from({length:COLS*ROWS},(_,i)=>({x:i%COLS,y:Math.floor(i/COLS)}));
 assert.equal(placeBall(full),null);
-let starts=0,stops=0,created=0;
+let starts=0,stops=0,created=0,decoded=0,fetches=0;
 class Context {
   state='running';sampleRate=22050;destination={};
   constructor(){created++;}
-  createGain(){return {gain:{value:1},connect(){}};}
-  createBuffer(channels,length){return {getChannelData:()=>new Float32Array(length)};}
+  createGain(){return {gain:{value:1},connect(){},disconnect(){}};}
+  decodeAudioData(){decoded++;return Promise.resolve({});}
   createBufferSource(){return {connect(){},disconnect(){},start(){starts++;},stop(){stops++;}};}
   resume(){this.state='running';return Promise.resolve();}
   close(){this.state='closed';return Promise.resolve();}
 }
-const audioExports={};vm.runInNewContext(compile('components/soccer98/audio.ts'),{exports:audioExports,AudioContext:Context});
+const audioExports={};vm.runInNewContext(compile('components/soccer98/audio.ts'),{exports:audioExports,AudioContext:Context,AbortController,fetch:async()=>{fetches++;return {ok:true,arrayBuffer:async()=>new ArrayBuffer(4)};}});
 const audio=new audioExports.SoccerAudio();audio.play('turn');assert.equal(starts,0);
 audio.unlock();audio.unlock();assert.equal(created,1);
+await new Promise(resolve=>setImmediate(resolve));assert.equal(fetches,2);assert.equal(decoded,2);
 audio.play('turn');audio.play('cheer');assert.equal(starts,2);
 audio.setMuted(true);assert.equal(stops,2);audio.play('turn');assert.equal(starts,2);
 audio.setMuted(false);audio.play('cheer');assert.equal(starts,3);audio.dispose();assert.equal(stops,3);
-const silentExports={};vm.runInNewContext(compile('components/soccer98/audio.ts'),{exports:silentExports});
+const silentExports={};vm.runInNewContext(compile('components/soccer98/audio.ts'),{exports:silentExports,AbortController,fetch:async()=>{throw new Error("offline");}});
 const silent=new silentExports.SoccerAudio();assert.doesNotThrow(()=>{silent.unlock();silent.play('turn');silent.dispose();});
 console.log('Passed: two-corner buffering, queue limit, reversals, growth, collisions, spawning, pause, audio reuse, mute, cleanup and missing audio API.');
