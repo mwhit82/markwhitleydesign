@@ -8,6 +8,7 @@ import {cars,formatTime} from './data';
 import styles from './rally.module.css';
 import {HudIcon} from './ui';
 import {SelectionCard} from './selection-card';
+import {CarPreview} from './car-preview';
 import {previewImage} from './preview-manifest';
 import {stages,stageDefinition,stageTimes,trackNames} from './stages';
 const rivalColors=['#68c4d0','#e6ad5c','#cfa1e2','#a8ce78'];
@@ -102,7 +103,7 @@ export function FriendRaces({openRequest,world,selection,car,ready,mode,onSetup,
  {(['stage','track','weather','time','direction',...(isCircuit(draft)?['laps']:[])] as const).map(kind=><button key={kind} onClick={()=>setPicker(kind as NonNullable<typeof picker>)}><small>{{stage:'ENVIRONMENT',track:'TRACK',weather:'WEATHER',time:'TIME OF DAY',direction:'ROUTE',laps:'LAPS'}[kind]}</small><strong>{{stage:stageDefinition(draft).name,track:trackName(draft),weather:weatherNames[draft.weather],time:timeNames[timeOfDay(draft)],direction:draft.reverse?'Reverse':'Forward',laps:String(lapCount(draft))}[kind]}</strong><HudIcon name="next"/></button>)}
  </div><button className={styles.start} disabled={!connected} onClick={applySetup}>Apply setup <HudIcon name="check"/></button></section></div>}
  {picker&&<RoomSetupPicker kind={picker} selection={draft} onClose={()=>setPicker(null)} onSelect={s=>{setDraft(s);setPicker(null);}}/>}
- {carOpen&&room&&<div className={styles.optionScrim}><section className={styles.optionPanel} role="dialog" aria-modal="true" aria-label="Choose your car" data-rally-menu="true"><header><h2>Your car</h2><button aria-label="Close car selection" onClick={()=>setCarOpen(false)}>×</button></header><div className={styles.stageChoices}>{cars.map((c,i)=>compatibleCar(room.selection,i)&&<button key={i} aria-pressed={(me?.car??room.car)===i} onClick={()=>{send({type:'car',car:i});setCarOpen(false);}}><small>{c.year}</small><strong>{c.name}</strong><HudIcon name={(me?.car??room.car)===i?'check':'next'}/></button>)}</div></section></div>}
+ {carOpen&&room&&<SelectionCard title="Your car" options={cars.flatMap((c,i)=>compatibleCar(room.selection,i)?[{value:String(i),label:c.name,detail:`${c.year} · ${c.trait}`,selected:(me?.car??room.car)===i,image:''}]:[])} renderPreview={value=><CarPreview car={Number(value)}/>} onSelect={value=>{send({type:'car',car:Number(value)});setCarOpen(false);}} onClose={()=>setCarOpen(false)}/>}
  </>;
 }
 
