@@ -1,3 +1,6 @@
+import Link from "next/link";
+import {portfolioStudies} from "@/data/portfolio";
+import styles from "../../portfolio.module.css";
 import { notFound } from "next/navigation";
 import { BadgeList } from "@/components/badge-list";
 import { ButtonLink } from "@/components/button-link";
@@ -10,14 +13,14 @@ type ProjectPageProps = {
 };
 
 export function generateStaticParams() {
-  return projects.map((project) => ({
+  return [...projects,...portfolioStudies].map((project) => ({
     slug: project.slug,
   }));
 }
 
 export async function generateMetadata({ params }: ProjectPageProps) {
   const { slug } = await params;
-  const project = getProjectBySlug(slug);
+  const project = portfolioStudies.find(p=>p.slug===slug)??getProjectBySlug(slug);
 
   if (!project) {
     return {
@@ -33,6 +36,8 @@ export async function generateMetadata({ params }: ProjectPageProps) {
 
 export default async function ProjectPage({ params }: ProjectPageProps) {
   const { slug } = await params;
+  const study=portfolioStudies.find(p=>p.slug===slug);
+  if(study)return <article className={styles.study}><nav className={styles.studyNav}><Link href="/">← All projects</Link><span>Mark Whitley</span></nav><header className={styles.studyHero}><p className={styles.kicker}>{study.category}</p><h1>{study.title}</h1><p>{study.description}</p></header><section className={styles.studyNote}><div><h2>Case study coming soon.</h2><p>The story, process and details of my work will be added here.</p></div><a href={study.source} target="_blank" rel="noreferrer">{study.slug==='salecycle-design-system'?'Visit SaleCycle':'Explore the product'} ↗</a></section></article>;
   const project = getProjectBySlug(slug);
 
   if (!project) {

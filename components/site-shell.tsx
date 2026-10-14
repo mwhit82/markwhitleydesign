@@ -1,3 +1,5 @@
+"use client";
+import {usePathname} from "next/navigation";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import {
@@ -18,6 +20,9 @@ const navigation = [
 ];
 
 export function SiteShell({ children }: { children: ReactNode }) {
+  const pathname=usePathname();
+  if(pathname==='/playground/rally'||['pendo-for-agents','salecycle-design-system','leo','pendo-listen'].some(slug=>pathname===`/work/${slug}`))return <main>{children}</main>;
+  if(pathname==='/')return <div style={{minHeight:'100dvh',background:'#f2f0e9',color:'#252621'}}><header style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'20px clamp(20px,4vw,64px)',maxWidth:1440,margin:'auto',fontSize:13}}><Link href="/" style={{fontWeight:700}}>MW.</Link><nav style={{display:'flex',gap:24}}><Link href="/about">About</Link><Link href="/contact">Contact ↗</Link></nav></header><main>{children}</main></div>;
   return (
     <div className="relative z-10 mx-auto min-h-screen max-w-7xl px-4 pb-8 sm:px-6 lg:px-8">
       <header className="sticky top-0 z-50 mx-auto mb-6 mt-4 max-w-7xl rounded-[1.75rem] border border-[color:var(--border)] bg-[color:var(--surface)] px-3 py-3 shadow-[var(--shadow)] backdrop-blur">

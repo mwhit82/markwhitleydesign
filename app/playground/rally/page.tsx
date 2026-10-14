@@ -20,5 +20,5 @@ export const viewport: Viewport = {
   themeColor: "#233c32",
 };
 export default function RallyPage() {
-  return <RallyGame />;
+  return <RallyGame immersive />;
 }

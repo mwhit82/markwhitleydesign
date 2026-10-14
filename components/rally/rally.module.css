@@ -417,3 +417,5 @@
 .controlFeedback p {margin:8px 0;}
 .controlReset {display:flex;align-items:center;gap:12px;}
 .controlReset button {flex-shrink:0;}
+.immersivePage {padding:0;}
+.immersivePage>.heading,.immersivePage>.below {display:none;}

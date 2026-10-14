@@ -1,5 +1,6 @@
 /* eslint-disable @next/next/no-img-element -- Locally captured, pre-sized WebP previews need no image service. */
 "use client";
+import {useRouter} from "next/navigation";
 import {stageVehicle,hasCodriver} from './stages';
 import {useModalViewport,useModalIsolation} from "./modal-viewport";
 import {PreparationBar} from './preparation-bar';
@@ -19,7 +20,8 @@ import { Leaderboard, type RaceResult } from "./leaderboard";
 import { HudIcon } from "./ui";
 import { reasonText, type CheckpointNotice, type RunReason } from "./checkpoints";
 import type { GhostSource } from "./replay";
-export function RallyGame() {
+export function RallyGame({immersive=false}:{immersive?:boolean}={}) {
+  const router=useRouter();
   const host = useRef<HTMLDivElement>(null);
   const game = useRef<HTMLDivElement>(null);
   const hadNativeFullscreen = useRef(false);
@@ -35,7 +37,7 @@ export function RallyGame() {
   const [hapticMessage,setHapticMessage]=useState("");
   const toggleCodriver=()=>{api.current?.toggleCodriver();setCodriver(api.current?.codriverEnabled??true);};
   useEffect(()=>{const refresh=()=>setHapticSupport(currentHaptics());refresh();const timer=window.setInterval(refresh,1000);return ()=>window.clearInterval(timer);},[]);
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(immersive);
   const [installHelp, setInstallHelp] = useState(false);
   const [standalone, setStandalone] = useState(false);
   const [audioBusy, setAudioBusy] = useState(false);
@@ -183,6 +185,7 @@ export function RallyGame() {
           return;
         }
       }
+      if(immersive){router.push("/");return;}
       setExpanded(false);
       return;
     }
@@ -295,7 +298,7 @@ export function RallyGame() {
     (menu?.querySelector<HTMLElement>('[data-menu-default]')||menu?.querySelector<HTMLElement>('button'))?.focus();
   },[mode,optionPanel,leaderboard,installHelp,ready,allBoards,settingsPanel]);
   return (
-    <div className={styles.page}>
+    <div className={`${styles.page} ${immersive?styles.immersivePage:""}`}>
       <div className={styles.heading}>
         <div>
           <p className={styles.eyebrow}>MARK WHITLEY / POCKET RALLY V5</p>
