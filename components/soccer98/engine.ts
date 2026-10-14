@@ -5,10 +5,11 @@ export const vectors: Record<Direction, Point> = { up: { x: 0, y: -1 }, down: { 
 export type Match = { players: Point[]; ball: Point | null; direction: Direction; score: number; status: "ready" | "playing" | "paused" | "over" | "won" };
 export const same = (a: Point, b: Point) => a.x === b.x && a.y === b.y;
 export function placeBall(players: Point[], previous?: Point | null): Point | null {
+  const occupied = new Set(players.map(p => p.y * COLS + p.x));
   const free: Point[] = [];
   for (let y = 0; y < ROWS; y++) for (let x = 0; x < COLS; x++) {
     const p = { x, y };
-    if (!players.some(player => same(player, p)) && (!previous || !same(previous, p))) free.push(p);
+    if (!occupied.has(y * COLS + x) && (!previous || !same(previous, p))) free.push(p);
   }
   return free.length ? free[Math.floor(Math.random() * free.length)] : null;
 }
@@ -27,4 +28,13 @@ export function step(match: Match, direction: Direction): Match {
   const players = [head, ...body];
   const ball = collected ? placeBall(players, match.ball) : match.ball;
   return { players, ball, direction, score: match.score + Number(collected), status: ball ? "playing" : "won" };
+}
+
+/** Retain two deliberate corners without accumulating repeated or illegal turns. */
+export function enqueueTurn(queue: Direction[], current: Direction, direction: Direction): boolean {
+  if (queue.length >= 2) return false;
+  const previous = vectors[queue.at(-1) ?? current], next = vectors[direction];
+  if ((previous.x === next.x && previous.y === next.y) || (previous.x + next.x === 0 && previous.y + next.y === 0)) return false;
+  queue.push(direction);
+  return true;
 }
