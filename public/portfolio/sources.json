@@ -1,0 +1,7 @@
+{
+  "mark-whitley.jpg": {"source": "Portrait supplied by Mark Whitley for his portfolio avatar"},
+  "pendo-agents.webp": {"page": "https://www.pendo.io/pendo-for-agents/", "asset": "https://cdn.builder.io/api/v1/image/assets%2F6a96e08774184353b3aa88032e406411%2F3430d260f57f4e3087d1ed5696829282", "usage": "Official public product artwork"},
+  "leo.webp": {"page": "https://www.pendo.io/product/leo/", "asset": "https://cdn.builder.io/api/v1/image/assets%2F6a96e08774184353b3aa88032e406411%2F34e2feacc34a40a0a0787b23d9501451", "usage": "Official public product artwork"},
+  "listen.webp": {"page": "https://www.pendo.io/product/listen/", "asset": "https://cdn.builder.io/api/v1/image/assets%2F6a96e08774184353b3aa88032e406411%2Fe119f56cba6f4bb6a074f88ea09f352b", "usage": "Official public product artwork"},
+  "salecycle-logo.svg": {"page": "https://www.salecycle.com/", "asset": "https://cdn.prod.website-files.com/660535b6b49625d120f0f4e3/6a43ab275539c9423e1cef45_SaleCycle-Brand-logo.svg", "usage": "Company brand reference. Surrounding decorative shapes do not depict the internal design system."}
+}
