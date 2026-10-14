@@ -28,6 +28,11 @@ export default function PlaygroundPage() {
           your best time.
         </p>
       </Link>
+      <Link href="/playground/soccer98" className="block rounded-2xl bg-[#213c31] p-8 text-[#fff3de]">
+        <p className="text-xs uppercase tracking-widest">Playable experiment 02</p>
+        <h2 className="mt-3 text-4xl font-black italic">SOCCER98 ↗</h2>
+        <p className="mt-3">Retro football meets Snake. Every ball adds a defender. How long can you keep running?</p>
+      </Link>
       <div className="grid gap-6 lg:grid-cols-2">
         {experiments.map((experiment) => (
           <article

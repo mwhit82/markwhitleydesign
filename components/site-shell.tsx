@@ -20,7 +20,7 @@ const navigation = [
 
 export function SiteShell({ children }: { children: ReactNode }) {
   const pathname=usePathname();
-  if(pathname==='/playground/rally'||['pendo-for-agents','salecycle-design-system','leo','pendo-listen'].some(slug=>pathname===`/work/${slug}`))return <main>{children}</main>;
+  if(pathname==='/playground/rally'||pathname==='/playground/soccer98'||['pendo-for-agents','salecycle-design-system','leo','pendo-listen'].some(slug=>pathname===`/work/${slug}`))return <main>{children}</main>;
   if(pathname==='/')return <div style={{minHeight:'100dvh',background:'#f2f0e9',color:'#252621'}}><header style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'20px clamp(20px,4vw,64px)',maxWidth:1440,margin:'auto',fontSize:13}}><Link href="/" style={{fontWeight:700}}>MW.</Link><nav style={{display:'flex',gap:24}}><Link href="/contact">Contact <span aria-hidden="true" className="inline-block align-middle"><Icon icon={ArrowUpRight01Icon} size={16} /></span></Link></nav></header><main>{children}</main></div>;
   return (
     <div className="relative z-10 mx-auto min-h-screen max-w-7xl px-4 pb-8 sm:px-6 lg:px-8">
