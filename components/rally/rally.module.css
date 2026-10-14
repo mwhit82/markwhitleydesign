@@ -443,3 +443,13 @@
 
 .game .roomCard .roomBack {padding:10px 16px;gap:10px;min-height:44px;display:inline-flex;align-items:center;}
 .game .roomCard .roomBack svg {flex-shrink:0;}
+
+.lobbyPlayers {list-style:none;padding:0;margin:12px 0;display:grid;gap:8px;}
+.lobbyPlayers li {display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 0;border-bottom:1px solid var(--edge);font-size:13px;}
+.lobbyPlayers li>div {display:grid;gap:3px;min-width:0;}
+.lobbyPlayers small {font-size:11px;opacity:.8;}
+.readyBadge {display:flex;align-items:center;gap:5px;flex-shrink:0;padding:5px 7px;border-radius:3px;background:#dfb76d24;color:#f5dca9;font-size:11px;}
+.readyBadge svg {width:16px;height:16px;}
+.readyBadge[data-ready=true] {background:#73b99b30;color:#c4f4da;}
+.roomCode {display:block;margin:6px 0 12px;font-size:12px;}
+.roomCode strong {letter-spacing:.12em;user-select:all;}

@@ -18,9 +18,11 @@ export function FriendRaces({openRequest,world,selection,car,ready,mode,onSetup,
  const [picker,setPicker]=useState<'stage'|'track'|'weather'|'time'|'direction'|'laps'|null>(null);
  const [carOpen,setCarOpen]=useState(false);
  const [confirmLeave,setConfirmLeave]=useState(false);
- const [entryStep,setEntryStep]=useState<'choose'|'create'|'join'>('choose'),[setupOpen,setSetupOpen]=useState(false),[draft,setDraft]=useState(selection),[preparing,setPreparing]=useState(false),[inviteOpen,setInviteOpen]=useState(false);
+ const [entryStep,setEntryStep]=useState<'choose'|'create'|'join'>('choose'),[setupOpen,setSetupOpen]=useState(false),[draft,setDraft]=useState(selection),[preparing,setPreparing]=useState(false),[copied,setCopied]=useState(false),[copyError,setCopyError]=useState(''),[readyNotice,setReadyNotice]=useState(''),[readyPending,setReadyPending]=useState(false);
  useEffect(()=>{if(openRequest)setOpen(true);},[openRequest]);
  const session=useRef<Session|null>(null),socket=useRef<WebSocket|null>(null),generation=useRef(0),attempt=useRef(-1),offset=useRef(0),lostAt=useRef(0),retry=useRef<ReturnType<typeof setTimeout>|null>(null),poses=useRef(new Map<string,LivePose>());
+ const requestedReady=useRef<boolean|null>(null);
+ useEffect(()=>{if(!copied)return;const timer=setTimeout(()=>setCopied(false),2500);return()=>clearTimeout(timer);},[copied]);
  const pendingFinish=useRef<Record<string,unknown>|null>(null);
  const [,refreshStandings]=useState(0),hasRoom=room!==null;
  const card=useRef<HTMLDivElement>(null);
@@ -36,7 +38,7 @@ export function FriendRaces({openRequest,world,selection,car,ready,mode,onSetup,
    const ack=(event:MessageEvent)=>{try{const m=JSON.parse(event.data);if(m.type==='room'){const seat=m.room.members.find((p:{id:string;status:string})=>p.id===id);if(!seat||seat.status==='retired')close();}}catch{}};
    const deadline=setTimeout(close,5000);departing.addEventListener('message',ack);send({type:'leave'});
   }else departing?.close();
-  setPicker(null);setCarOpen(false);setConfirmLeave(false);setEntryStep('choose');setSetupOpen(false);setInviteOpen(false);generation.current++;if(retry.current)clearTimeout(retry.current);socket.current=null;session.current=null;pendingFinish.current=null;setRoom(null);setConnected(false);setLiveMenu(false);setOpen(false);attempt.current=-1;const w=callbacks.current.world();if(w){w.roomJoined=false;w.leaveLive();}callbacks.current.onActive(false);try{sessionStorage.removeItem('rally-room');}catch{}};
+  setPicker(null);setCarOpen(false);setConfirmLeave(false);setEntryStep('choose');setSetupOpen(false);setCopied(false);setCopyError('');setReadyNotice('');setReadyPending(false);requestedReady.current=null;generation.current++;if(retry.current)clearTimeout(retry.current);socket.current=null;session.current=null;pendingFinish.current=null;setRoom(null);setConnected(false);setLiveMenu(false);setOpen(false);attempt.current=-1;const w=callbacks.current.world();if(w){w.roomJoined=false;w.leaveLive();}callbacks.current.onActive(false);try{sessionStorage.removeItem('rally-room');}catch{}};
  const requestBack=useCallback(()=>{if(picker){setPicker(null);return;}if(carOpen){setCarOpen(false);return;}if(setupOpen){setSetupOpen(false);return;}if(confirmLeave){setConfirmLeave(false);return;}if(room?.phase==='lobby'||room?.phase==='results'){setConfirmLeave(true);return;}if(!room&&entryStep!=='choose'){setEntryStep('choose');return;}setOpen(false);setLiveMenu(false);},[picker,carOpen,setupOpen,confirmLeave,room,entryStep]);
  const connect=(entry:Session)=>{
   session.current=entry;const rev=++generation.current;setRoom(entry.room);setOpen(true);callbacks.current.onActive(true);const joined=callbacks.current.world();if(joined)joined.roomJoined=true;
@@ -45,9 +47,14 @@ export function FriendRaces({openRequest,world,selection,car,ready,mode,onSetup,
    const ws=new WebSocket(`${location.protocol==='https:'?'wss':'ws'}://${location.host}/api/rally/rooms/socket?code=${entry.room.code}`);socket.current=ws;
    ws.onopen=()=>{if(rev!==generation.current){ws.close();return;}ws.send(JSON.stringify({version:3,type:'hello',id:entry.id,token:entry.token}));};
    ws.onmessage=e=>{if(rev!==generation.current)return;let m;try{m=JSON.parse(e.data);}catch{return;}
-    if(m.type==='error'){setError(m.error);return;}
+    if(m.type==='error'){setError(m.error);setReadyPending(false);requestedReady.current=null;return;}
     if(m.type==='pose'){const p=m.pose as LivePose;if(p.id!==entry.id){poses.current.set(p.id,p);const w=callbacks.current.world();if(w&&w.live)w.rivals.receive(p,w.vehicle,rivalColors[Math.max(0,entry.room.members.findIndex(m=>m.id===p.id))]);}return;}
-    if(m.type!=='room')return;setConnected(true);lostAt.current=0;setError('');offset.current=m.now-Date.now();const r=m.room as RaceRoom;if(r.version!==3){setError('Game updated. Refresh to join.');return;}const previousPhase=entry.room.phase;entry.room=r;setRoom(r);
+    if(m.type!=='room')return;setConnected(true);lostAt.current=0;setError('');offset.current=m.now-Date.now();const r=m.room as RaceRoom;if(r.version!==3){setError('Game updated. Refresh to join.');return;}const previousPhase=entry.room.phase;
+    const wasReady=entry.room.members.find(p=>p.id===entry.id)?.ready,nowReady=r.members.find(p=>p.id===entry.id)?.ready;
+    if(wasReady&&!nowReady&&r.phase==='lobby')setReadyNotice(requestedReady.current===false?'':'The cars or lobby changed. Confirm when you’re ready again.');
+    if(nowReady)setReadyNotice('');
+    if(requestedReady.current!==null&&nowReady===requestedReady.current){requestedReady.current=null;setReadyPending(false);card.current?.querySelector<HTMLElement>('[data-ready-action]')?.focus();}
+    entry.room=r;setRoom(r);
     try{sessionStorage.setItem('rally-room',JSON.stringify(entry));}catch{}
     const w=callbacks.current.world();if(!w)return;
     const myCar=r.members.find(p=>p.id===entry.id)?.car??r.car;
@@ -57,7 +64,7 @@ export function FriendRaces({openRequest,world,selection,car,ready,mode,onSetup,
     if(r.phase==='results'){setOpen(true);if(w.mode==='race'||w.mode==='countdown'){w.leaveLive();}}
     const seat=r.members.find(p=>p.id===entry.id);if(seat?.status==='finished')pendingFinish.current=null;else if(seat?.status==='racing'&&pendingFinish.current)send(pendingFinish.current);if(!seat||seat.status==='disconnected'){setError('Reconnect window expired. Leave and rejoin for the next race.');w.leaveLive();}
    };
-   ws.onclose=()=>{if(rev!==generation.current)return;setConnected(false);lostAt.current ||=Date.now();if(Date.now()-lostAt.current<20000){setError('Reconnecting… your race clock continues.');retry.current=setTimeout(boot,1000);}else{setError('Connection lost. Leave the room to return to solo racing.');setOpen(true);callbacks.current.world()?.leaveLive();}};
+   ws.onclose=()=>{if(rev!==generation.current)return;setConnected(false);setReadyPending(false);requestedReady.current=null;lostAt.current ||=Date.now();if(Date.now()-lostAt.current<20000){setError('Reconnecting… your race clock continues.');retry.current=setTimeout(boot,1000);}else{setError('Connection lost. Leave the room to return to solo racing.');setOpen(true);callbacks.current.world()?.leaveLive();}};
    ws.onerror=()=>{setError('Live connection unavailable. Solo racing still works.');};
   };boot();
  };
@@ -66,7 +73,8 @@ export function FriendRaces({openRequest,world,selection,car,ready,mode,onSetup,
  useEffect(()=>{const w=callbacks.current.world();if(w){w.roomMenuOpen=open||liveMenu;w.onRoomBack=requestBack;w.menuOpen=open||liveMenu;if(w.live)w.liveMenu=open||liveMenu;}},[open,liveMenu,ready,requestBack]);
  const enter=async(join:boolean)=>{setBusy(true);setError('');try{const response=await fetch('/api/rally/rooms',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({version:3,name,selection,car,...(join?{code}:{})})});const data=await response.json();if(!response.ok)throw Error(data.error||'Room unavailable');try{localStorage.setItem('rally-room-name',name);}catch{}connect(data);}catch(e){setError(e instanceof Error?e.message:'Could not join');}finally{setBusy(false);}};
  const me=room?.members.find(p=>p.id===session.current?.id),host=room?.host===session.current?.id;
- const readyUp=async()=>{if(me?.ready){send({type:'ready',ready:false});return;}setPreparing(true);try{if(await world()?.prepareRace())send({type:'ready',ready:true});}finally{setPreparing(false);}};
+ const readyUp=async()=>{if(readyPending||preparing||!connected)return;setReadyNotice('');if(me?.ready){requestedReady.current=false;setReadyPending(true);send({type:'ready',ready:false});return;}setPreparing(true);try{if(await world()?.prepareRace()){if(socket.current?.readyState!==WebSocket.OPEN){setReadyNotice('Reconnect before confirming you’re ready.');return;}requestedReady.current=true;setReadyPending(true);send({type:'ready',ready:true});}else setReadyNotice('Preparation did not finish. Try Ready to start again.');}catch{setReadyNotice('Could not prepare the race. Try again.');}finally{setPreparing(false);}};
+ const allReady=Boolean(room&&room.members.length>=2&&room.members.every(p=>p.ready&&p.status==='lobby'));
  const applySetup=()=>{send({type:'setup',selection:draft,car:stageVehicle(draft.stage)??(compatibleCar(draft,room?.car??0)?room!.car:0)});setSetupOpen(false);};
  return <>
   {room&&mode!=='garage'&&<button className={`${styles.friendsLaunch} ${styles.friendsInRace}`} onClick={()=>setOpen(true)}><HudIcon name="people"/> Friends</button>}
@@ -82,15 +90,17 @@ export function FriendRaces({openRequest,world,selection,car,ready,mode,onSetup,
     <button disabled={busy||name.trim().length<2||(entryStep==='join'&&code.length!==6)} onClick={()=>enter(entryStep==='join')}>{busy?'Connecting…':entryStep==='join'?'Join race':'Create race'}</button></>}
    </>:<>
     <p>{trackName(room.selection)} · {weatherNames[room.selection.weather]} · {timeNames[timeOfDay(room.selection)]} · {room.selection.reverse?'Reverse':'Forward'}{isCircuit(room.selection)?` · ${lapCount(room.selection)} laps`:null}</p>
-    <ol>{room.members.map(m=><li key={m.id}>{m.name} · {cars[m.car??room.car].name}{m.id===session.current?.id?' · You':''} — {m.time!==undefined?`${formatTime(m.time)}${m.practice?' · Practice':''}`:m.ready?'Ready':m.status==='lobby'?'Getting ready':m.status}</li>)}</ol>
+    <ol className={styles.lobbyPlayers}>{room.members.map(m=><li key={m.id}><div><strong>{m.name}{m.id===session.current?.id?' · You':''}</strong><small>{cars[m.car??room.car].name}</small></div><span className={styles.readyBadge} data-ready={m.ready} aria-live="polite">{m.time!==undefined?`${formatTime(m.time)}${m.practice?' · Practice':''}`:m.status==='lobby'?<><HudIcon name={m.ready?'check':'people'}/>{m.ready?'Ready to play':'Needs more time'}</>:m.status}</span></li>)}</ol>
     {room.phase==='lobby'&&<>
-      <button className={styles.start} disabled={!connected||preparing} onClick={()=>void readyUp()}><HudIcon name="check"/>{preparing?'Preparing race…':me?.ready?'Ready ✓ — change':'Ready to race'}</button>
-      {host&&room.members.length>=2&&room.members.every(p=>p.ready)&&<button className={styles.start} disabled={!connected} onClick={()=>send({type:'start'})}><HudIcon name="right"/> Start together</button>}
-      <button onClick={async()=>{setInviteOpen(true);try{await navigator.clipboard.writeText(`${location.origin}/playground/rally?room=${room.code}`);setError('Invitation link copied.');}catch{setError('Copy the invitation link below.');}}}><HudIcon name="invite"/> Invite a friend</button>
-      {inviteOpen&&<label>Invitation link<input readOnly value={`${typeof location==='undefined'?'':location.origin}/playground/rally?room=${room.code}`} onFocus={e=>e.currentTarget.select()}/><small>Room code: {room.code}</small></label>}
-      <button disabled={!connected||preparing} onClick={()=>setCarOpen(true)}><HudIcon name="wheel"/> Your car · {cars[me?.car??room.car].name}</button>
-      {host&&<button onClick={()=>{setDraft(room.selection);setSetupOpen(true);}}><HudIcon name="settings"/> Race setup</button>}
-
+      {readyNotice&&<p role="status">{readyNotice}</p>}
+      <button data-ready-action className={me?.ready?undefined:styles.start} disabled={!connected||preparing||readyPending} onClick={()=>void readyUp()}><HudIcon name={me?.ready?'settings':'check'}/>{preparing?'Preparing race…':readyPending?'Updating…':me?.ready?'Make changes':'Ready to start'}</button>
+      {me?.ready&&<p role="status">{room.members.length<2?'Waiting for a friend to join':allReady?host?'Everyone is ready to play':'Waiting for the host to start':'Waiting for friends to get ready'}</p>}
+      {host&&allReady&&<button className={styles.start} disabled={!connected||readyPending} onClick={()=>send({type:'start'})}><HudIcon name="right"/> Start race</button>}
+      <button onClick={async()=>{setCopyError('');try{await navigator.clipboard.writeText(`${location.origin}/playground/rally?room=${room.code}`);setCopied(true);}catch{setCopied(false);setCopyError('Couldn’t copy. Share the room code instead.');}}}><HudIcon name={copied?'check':'invite'}/><span aria-live="polite">{copied?'Link copied':'Copy link for friend'}</span></button>
+      <small className={styles.roomCode}>Room code: <strong>{room.code}</strong></small>
+      {copyError&&<p role="status">{copyError}</p>}
+      {!me?.ready&&<><button disabled={!connected||preparing||readyPending} onClick={()=>setCarOpen(true)}><HudIcon name="wheel"/> Your car · {cars[me?.car??room.car].name}</button>
+      {host&&<button disabled={!connected||preparing||readyPending} onClick={()=>{setDraft(room.selection);setSetupOpen(true);}}><HudIcon name="settings"/> Race setup</button>}</>}
     </>}
     {room.phase==='results'&&host&&<button onClick={()=>send({type:'again'})}><HudIcon name="recover"/> Race again</button>}
     {room.phase==='results'&&!host&&<p>Waiting for the host to start a rematch.</p>}
