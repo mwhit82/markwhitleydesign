@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict';
 import WebSocket from 'ws';
 const origin=process.argv[2];if(!origin?.startsWith('https://'))throw Error('Pass the deployed HTTPS origin');
-const stage=process.argv[3]||'nyc',version=['neon','mx'].includes(stage)?2:1,car=stage==='neon'?9:stage==='mx'?10:0;
+const stage=process.argv[3]||'nyc',version=3,car=stage==='neon'?9:stage==='mx'?10:0;
 const pause=ms=>new Promise(r=>setTimeout(r,ms));
 async function wait(check,label,timeout=15000){const start=Date.now();while(Date.now()-start<timeout){if(check())return;await pause(60);}throw Error(`Timed out: ${label}`);}
 const clients=[];
@@ -23,13 +23,19 @@ try{
  }
  await wait(()=>clients.every(c=>c.room.members.length===4),'four-member snapshots');
  const full=await fetch(origin+'/api/rally/rooms',{method:'POST',headers:{Origin:origin,'Content-Type':'application/json'},body:JSON.stringify({name:'V5 Extra',version,code})});assert.equal(full.status,400);
+ if(!['kart','neon','mx'].includes(stage)){
+  for(const [i,c] of clients.entries()){send(c,{type:'car',car:i});await pause(220);}
+  await wait(()=>clients.every(c=>c.room.members.every((m,i)=>m.car===i)),'individual car snapshots');
+  for(const c of clients){send(c,{type:'ready',ready:true});await pause(220);}
+  send(clients[1],{type:'car',car:7});await wait(()=>clients.every(c=>c.room.members.every(m=>!m.ready)),'car changes reset ready');
+ }
  for(const c of clients){send(c,{type:'ready',ready:true});await pause(220);}
  await wait(()=>clients[0].room.members.every(m=>m.ready),'all ready');send(clients[0],{type:'start'});
  await wait(()=>clients.every(c=>c.room.phase==='racing'),'shared countdown');assert.equal(new Set(clients.map(c=>c.room.startAt)).size,1);
  const startAt=clients[0].room.startAt;await pause(Math.max(0,startAt-Date.now()+100));
- const began=Date.now();send(clients[0],{type:'pose',pose:{x:0,z:0,heading:0,speed:10,progress:.1,...(version===2?{y:2,pitch:.1,roll:.2}:{})}});
+ const began=Date.now();send(clients[0],{type:'pose',pose:{x:0,z:0,heading:0,speed:10,progress:.1,...(version>=2?{y:2,pitch:.1,roll:.2}:{})}});
  await wait(()=>clients.slice(1).every(c=>c.messages.some(m=>m.type==='pose')),'cross-instance movement');console.log('Movement delivered to all three rivals within',Date.now()-began,'ms');
- if(version===2)for(const c of clients.slice(1)){const m=c.messages.find(m=>m.type==='pose');assert.equal(m.pose.y,2);assert.equal(m.pose.pitch,.1);}
+ if(version>=2)for(const c of clients.slice(1)){const m=c.messages.find(m=>m.type==='pose');assert.equal(m.pose.y,2);assert.equal(m.pose.pitch,.1);}
  const entry=clients[3].entry;clients[3].ws.close();await pause(900);clients[3]=await connect(entry);assert.equal(clients[3].room.attempt,1);
  send(clients[2],{type:'unknown',version:99});await wait(()=>clients[2].messages.some(m=>m.type==='error'&&/version/.test(m.error)),'version rejection');
  await pause(300);

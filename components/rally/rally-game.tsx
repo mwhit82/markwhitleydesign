@@ -1,6 +1,5 @@
 /* eslint-disable @next/next/no-img-element -- Locally captured, pre-sized WebP previews need no image service. */
 "use client";
-import {useRouter} from "next/navigation";
 import {stageVehicle,hasCodriver} from './stages';
 import {useModalViewport,useModalIsolation} from "./modal-viewport";
 import {PreparationBar} from './preparation-bar';
@@ -21,10 +20,10 @@ import { HudIcon } from "./ui";
 import { reasonText, type CheckpointNotice, type RunReason } from "./checkpoints";
 import type { GhostSource } from "./replay";
 export function RallyGame({immersive=false}:{immersive?:boolean}={}) {
-  const router=useRouter();
   const host = useRef<HTMLDivElement>(null);
   const game = useRef<HTMLDivElement>(null);
   const hadNativeFullscreen = useRef(false);
+  const [nativeFullscreen,setNativeFullscreen]=useState(false);
   useModalViewport(game);useModalIsolation(game);
   const [inRoom,setInRoom]=useState(false);
   const [preparing,setPreparing]=useState("");
@@ -152,6 +151,7 @@ export function RallyGame({immersive=false}:{immersive?:boolean}={}) {
   }, []);
   useEffect(() => {
     const changed = () => {
+      setNativeFullscreen(document.fullscreenElement === game.current);
       if (document.fullscreenElement === game.current) {
         hadNativeFullscreen.current = true;
         setExpanded(true);
@@ -179,7 +179,7 @@ export function RallyGame({immersive=false}:{immersive?:boolean}={}) {
     return () => window.clearTimeout(timer);
   }, [notice]);
   const toggleFullscreen = async () => {
-    if (expanded) {
+    if (document.fullscreenElement === game.current) {
       if (document.fullscreenElement) {
         try {
           await document.exitFullscreen();
@@ -188,8 +188,7 @@ export function RallyGame({immersive=false}:{immersive?:boolean}={}) {
           return;
         }
       }
-      if(immersive){router.push("/");return;}
-      setExpanded(false);
+      setExpanded(true);
       return;
     }
     // Expanded layout is also the fallback on browsers without native fullscreen.
@@ -344,7 +343,7 @@ export function RallyGame({immersive=false}:{immersive?:boolean}={}) {
           {(mode==='race'||mode==='countdown') && <button data-mobile-pause="true" aria-label="Pause" title="Pause" onClick={()=>api.current?.pause()}><HudIcon name="pause"/></button>}
           {mode==='garage'&&<><button aria-label="Control" title="Control" onClick={()=>setSettingsPanel(true)}><HudIcon name="wheel"/></button><button aria-label="Leaderboards" title="Leaderboards" onClick={()=>setAllBoards(true)}><HudIcon name="list"/></button></>}
           <button data-sound-toggle disabled={!ready||audioBusy} aria-label={muted?'Enable sound':audioPlaying||mode==='paused'?'Mute sound':'Start sound'} title={muted?'Enable sound':audioPlaying||mode==='paused'?'Mute sound':'Sound'} aria-pressed={!muted&&(audioPlaying||mode==='paused')} onClick={toggleSound}><HudIcon name={muted?'muted':'sound'}/></button>
-          <button aria-label={expanded?'Exit game view':'Fullscreen'} title={expanded?'Exit game view':'Fullscreen'} aria-pressed={expanded} onClick={toggleFullscreen}><HudIcon name={expanded?'contract':'expand'}/></button>
+          <button aria-label={nativeFullscreen?'Exit fullscreen':'Fullscreen'} title={nativeFullscreen?'Exit fullscreen':'Fullscreen'} aria-pressed={nativeFullscreen} onClick={toggleFullscreen}><HudIcon name={nativeFullscreen?'contract':'expand'}/></button>
           {!inRoom && (mode==='race'||mode==='countdown') && ghostSource!=='off' && <button aria-label={ghostShown?'Hide ghost':'Show ghost'} title="Ghost · G" aria-pressed={ghostShown} onClick={()=>api.current?.toggleGhost()}><HudIcon name="ghost"/></button>}
         </div>
         {installHelp && (
@@ -546,7 +545,7 @@ export function RallyGame({immersive=false}:{immersive?:boolean}={}) {
                 <button onClick={toggleCamera} aria-pressed={driverView}><small><HudIcon name="wheel"/> CAMERA</small><strong>{driverView?"Driver seat":"Isometric"}</strong></button><button aria-pressed={codriver} disabled={stageVehicle(selection.stage)!==null} onClick={toggleCodriver}><small><HudIcon name="headset"/> CO-DRIVER</small><strong>{!hasCodriver(selection.stage)?'Rally only':codriver?'On':'Off'}</strong></button>
                 <button onClick={changeGraphics} aria-label={`Graphics: ${graphics}. Change quality`}><small><HudIcon name="screen"/> GRAPHICS</small><strong>{graphics==='auto'?'Auto':graphics==='high'?'High':'Low'}</strong></button>
                 <button aria-pressed={screenWeather} onClick={toggleScreenWeather}><small><HudIcon name="screen"/> SCREEN WEATHER</small><strong>{screenWeather?"On":"Off"}</strong></button>
-              </div><div className={styles.secondaryTiles}><button data-sound-toggle onClick={toggleSound}><HudIcon name={muted?'muted':'sound'}/>{muted?'Sound off':'Sound on'}</button><button onClick={()=>{api.current?.toggleReplay();setReplayEnabled(Boolean(api.current?.replayEnabled));}}><HudIcon name="replay"/>Replay {replayEnabled?'on':'off'}</button><button onClick={toggleFullscreen}><HudIcon name={expanded?'contract':'expand'}/>{expanded?'Exit view':'Fullscreen'}</button></div><section className={styles.controlFeedback} aria-label="Steering and feedback">
+              </div><div className={styles.secondaryTiles}><button data-sound-toggle onClick={toggleSound}><HudIcon name={muted?'muted':'sound'}/>{muted?'Sound off':'Sound on'}</button><button onClick={()=>{api.current?.toggleReplay();setReplayEnabled(Boolean(api.current?.replayEnabled));}}><HudIcon name="replay"/>Replay {replayEnabled?'on':'off'}</button><button onClick={toggleFullscreen}><HudIcon name={nativeFullscreen?'contract':'expand'}/>{nativeFullscreen?'Exit fullscreen':'Fullscreen'}</button></div><section className={styles.controlFeedback} aria-label="Steering and feedback">
           <label className={styles.controlRange}>Steering sensitivity <strong>{controls.sensitivity.toFixed(1)}×</strong><input type="range" min="0.5" max="1.5" step="0.1" value={controls.sensitivity} onChange={e=>setControls(c=>({...c,sensitivity:Number(e.target.value)}))}/></label>
           <div className={styles.feedbackActions}>
             <button disabled={hapticSupport==='unavailable'} aria-pressed={controls.haptics} onClick={()=>setControls(c=>({...c,haptics:!c.haptics}))}>{hapticSupport==='controller'?'Controller rumble':hapticSupport==='device'?'Device vibration':'Haptics unavailable'}{hapticSupport!=='unavailable'?`: ${controls.haptics?'On':'Off'}`:''}</button>

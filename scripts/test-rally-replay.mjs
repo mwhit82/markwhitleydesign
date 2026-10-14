@@ -94,3 +94,17 @@ test('audio failures never change the explicit mute preference and the next gest
   w.disposed=true;w.audioFailed();assert.equal(notices,3);
  }finally{globalThis.document=oldDocument;}
 });
+
+test('member-specific rival preparation is bounded and empty prewarmed ghosts update safely',async()=>{
+ const {LiveRivals}=await import(await moduleUrl(resolve('components/rally/live-rivals.ts')));
+ const fetchBefore=globalThis.fetch;globalThis.fetch=async()=>{throw Error('optional model offline');};
+ const model=new T.Group();model.add(new T.Mesh(new T.BoxGeometry(),new T.MeshStandardMaterial()));
+ const rivals=new LiveRivals();try{
+  await rivals.prewarmDrivers([{id:'a',car:0,color:'#ff0000'},{id:'b',car:1,color:'#00ff00'},{id:'c',car:2,color:'#0000ff'},{id:'d',car:3,color:'#ffffff'}],model);
+  assert.equal(rivals.group.children.length,3);rivals.update(performance.now(),()=>0);
+  assert.ok(rivals.group.children.every(c=>!c.visible));
+  const prepared=rivals.cars.get('b').car;rivals.receive({id:'b',x:1,z:2,heading:0,speed:0,progress:0,sent:Date.now()},model);
+  assert.equal(rivals.cars.get('b').car,prepared);assert.equal(prepared.scale.x,1);rivals.update(performance.now(),()=>0);assert.equal(prepared.visible,true);
+ }finally{rivals.clear();globalThis.fetch=fetchBefore;}
+ assert.equal(rivals.group.children.length,0);
+});

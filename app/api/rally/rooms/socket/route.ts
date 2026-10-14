@@ -18,7 +18,7 @@ export async function GET(request:Request){
   ws.on('close',cleanup);ws.on('error',cleanup);
   ws.on('message',async raw=>{
    try{
-    const text=raw.toString();if(text.length>300000)throw Error('Message too large');const m=JSON.parse(text);if(![1,2].includes(m.version))throw Error('Game version changed. Refresh.');
+    const text=raw.toString();if(text.length>300000)throw Error('Message too large');const m=JSON.parse(text);if(![1,2,3].includes(m.version))throw Error('Game version changed. Refresh.');
     if(!member){if(authenticating)return;authenticating=true;if(m.type!=='hello'||typeof m.id!=='string'||typeof m.token!=='string')throw Error('Join a room first');const room=await readRoom(code);if(room&&room.version!==m.version)throw Error('Game version changed. Refresh.');if(!room||!authenticate(room,m.id,m.token))throw Error('Invalid room membership');const seat=room.members.find(p=>p.id===m.id)!;if(Date.now()-seat.seen>20000||seat.status==='retired'||seat.status==='disconnected')throw Error('Reconnect window expired');if(closed)return;member=m.id;token=m.token;current=publicRoom(room);clearTimeout(authTimer);subscription=db.subscribe(`rally-room:${code}`);subscription.on('message',event=>{const message=event.message as {type:string;room?:RaceRoom};if(message.type==='room'&&message.room)current=message.room;send(message);});subscription.on('error',()=>ws.close(1011,'Connection interrupted'));send({type:'room',room:publicRoom(room),now:Date.now()});return;}
     if(current&&m.version!==current.version)throw Error('Game version changed. Refresh.');
     if(m.type==='pose'){

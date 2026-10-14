@@ -102,3 +102,23 @@ test('Blender cockpit switches safely, lights gauges at night and falls back on 
  try{const goodFetch=globalThis.fetch;globalThis.fetch=async()=>{throw Error('offline')};const failed=new DriverCamera();await failed.prepare(false);assert.equal(failed.assetRoot,null);assert.ok(failed.cockpit.children.length>3);failed.dispose();globalThis.fetch=goodFetch;await c.prepare(false);assert.ok(c.assetRoot);const root=c.assetRoot;await c.prepare(false);assert.equal(c.assetRoot,root);c.update(.5,v,0,-1,base,true,true,390,700,false,40,3000,false,true);assert.ok(c.wheel.rotation.z>.8,'left is counterclockwise from the driver');assert.equal(c.arms.length,2);assert.ok(c.lights.every(m=>m.emissiveIntensity>1));assert.ok(c.arms.every(a=>Number.isFinite(a.scale.y)&&a.scale.y>.1));await c.prepare(true);assert.notEqual(c.assetRoot,root);globalThis.fetch=async()=>{throw Error('offline')};const fallback=new DriverCamera();await fallback.prepare(false);assert.ok(fallback.assetRoot,'encoded buffers survive offline restarts');fallback.dispose();}finally{c.dispose();globalThis.fetch=fetchBefore;}
 });
 test('track outline cards cover every layout and direction, with open rally routes',async()=>{for(const stage of S.stages.filter(s=>!['neon','mx'].includes(s.id)))for(const track of stage.id==='nyc'?[1]:[1,2,3]){const pair=[];for(const direction of ['forward','reverse']){const svg=await readFile(`public/rally/previews/routes/${stage.id}-${track}-${direction}.svg`,'utf8');assert.ok(svg.includes('<polyline'));assert.ok(svg.includes(direction.toUpperCase()));assert.ok(svg.includes(['kart','nyc'].includes(stage.id)?'START / FINISH':'POINT TO POINT'));pair.push(svg);}assert.notEqual(...pair);}});
+
+test('individual cars are validated, reset readiness and lock for the shared attempt',()=>{
+ const r=roomFixture();r.version=3;
+ for(const [i,m] of r.members.entries())roomAction(r,m.id,{type:'car',car:i},1000);
+ assert.deepEqual(r.members.map(m=>m.car),[0,1,2,3]);
+ for(const m of r.members)roomAction(r,m.id,{type:'ready',ready:true},1000);
+ roomAction(r,'b',{type:'car',car:7},1001);assert.ok(r.members.every(m=>!m.ready));assert.equal(r.members[0].car,0);
+ for(const car of [-1,8,9,1.5,'2'])assert.throws(()=>roomAction(r,'b',{type:'car',car},1002));
+ for(const m of r.members)roomAction(r,m.id,{type:'ready',ready:true},1003);
+ roomAction(r,'a',{type:'start'},1004);assert.throws(()=>roomAction(r,'b',{type:'car',car:2},1005));assert.deepEqual(r.members.map(m=>m.car),[0,7,2,3]);
+ const old=roomFixture();assert.throws(()=>roomAction(old,'b',{type:'car',car:1},1000));
+});
+test('special stages enforce their vehicle and rally setup preserves compatible individual choices',()=>{
+ const r=roomFixture();r.version=3;r.members.forEach((m,i)=>{m.car=i;m.ready=true;});
+ roomAction(r,'a',{type:'setup',selection:{stage:'mountain',weather:'clear',reverse:true},car:0},1001);
+ assert.deepEqual(r.members.map(m=>m.car),[0,1,2,3]);assert.ok(r.members.every(m=>!m.ready));
+ roomAction(r,'a',{type:'setup',selection:{stage:'kart',weather:'clear',reverse:false,circuitVersion:2,laps:3},car:8},1002);
+ assert.ok(r.members.every(m=>m.car===8));assert.throws(()=>roomAction(r,'b',{type:'car',car:0},1003));
+ roomAction(r,'a',{type:'setup',selection:{stage:'forest',weather:'clear',reverse:false},car:0},1004);assert.ok(r.members.every(m=>m.car===0));
+});

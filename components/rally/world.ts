@@ -67,6 +67,9 @@ export class RallyWorld {
   private modelPending:Promise<void>=Promise.resolve();
   private preparationId=0;
   private preparedKey="";
+  private roomDrivers:{id:string;car:number;color:string}[]=[];
+  setRoomDrivers(drivers:{id:string;car:number;color:string}[]){if(JSON.stringify(drivers)!==JSON.stringify(this.roomDrivers)){this.roomDrivers=drivers;this.cancelPreparation();}}
+
   private preparation:Promise<boolean>|null=null;
   private routeIndex:RouteIndex|null=null;
   private nearestCache=new Map<string,{index:number;distance:number}>();
@@ -74,7 +77,7 @@ export class RallyWorld {
   private projectionKey='';
   private renderedAt=0;
   async prepareRace(){
-    const key=boardKey(this.selection)+":"+this.selected+":"+this.ghostSource;
+    const key=boardKey(this.selection)+":"+this.selected+":"+this.ghostSource+":"+JSON.stringify(this.roomDrivers);
     if(this.preparedKey===key)return true;
     if(this.preparation)return this.preparation;
     const id=++this.preparationId;
@@ -85,7 +88,8 @@ export class RallyWorld {
       this.callbacks.preparation?.('Preparing rivals and sound…');
       await Promise.allSettled([this.prepareGhost(),this.ensureAudio(),this.driverCamera.prepare(this.selected===9?'hover':this.selected===10?'bike':this.selected===8)]);
       if(id!==this.preparationId||this.disposed)return false;
-      this.rivals.prewarm(this.vehicle);
+      if(this.roomJoined)await this.rivals.prewarmDrivers(this.roomDrivers,this.vehicle);else this.rivals.prewarm(this.vehicle);
+      if(id!==this.preparationId||this.disposed)return false;
       this.callbacks.preparation?.('Warming lights and materials…');
       const textures=new Set<T.Texture>();this.scene.traverse(o=>{if(o instanceof T.Mesh)for(const material of Array.isArray(o.material)?o.material:[o.material])for(const value of Object.values(material))if(value instanceof T.Texture)textures.add(value);});for(const texture of textures)this.renderer.initTexture(texture);
       await this.renderer.compileAsync(this.scene,this.camera);
@@ -100,7 +104,7 @@ export class RallyWorld {
   async requestStart(){if(await this.prepareRace())this.start();}
 
   beginLive(at:number){this.live=true;this.liveStartAt=at;this.liveMenu=false;this.start(true);this.countdown=Math.max(0,(at-Date.now())/1000);}
-  leaveLive(){this.live=false;this.liveStartAt=0;this.liveMenu=false;this.rivals.clear();this.onLiveMenu?.(false);this.garage();}
+  leaveLive(){if(!this.roomJoined)this.setRoomDrivers([]);this.live=false;this.liveStartAt=0;this.liveMenu=false;this.rivals.clear();this.onLiveMenu?.(false);this.garage();}
   codriverEnabled=true;
   private pace:PaceScheduler|null=null;
   private routeDistances:number[]=[];
