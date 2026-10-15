@@ -11,6 +11,14 @@ export default function HomePage() {
     <section className={styles.grid} aria-label="AI experiments">
       <Link href="/playground/rally" className={`${styles.card} ${styles.rally}`} prefetch={false}><div className={styles.rallyArt}><Image src="/rally/previews/v42/forest-1-weather-clear.webp" alt="Handmade miniature forest rally course" fill sizes="(max-width: 700px) 100vw, 50vw"/><span className={styles.playBadge}>PLAY <Icon icon={ArrowUpRight01Icon} className={styles.inlineArrow} /></span><strong>POCKET<br/>RALLY.</strong></div><div className={styles.cardFooter}><div><small>01 / Playable experiment</small><h2>Pocket Rally</h2></div><span aria-hidden="true"><Icon icon={ArrowUpRight01Icon} className={styles.inlineArrow} /></span></div></Link>
       <Link href="/playground/soccer98" className={`${styles.card} ${styles.rally}`}><div className={styles.rallyArt}><Image src="/soccer98/cover.svg" alt="Retro striped football pitch with a black-and-white-shirted player chased by red defenders" fill sizes="(max-width: 700px) 100vw, 50vw"/><span className={styles.playBadge}>PLAY <Icon icon={ArrowUpRight01Icon} className={styles.inlineArrow} /></span><strong>SOCCER98.</strong></div><div className={styles.cardFooter}><div><small>02 / Playable experiment</small><h2>Football meets Snake</h2></div><span aria-hidden="true"><Icon icon={ArrowUpRight01Icon} className={styles.inlineArrow} /></span></div></Link>
+      <Link href="/playground/dead-deadly-deader" className={`${styles.card} ${styles.deader}`} prefetch={false}>
+        <div className={`${styles.rallyArt} ${styles.deaderArt}`}>
+          <Image src="/deader/cover.png" alt="Dimly lit horror room with a chained wooden door and ladder" fill sizes="(max-width: 700px) 100vw, (max-width: 1440px) 50vw, 650px" />
+          <span className={styles.playBadge}>PLAY <Icon icon={ArrowUpRight01Icon} className={styles.inlineArrow} /></span>
+          <strong>DEAD.<br />DEADLY.<br />DEADER.</strong>
+        </div>
+        <div className={styles.cardFooter}><div><small>03 / Playable experiment · By Fenn</small><h2>Dead Deadly Deader</h2></div><span aria-hidden="true"><Icon icon={ArrowUpRight01Icon} className={styles.inlineArrow} /></span></div>
+      </Link>
     </section>
     <h2 className={styles.categoryTitle}>My portfolio</h2>
     <section className={styles.grid} aria-label="My portfolio">
