@@ -31,6 +31,8 @@ export function interactRoom() {
     roomAudio.unlock();
     roomAudio.play("switch");
     s.roomView(view);
+    // Inspect first on both keyboard and touch; stepping back reveals door actions.
+    if (view === "door") useGame.getState().doorEvent({ type: "inspect" });
   }
 }
 export function RoomController() {
