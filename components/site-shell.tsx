@@ -20,7 +20,7 @@ const navigation = [
 
 export function SiteShell({ children }: { children: ReactNode }) {
   const pathname=usePathname();
-  if(pathname==='/playground/rally'||pathname==='/playground/soccer98'||['pendo-for-agents','salecycle-design-system','leo','pendo-listen'].some(slug=>pathname===`/work/${slug}`))return <main>{children}</main>;
+  if(pathname==='/playground/dead-deadly-deader'||pathname==='/playground/rally'||pathname==='/playground/soccer98'||['pendo-for-agents','salecycle-design-system','leo','pendo-listen'].some(slug=>pathname===`/work/${slug}`))return <main>{children}</main>;
   if(pathname==='/')return <div style={{minHeight:'100dvh',background:'#f2f0e9',color:'#252621'}}><main>{children}</main></div>;
   return (
     <div className="relative z-10 mx-auto min-h-screen max-w-7xl px-4 pb-8 sm:px-6 lg:px-8">

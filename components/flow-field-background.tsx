@@ -201,7 +201,7 @@ function getColor(noiseValue: number, palette: Color[]) {
 export function FlowFieldBackground() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const pathname=usePathname();
-  const isTrial = pathname==='/'||pathname.startsWith("/work/")||pathname.startsWith("/playground/rally")||pathname.startsWith("/playground/soccer98");
+  const isTrial = pathname==='/playground/dead-deadly-deader'||pathname==='/'||pathname.startsWith("/work/")||pathname.startsWith("/playground/rally")||pathname.startsWith("/playground/soccer98");
 
   useEffect(() => {
     if (isTrial) return;

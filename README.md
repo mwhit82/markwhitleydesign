@@ -205,3 +205,14 @@ measured 653 calls/89,292 triangles/180 points versus 652/89,292/0 when hidden:
 one draw call, matching the previous weather layer's draw-call count. Rain uses
 400 lines instead of the old 180 points; headlights add shader lighting work but
 no shadow passes. These are desktop measurements, not physical iPhone FPS tests.
+
+## Dead Deadly Deader
+
+Fenn's cone-shaped survival horror game is at `/playground/dead-deadly-deader`.
+Explore the 3D lobby, buy/equip colours with the one-time 150-coin starter balance,
+choose difficulty/mode in Fenn's START menu, and enter the explorable room with
+live CCTV, three story nights and Infinite mode. Play with keyboard/mouse or
+landscape touch controls; physical mobile-device validation is still pending.
+See [the game notes](docs/dead-deadly-deader.md) for controls, save format,
+architecture, validation and known limitations. Run `node --test scripts/test-deader.mjs`
+for the isolated game checks and `npm run build` for production verification.
