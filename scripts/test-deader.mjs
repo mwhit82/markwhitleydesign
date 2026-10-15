@@ -1550,9 +1550,9 @@ test("mobile settings migrate without changing visual defaults or saved progress
   assert.equal(invalid.settings.controls,"auto");
   assert.equal(invalid.settings.touchSensitivity,2);
 });
-test("portrait and interruption suspension freeze encounters, night and survival",async()=>{
+test("interruption suspension freezes encounters, night and survival in either orientation",async()=>{
   const {useGame}=await import(await moduleUrl(resolve("lib/deader/store.ts")));
-  for(const suspension of ["portrait","interrupted"]){
+  for(const suspension of ["interrupted"]){
     useGame.setState({save:g.newSave(),focused:true,panel:null,suspension:null,runSeconds:600});
     useGame.getState().start();
     useGame.setState({suspension});
@@ -1568,9 +1568,10 @@ test("portrait and interruption suspension freeze encounters, night and survival
   useGame.setState({suspension:null});
 });
 
-test("interruptions preserve the portrait lock instead of enabling menu Resume", async () => {
-  const {interruptionReason}=await import(await moduleUrl(resolve("lib/deader/input.ts")));
-  assert.equal(interruptionReason(true,390,844),"portrait");
-  assert.equal(interruptionReason(true,844,390),"interrupted");
-  assert.equal(interruptionReason(false,390,844),"interrupted");
+test("portrait and landscape swipes have equal sensitivity", async () => {
+  const {touchLookScale}=await import(await moduleUrl(resolve("lib/deader/input.ts")));
+  assert.equal(touchLookScale(390,844),1);
+  assert.equal(touchLookScale(844,390),1);
+  assert.equal(touchLookScale(820,1180),touchLookScale(1180,820));
+  assert.equal(touchLookScale(200,300),390/320);
 });

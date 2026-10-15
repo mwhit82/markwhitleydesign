@@ -1113,8 +1113,8 @@
 .primary, .interact { background: #e3e6e9 !important; color: #101215 !important; font-weight: 500 !important; }
 .preview { background: radial-gradient(ellipse, #30343a, #101215); border-color: var(--line); }
 .items .selected, .categories button[aria-pressed="true"], .fenn button[aria-pressed="true"] { background: #ffffff16; color: #fff; border-color: #ffffff85; }
-.fenn { padding: 12px 0; font-size: 16px; }
-.fenn button { font-size: 15px; padding: 10px 16px; line-height: 1.4; }
+.fenn { padding: 12px 0; font-size: 16px; color: #eef0f2; }
+.fenn button { font-size: 15px; padding: 10px 16px; line-height: 1.4; color: #eef0f2; }
 .fenn .startButton { width: 100%; margin: 28px auto 8px; font-size: 22px; letter-spacing: 5px; background: #e3e6e9; color: #101215; }
 .modeRow, .typeRow { gap: 10px; margin: 18px 0; }
 .settings, .achievements article, .questions, .purchase, .broadcastIdent, .newsGraphic { border-color: var(--line); }
@@ -1122,6 +1122,7 @@
 .settings input { accent-color: #e3e6e9; }
 .news { background: #090c10ed; border: 1px solid var(--line); border-radius: 4px; }
 .newsBrand { color: #eef0f2; font-weight: 500; letter-spacing: -2px; }
+.newsBrand span { letter-spacing: 1px; }
 .newsGraphic { background: linear-gradient(110deg, #ffffff06, #ffffff0e); }
 .newsGraphic b { color: #aeb4bc; }
 .breaking { background: #ffffff0b; border-left: 2px solid #ffffff80; font-weight: 400; }
@@ -1129,3 +1130,46 @@
 .news progress { accent-color: #dce0e5; }
 .ending { background: #080a0dde; color: #eef0f2; }
 .endingDark { background: #000; }
+
+/* Upright phones keep the scene central, with controls in the thumb zone. */
+@media (orientation: portrait) {
+  .touchGame .top { gap: 10px; }
+  .touchGame .top h1 { font-size: 22px; max-width: 160px; }
+  .touchGame .top .eyebrow { font-size: 7px; letter-spacing: 1px; }
+  .touchGame .topRight { gap: 6px; }
+  .touchGame .coin { padding: 10px; font-size: 12px; }
+  .touchGame .topRight button { padding: 10px; font-size: 12px; }
+  .touchGame .bottom { display: none; }
+  .touchGame .joystick { width: 112px; height: 112px; left: max(18px, env(safe-area-inset-left)); bottom: max(24px, env(safe-area-inset-bottom)); }
+  .touchGame .touchInteract { max-width: 156px; width: 40vw; right: max(18px, env(safe-area-inset-right)); bottom: max(42px, env(safe-area-inset-bottom)); font-size: 13px; }
+  .touchGame .lookPad { inset: 100px 0 0 40%; }
+  .touchGame .lookPad > span { bottom: 150px; font-size: 11px; }
+  .touchGame .night { top: max(18px, env(safe-area-inset-top)); left: 18px; max-width: 49vw; font-size: 12px; }
+  .touchGame .night small { font-size: 9px; }
+  .touchGame .hearts { font-size: 20px; }
+  .touchGame .encounterStatus { top: 112px; left: 18px; right: 18px; max-width: none; font-size: 11px; padding: 8px 12px; }
+  .touchGame .encounterStatus p { margin: 4px 0; }
+  .touchGame .outcome { bottom: 170px; left: 18px; width: calc(100% - 36px); max-width: none; }
+  .touchGame .inspectionQuestions { top: auto; left: 12px; right: 12px; bottom: max(94px, calc(env(safe-area-inset-bottom) + 82px)); width: auto; max-height: 26dvh; overflow-y: auto; overscroll-behavior: contain; padding: 10px 14px; }
+  .touchGame .inspectionQuestions .note { display: none; }
+  .touchGame .inspectionActions { bottom: max(12px, env(safe-area-inset-bottom)); font-size: 10px; }
+  .touchGame .inspectionActions p { margin: 6px 0; }
+  .touchGame .survivalOverlay { padding: 120px 18px 180px; }
+  .touchGame .news { inset: 110px 12px max(12px, env(safe-area-inset-bottom)); padding: 18px; }
+  .touchGame .newsBrand { font-size: 34px; }
+  .touchGame .news h2 { font-size: 23px; }
+  .touchGame .subtitle { font-size: 16px; min-height: 0; }
+  .touchGame .newsActions { font-size: 11px; }
+  .touchGame .cctv { inset: 110px 12px max(12px, env(safe-area-inset-bottom)); font-size: 10px; padding: 10px; }
+  .touchGame .cctv > button { padding: 8px; font-size: 11px; }
+  .touchGame.surveillance .encounterStatus { top: 190px; left: 24px; right: 24px; max-width: none; }
+  .touchGame .feedButtons { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .touchGame .feedButtons button { padding: 8px; font-size: 10px; }
+  .touchGame .shopGrid { grid-template-columns: 1fr; }
+  .touchGame .preview { height: 180px; }
+  .touchGame .items { grid-template-columns: 1fr 1fr; }
+  .touchGame .purchase { flex-wrap: wrap; }
+  .touchGame .results { gap: 8px; }
+  .touchGame .results dd { font-size: 24px; }
+  .touchGame .fenn .startButton { margin-top: 20px; }
+}

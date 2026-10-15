@@ -212,7 +212,7 @@ Fenn's cone-shaped survival horror game is at `/playground/dead-deadly-deader`.
 Explore the 3D lobby, buy/equip colours with the one-time 150-coin starter balance,
 choose difficulty/mode in Fenn's START menu, and enter the explorable room with
 live CCTV, three story nights and Infinite mode. Play with keyboard/mouse or
-landscape touch controls; physical mobile-device validation is still pending.
+portrait or landscape touch controls; physical mobile-device validation is still pending.
 See [the game notes](docs/dead-deadly-deader.md) for controls, save format,
 architecture, validation and known limitations. Run `node --test scripts/test-deader.mjs`
 for the isolated game checks and `npm run build` for production verification.

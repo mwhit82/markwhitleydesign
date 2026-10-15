@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useRef, useState, type PointerEvent } from "react";
-import { gameInput, joystick, interruptionReason } from "@/lib/deader/input";
+import { gameInput, joystick, touchLookScale } from "@/lib/deader/input";
 import { useGame } from "@/lib/deader/store";
 import { roomAudio } from "@/lib/deader/audio/room-audio";
 import { interactRoom } from "./room-controller";
@@ -8,7 +8,6 @@ import styles from "./game.module.css";
 
 export function TouchControls() {
   const s = useGame();
-  const [portrait, setPortrait] = useState(false);
   const [thumb, setThumb] = useState({ x: 0, z: 0 });
   const last = useRef({ x: 0, y: 0 });
   useEffect(() => {
@@ -18,18 +17,6 @@ export function TouchControls() {
         (state.save.settings.controls === "auto" && touch);
       if (active !== state.touchActive) gameInput.reset();
       useGame.setState({ touchActive: active });
-      resize();
-    };
-    const resize = () => {
-      const vertical = window.innerHeight > window.innerWidth;
-      setPortrait(vertical);
-      const state = useGame.getState();
-      if (state.touchActive && vertical) {
-        gameInput.reset();
-        useGame.setState({ suspension: "portrait" });
-      } else if (state.suspension === "portrait") {
-        useGame.setState({ suspension: "interrupted" });
-      }
     };
     const pointer = (e: globalThis.PointerEvent) => {
       if (e.pointerType === "touch") choose(true);
@@ -42,15 +29,21 @@ export function TouchControls() {
     const interrupt = () => {
       gameInput.reset();
       roomAudio.silence();
-      useGame.setState({ suspension: interruptionReason(useGame.getState().touchActive, window.innerWidth, window.innerHeight) });
+      useGame.setState({ suspension: "interrupted" });
     };
     const visibility = () => { if (document.hidden) interrupt(); };
-    const orientation = () => { interrupt(); resize(); };
+    let portrait = window.innerHeight > window.innerWidth;
+    const orientation = () => {
+      const next = window.innerHeight > window.innerWidth;
+      if (next === portrait) return;
+      portrait = next;
+      interrupt();
+      setThumb({ x: 0, z: 0 });
+    };
     choose(matchMedia("(pointer: coarse)").matches);
     window.addEventListener("pointerdown", pointer, true);
     window.addEventListener("keydown", key, true);
-    window.addEventListener("resize", resize);
-    window.addEventListener("orientationchange", orientation);
+    window.addEventListener("resize", orientation);
     window.addEventListener("blur", interrupt);
     window.addEventListener("pagehide", interrupt);
     document.addEventListener("visibilitychange", visibility);
@@ -58,8 +51,7 @@ export function TouchControls() {
       gameInput.reset();
       window.removeEventListener("pointerdown", pointer, true);
       window.removeEventListener("keydown", key, true);
-      window.removeEventListener("resize", resize);
-      window.removeEventListener("orientationchange", orientation);
+      window.removeEventListener("resize", orientation);
       window.removeEventListener("blur", interrupt);
       window.removeEventListener("pagehide", interrupt);
       document.removeEventListener("visibilitychange", visibility);
@@ -98,7 +90,7 @@ export function TouchControls() {
         }}
         onPointerMove={e => {
           if (gameInput.owners.look !== e.pointerId) return;
-          const scale = 390 / Math.max(320, window.innerHeight);
+          const scale = touchLookScale(window.innerWidth, window.innerHeight);
           gameInput.look.x += (e.clientX - last.current.x) * scale;
           gameInput.look.y += (e.clientY - last.current.y) * scale;
           last.current = { x: e.clientX, y: e.clientY };
@@ -131,13 +123,13 @@ export function TouchControls() {
         if (e.shiftKey && document.activeElement === first) { e.preventDefault(); final.focus(); }
         else if (!e.shiftKey && document.activeElement === final) { e.preventDefault(); first.focus(); }
       }}>
-        <h2>{s.touchActive && portrait ? "Turn your device sideways" : "Ready to return?"}</h2>
+        <h2>Ready to return?</h2>
         <p>Your shift, visitors and decision countdown are paused.</p>
-        {!(s.touchActive && portrait) && <button autoFocus onClick={() => {
+        <button autoFocus onClick={() => {
           gameInput.reset(); roomAudio.unlock();
           useGame.setState({ suspension: null, focused: true });
-        }}>Resume game</button>}
-        <button autoFocus={s.touchActive && portrait} onClick={() => s.open("pause")}>Open menu</button>
+        }}>Resume game</button>
+        <button onClick={() => s.open("pause")}>Open menu</button>
       </section>
     </div>}
   </>;

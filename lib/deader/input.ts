@@ -31,7 +31,7 @@ export class GameInput {
 }
 export const gameInput = new GameInput();
 
-/** An interruption must never downgrade the portrait lock to a resumable pause. */
-export function interruptionReason(touch: boolean, width: number, height: number): "portrait" | "interrupted" {
-  return touch && height > width ? "portrait" : "interrupted";
+/** Match swipe distance across orientations without amplifying tiny viewports. */
+export function touchLookScale(width: number, height: number): number {
+  return 390 / Math.max(320, Math.min(width, height));
 }

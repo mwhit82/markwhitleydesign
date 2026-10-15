@@ -87,9 +87,12 @@ export function Controller() {
     target.current.set(p.x, 1.35, p.z - 0.5);
     camera.lookAt(target.current);
     // Reset FOV after room inspection/CCTV before returning to the lobby.
-    if (camera instanceof THREE.PerspectiveCamera && camera.fov !== 55) {
-      camera.fov = 55;
-      camera.updateProjectionMatrix();
+    if (camera instanceof THREE.PerspectiveCamera) {
+      const fov = s.touchActive && camera.aspect < 1 ? 77 : 55;
+      if (camera.fov !== fov) {
+        camera.fov = fov;
+        camera.updateProjectionMatrix();
+      }
     }
     const prompt =
       Math.hypot(p.x + 3.9, p.z + 1) < 2

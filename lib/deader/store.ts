@@ -79,7 +79,7 @@ type State = {
   decideVisitor: (id: string, decision: Decision) => void;
   escape: () => void;
   focused: boolean;
-  suspension: "portrait" | "interrupted" | null;
+  suspension: "interrupted" | null;
   touchActive: boolean;
   prompt: string | null;
   difficulty: Difficulty;

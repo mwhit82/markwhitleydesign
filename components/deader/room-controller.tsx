@@ -310,6 +310,12 @@ export function RoomController() {
     camera.position.lerp(eye, alpha);
     camera.quaternion.slerp(rotation, alpha);
     if (camera instanceof THREE.PerspectiveCamera) {
+      // Keep enough horizontal context for visitor clues on an upright phone.
+      if (s.touchActive && camera.aspect < 1) {
+        fov = Math.min(85, THREE.MathUtils.radToDeg(2 * Math.atan(
+          Math.tan(THREE.MathUtils.degToRad(fov / 2)) / Math.max(.65, camera.aspect),
+        )));
+      }
       camera.fov = THREE.MathUtils.lerp(camera.fov, fov, alpha);
       camera.updateProjectionMatrix();
     }

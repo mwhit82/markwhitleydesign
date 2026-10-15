@@ -36,7 +36,7 @@ export default function PlaygroundPage() {
       <Link href="/playground/dead-deadly-deader" className="block rounded-2xl border border-[#68704c] bg-[#24291c] p-8 text-[#ede8d4]">
         <p className="text-xs uppercase tracking-widest text-[#c8dc8c]">Playable experiment 03 · By Fenn</p>
         <h2 className="mt-3 text-4xl font-black">DEAD DEADLY DEADER ↗</h2>
-        <p className="mt-3">A fresh face. A very long night. Explore the lobby, find your colour and meet the night shift. Keyboard &amp; mouse or landscape touch controls.</p>
+        <p className="mt-3">A fresh face. A very long night. Explore the lobby, find your colour and meet the night shift. Keyboard &amp; mouse, or touch controls in portrait and landscape.</p>
       </Link>
       <div className="grid gap-6 lg:grid-cols-2">
         {experiments.map((experiment) => (

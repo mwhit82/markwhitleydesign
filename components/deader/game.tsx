@@ -361,7 +361,7 @@ function StartMenu() {
           : "An endless shift with three lives. Dawn advances your night without restoring trust. The pace increases to a fair limit."}
       </p>
       <p className={styles.note}>
-        Play with keyboard and mouse, or touch controls in landscape. Contains mild scares. Progress stays in this browser on this
+        Play with keyboard and mouse, or touch controls in portrait or landscape. Contains mild scares. Progress stays in this browser on this
         device; no game account is needed.
       </p>
       <p className={styles.note}>
