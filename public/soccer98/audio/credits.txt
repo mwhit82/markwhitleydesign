@@ -18,3 +18,12 @@ mono 22050 Hz PCM16, peak normalization, 3 ms attack / 200 ms release fades.
 No synthesized effects or music. Both recordings permit modification and
 commercial use. Credits are retained voluntarily. The originally considered
 Signature Sounds storefront pack was not downloaded or used.
+
+Current pickup sound (v3): stadium-roar-v3.wav
+goalloop.wav by huubjeroen — football stadium crowd after a goal.
+https://freesound.org/people/huubjeroen/sounds/113698/
+https://cdn.freesound.org/previews/113/113698_190760-hq.mp3
+CC0 1.0: https://creativecommons.org/publicdomain/zero/1.0/
+Retrieved 15 October 2026. First 2.4 seconds of the high-quality preview,
+stereo retained, resampled to 22050 Hz PCM16, DC removal, peak normalization
+to 0.82, 35 ms onset and 450 ms tail fades. Replaces cheer-v2.wav in gameplay.

@@ -47,6 +47,21 @@ export function createRenderer(canvas: HTMLCanvasElement) {
   }
   // Warm every kit/stride once, before kick-off.
   for (let identity = 0; identity <= 25; identity++) for (const stride of [-1, 1]) sprite(identity, stride);
+  // Cache the curved black triads of a classic Tango-style ball once.
+  const ball = document.createElement("canvas"); ball.width = 64; ball.height = 64;
+  const ink = ball.getContext("2d")!;
+  ink.fillStyle = "#bfc5b8"; ink.beginPath(); ink.arc(32, 32, 30, 0, Math.PI * 2); ink.fill();
+  ink.fillStyle = "#fffdf1"; ink.beginPath(); ink.arc(30, 29, 28, 0, Math.PI * 2); ink.fill();
+  ink.save(); ink.beginPath(); ink.arc(32, 32, 29, 0, Math.PI * 2); ink.clip();
+  ink.fillStyle = "#171d1c";
+  const triad = new Path2D("M 0 -17 C 3 -7 6 -4 15 8 C 5 5 -5 5 -15 8 C -6 -4 -3 -7 0 -17 Z");
+  for (const [x, y, angle] of [[32, 14, 0], [16, 42, -2.1], [48, 42, 2.1]]) {
+    ink.save(); ink.translate(x, y); ink.rotate(angle); ink.fill(triad); ink.restore();
+  }
+  // Fine grey seams leave a white centre, rather than a black pentagon.
+  ink.strokeStyle = "#a7ada2"; ink.lineWidth = .8;
+  ink.beginPath(); ink.moveTo(24, 24); ink.lineTo(40, 24); ink.lineTo(46, 37); ink.lineTo(32, 46); ink.lineTo(18, 37); ink.closePath(); ink.stroke();
+  ink.restore();
   const target = canvas.getContext("2d");
   return (match: Match) => {
     if (!target) return;
@@ -55,9 +70,8 @@ export function createRenderer(canvas: HTMLCanvasElement) {
     c.drawImage(pitch, 0, 0);
   if (match.ball) {
     const x = PAD + match.ball.x * CELL + 8, y = PAD + match.ball.y * CELL + 8;
-    c.fillStyle = "#244c35"; c.fillRect(x - 4, y + 4, 11, 3);
-    c.fillStyle = "#fff8dc"; c.fillRect(x - 4, y - 5, 8, 10); c.fillRect(x - 5, y - 3, 10, 6);
-    c.fillStyle = "#263b34"; c.fillRect(x - 1, y - 2, 3, 3); c.fillRect(x - 4, y + 2, 2, 2); c.fillRect(x + 2, y - 4, 2, 2);
+    c.fillStyle = "#244c35"; c.fillRect(x - 6, y + 5, 14, 3);
+    c.drawImage(ball, x - 7, y - 7, 14, 14);
   }
     for (let identity = match.players.length - 1; identity >= 0; identity--) {
       const p = match.players[identity];

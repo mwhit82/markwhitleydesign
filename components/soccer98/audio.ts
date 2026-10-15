@@ -1,5 +1,5 @@
 type Cue = "turn" | "cheer";
-const files: Record<Cue, string> = { turn: "/soccer98/audio/kick-v2.wav", cheer: "/soccer98/audio/cheer-v2.wav" };
+const files: Record<Cue, string> = { turn: "/soccer98/audio/kick-v2.wav", cheer: "/soccer98/audio/stadium-roar-v3.wav" };
 /** Recorded CC0 clips, fetched early and decoded once outside the movement loop. */
 export class SoccerAudio {
   private context: AudioContext | null = null;
