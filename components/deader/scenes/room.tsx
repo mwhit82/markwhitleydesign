@@ -6,6 +6,7 @@ import * as THREE from "three";
 import { Box, Sign } from "../environment";
 import { Visitors } from "../visitors";
 import { RoomController } from "../room-controller";
+import { PlayerMirror, ReflectedPlayer } from "../player-reflection";
 import { RoomDoor } from "../room-door";
 import { Surveillance } from "../surveillance";
 import { RoomAtmosphere, RoomReflection } from "../room-atmosphere";
@@ -141,6 +142,7 @@ export default function Room() {
       <RoomAtmosphere materials={m} />
       <RoomReflection materials={m} />
       <RoomController />
+      <ReflectedPlayer />
       <Visitors />
       <RoomDoor materials={m} />
       <Surveillance materials={m} />
@@ -199,9 +201,7 @@ export default function Room() {
         rotation={[0, Math.PI / 2, -0.025]}
       >
         <Box position={[0, 0, 0]} size={[1.16, 2.06, 0.12]} material={m.wood} />
-        <mesh position={[0, 0, 0.07]} material={m.mirror}>
-          <planeGeometry args={[0.97, 1.87]} />
-        </mesh>
+        <PlayerMirror />
         {[-0.52, 0.52].map((x) => (
           <Box
             key={x}

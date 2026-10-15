@@ -8,6 +8,7 @@ import { move, ROOM_OBSTACLES, ROOM_CLOSED_OBSTACLES } from "@/lib/deader/game";
 import { FEEDS, type RoomView } from "@/lib/deader/room";
 import { renderScale } from "@/lib/deader/presentation";
 import { roomAudio } from "@/lib/deader/audio/room-audio";
+import { roomPlayerPose } from "./player-reflection";
 
 const targets: Record<string, RoomView> = {
   Door: "door",
@@ -231,6 +232,7 @@ export function RoomController() {
       pos.current.x - beforeX,
       pos.current.z - beforeZ,
     );
+    Object.assign(roomPlayerPose, { x: pos.current.x, z: pos.current.z, yaw: a.yaw, walking: enabled && travelled > .0001 });
     stepDistance.current += travelled;
     if (stepDistance.current > 0.95) {
       roomAudio.play("step");
