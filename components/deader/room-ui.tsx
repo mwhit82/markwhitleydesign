@@ -139,10 +139,10 @@ export function RoomUI() {
                   : (r.night?.elapsed ?? 0),
               )}
             </p>
-            <small>LIVE / 15 HZ</small>
+            <small>LIVE FEED</small>
           </div>
           <button autoFocus onClick={exit}>
-            Close CCTV · Esc
+            Back to room
           </button>
           <div className={styles.scanlines} />
           <div
@@ -170,10 +170,10 @@ export function RoomUI() {
                   });
                 }}
               >
-                CAM {i + 1} · {f.label}
+                <span className={styles.feedNumber}>0{i + 1}</span><span>{f.label}</span>
               </button>
             ))}
-            <button onClick={() => s.roomView("news")}>Watch DDD News</button>
+            <button onClick={() => s.roomView("news")} className={styles.newsFeed}>DDD News</button>
           </nav>
         </div>
       )}

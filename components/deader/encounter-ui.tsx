@@ -64,7 +64,7 @@ export function EncounterUI() {
   return (
     <>
       {!["door", "inspect"].includes(r.view) && (
-        <div className={styles.encounterStatus}>
+        <div className={styles.encounterStatus} data-urgent={e?.phase === "waiting" || e?.phase === "approaching"}>
           <DecisionCountdown />
           {e?.phase === "approaching"
             ? "Footsteps on the stairs · Check CAM 3"

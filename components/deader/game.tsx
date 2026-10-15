@@ -298,107 +298,58 @@ function Progress() {
   );
 }
 function StartMenu() {
-  const { difficulty, mode, start, runSeconds, selectedNight, save } =
-    useGame();
+  const { difficulty, mode, start, runSeconds, selectedNight, save } = useGame();
+  const deadline = { easy: 60, medium: 45, hard: 30 }[difficulty];
   return (
-    <Modal label="Start game">
-      <div className={styles.fenn}>
-        <p>People: (1)</p>
-        <div className={styles.modeRow}>
-          <span>Mode:</span>
-          {(["easy", "medium", "hard"] as Difficulty[]).map((d) => (
-            <button
-              key={d}
-              aria-pressed={difficulty === d}
-              onClick={() => useGame.setState({ difficulty: d })}
-            >
-              {d}
-            </button>
-          ))}
-        </div>
-        <div className={styles.typeRow}>
-          {(["normal", "infinite"] as GameMode[]).map((m) => (
-            <button
-              key={m}
-              aria-pressed={mode === m}
-              onClick={() => useGame.setState({ mode: m })}
-            >
-              {m === "normal" ? "Normal" : "Infinite"}
-            </button>
-          ))}
-        </div>
-        {mode === "normal" && (
-          <div className={styles.nightSelect} aria-label="Story nights">
-            {NIGHT_TITLES.map((title, i) => (
-              <button
-                key={title}
-                disabled={
-                  i + 1 > unlockedNight(save) &&
-                  !(process.env.NODE_ENV === "development" && runSeconds === 60)
-                }
-                aria-pressed={selectedNight === i + 1}
-                onClick={() => useGame.setState({ selectedNight: i + 1 })}
-              >
-                Night {i + 1} · {title}
-                {save.completions[difficulty].includes(i + 1)
-                  ? " ✓"
-                  : i + 1 > unlockedNight(save)
-                    ? runSeconds === 60
-                      ? " · Rehearsal"
-                      : " · Locked"
-                    : ""}
-              </button>
-            ))}
-          </div>
-        )}
-        <button className={styles.startButton} onClick={start}>
-          START
-        </button>
+    <Modal label="Start game" className={styles.setupModal}>
+      <header className={styles.setupHeader}>
+        <p className={styles.eyebrow}>NIGHT SHIFT / SOLO</p>
+        <h2>Choose your shift.</h2>
+      </header>
+      <div className={styles.setupBody}>
+        <section className={styles.setupOptions} aria-label="Session settings">
+          <fieldset className={styles.segmentGroup}>
+            <legend>Difficulty</legend>
+            <div className={styles.segments}>
+              {(["easy", "medium", "hard"] as Difficulty[]).map(d => (
+                <button key={d} aria-pressed={difficulty === d} onClick={() => useGame.setState({ difficulty: d })}>
+                  {d[0].toUpperCase() + d.slice(1)}
+                </button>
+              ))}
+            </div>
+            <p>{deadline}s to decide · {difficulty === "easy" ? "Extra guidance" : difficulty === "medium" ? "More visitors" : "Subtler clues"}</p>
+          </fieldset>
+          <fieldset className={styles.segmentGroup}>
+            <legend>Game mode</legend>
+            <div className={styles.segments}>
+              {(["normal", "infinite"] as GameMode[]).map(m => (
+                <button key={m} aria-pressed={mode === m} onClick={() => useGame.setState({ mode: m })}>
+                  {m === "normal" ? "Story" : "Infinite"}
+                </button>
+              ))}
+            </div>
+          </fieldset>
+          <details className={styles.setupHelp}>
+            <summary>How to play</summary>
+            <p>Inspect visitors, ask questions and decide who to let in. Three trust lives. Missing a deadline costs one life. Story has three ten-minute nights; Infinite keeps going. Progress saves on this device.</p>
+          </details>
+        </section>
+        <section className={styles.shiftList} aria-label="Story nights">
+          {mode === "normal" ? NIGHT_TITLES.map((title, i) => {
+            const locked = i + 1 > unlockedNight(save) && !(process.env.NODE_ENV === "development" && runSeconds === 60);
+            return <button key={title} disabled={locked} aria-pressed={selectedNight === i + 1} onClick={() => useGame.setState({ selectedNight: i + 1 })}>
+              <span className={styles.shiftNumber}>{String(i + 1).padStart(2, "0")}</span>
+              <span><strong>{title}</strong><small>{locked ? `Complete Night ${i} to unlock` : save.completions[difficulty].includes(i + 1) ? "Completed · Replay" : "10 minutes · Three lives"}</small></span>
+              <span aria-hidden="true">{locked ? "Locked" : selectedNight === i + 1 ? "✓" : ""}</span>
+            </button>;
+          }) : <div className={styles.infiniteCard}><p className={styles.eyebrow}>UNTIL YOUR LUCK RUNS OUT</p><h3>The endless shift.</h3><p>Three lives. No reset at dawn. How long can you last?</p><small>Best night: {save.infiniteRecords.night} · Best streak: {save.infiniteRecords.streak}</small></div>}
+          {process.env.NODE_ENV === "development" && <label className={styles.devRun}>Local test length<select value={runSeconds} onChange={e => useGame.setState({runSeconds: Number(e.target.value) === 60 ? 60 : 600, selectedNight: Number(e.target.value) === 60 ? selectedNight : Math.min(selectedNight, unlockedNight(save))})}><option value="600">Full night · 10 minutes</option><option value="60">Development rehearsal · 60 seconds · no rewards saved</option></select></label>}
+        </section>
       </div>
-      <p className={styles.note}>
-        {mode === "normal"
-          ? "Three ten-minute story nights. Complete each to unlock the next. Replays earn rewards."
-          : "An endless shift with three lives. Dawn advances your night without restoring trust. The pace increases to a fair limit."}
-      </p>
-      <p className={styles.note}>
-        Play with keyboard and mouse, or touch controls in portrait or landscape. Contains mild scares. Progress stays in this browser on this
-        device; no game account is needed.
-      </p>
-      <p className={styles.note}>
-        Easy: more time and inspection guidance. Medium: extra arrivals. Hard:
-        busiest schedule, subtler answers and more CCTV static. Three lives on
-        every difficulty. Decision time: Easy 60s, Medium 45s, Hard 30s.
-        Missing the deadline costs one trust heart and awards no coins.
-      </p>
-      {mode === "infinite" && (
-        <p className={styles.note}>
-          Records · streak {save.infiniteRecords.streak} · night{" "}
-          {save.infiniteRecords.night} · correct {save.infiniteRecords.correct}{" "}
-          · nights survived {save.infiniteRecords.totalNights}
-        </p>
-      )}
-      {process.env.NODE_ENV === "development" && (
-        <label className={styles.devRun}>
-          Local test length{" "}
-          <select
-            value={runSeconds}
-            onChange={(e) =>
-              useGame.setState({
-                runSeconds: Number(e.target.value) === 60 ? 60 : 600,
-                selectedNight:
-                  Number(e.target.value) === 60
-                    ? selectedNight
-                    : Math.min(selectedNight, unlockedNight(save)),
-              })
-            }
-          >
-            <option value="600">Full night · 10 minutes</option>
-            <option value="60">
-              Development rehearsal · 60 seconds · no rewards saved
-            </option>
-          </select>
-        </label>
-      )}
+      <footer className={styles.setupFooter}>
+        <span>{mode === "normal" ? `Night ${selectedNight}` : "Infinite"} · {difficulty}<small>1 player · Three lives</small></span>
+        <button className={styles.primary} onClick={start}>Start shift <span aria-hidden="true">→</span></button>
+      </footer>
     </Modal>
   );
 }

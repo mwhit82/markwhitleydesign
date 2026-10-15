@@ -6,10 +6,12 @@ export function Modal({
   children,
   label,
   onClose,
+  className = "",
 }: {
   children: ReactNode;
   label: string;
   onClose?: () => void;
+  className?: string;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -21,14 +23,14 @@ export function Modal({
     <div className={styles.scrim}>
       <div
         ref={ref}
-        className={styles.modal}
+        className={`${styles.modal} ${className}`}
         role="dialog"
         aria-modal="true"
         aria-label={label}
         onKeyDown={(e) => {
           if (e.key !== "Tab") return;
           const items = ref.current?.querySelectorAll<HTMLElement>(
-            "button:not(:disabled), a[href], input:not(:disabled), select:not(:disabled)",
+            "button:not(:disabled), a[href], input:not(:disabled), select:not(:disabled), summary",
           );
           if (!items?.length) return;
           const first = items[0],
