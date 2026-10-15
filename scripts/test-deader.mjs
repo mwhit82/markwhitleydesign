@@ -1333,11 +1333,15 @@ test("audio has gesture gating, bounded voices, reusable ambience and complete t
     a.ambience(0.5);
     a.ambience(1, true);
     assert.equal(a.diagnostics().ambientSources, 2);
+    a.broadcast(true);
+    a.broadcast(true);
+    assert.equal(a.diagnostics().broadcastSources, 1);
     for (let i = 0; i < 20; i++) a.play("knock");
     assert.equal(a.diagnostics().voices, 12);
     a.silence();
     assert.equal(a.diagnostics().voices, 0);
     assert.equal(a.diagnostics().ambientSources, 0);
+    assert.equal(a.diagnostics().broadcastSources, 0);
     a.muted = true;
     a.play("scare");
     a.ambience(1);
@@ -1351,6 +1355,7 @@ test("audio has gesture gating, bounded voices, reusable ambience and complete t
     assert.deepEqual(a.diagnostics(), {
       voices: 0,
       ambientSources: 0,
+      broadcastSources: 0,
       context: "locked",
     });
     a.unlock();

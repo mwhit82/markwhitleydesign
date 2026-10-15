@@ -52,11 +52,13 @@ export function GameAudio() {
         previousRun = r.encounters.runId;
       }
       if (s.scene === "room" && r.night?.status === "completed") {
+        roomAudio.broadcast(false);
         roomAudio.ambience(0);
         return;
       }
       seconds += 0.1;
       const busy = s.scene === "room" && r.survival.phase !== "idle";
+      roomAudio.broadcast(s.scene === "room" && r.view === "news" && !busy);
       roomAudio.ambience(
         busy
           ? 0

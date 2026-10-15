@@ -17,6 +17,9 @@ export type Cue =
 export class RoomAudio {
   private context: AudioContext | null = null;
   private voices = new Set<AudioScheduledSourceNode>();
+  private radio: { source: AudioBufferSourceNode; filter: BiquadFilterNode; gain: GainNode } | null = null;
+  private radioBuffer: AudioBuffer | null = null;
+  private bangBuffer: AudioBuffer | null = null;
   private bed: {
     sources: AudioScheduledSourceNode[];
     nodes: AudioNode[];
@@ -42,6 +45,71 @@ export class RoomAudio {
       data[i] = last * 3.5;
     }
     return buffer;
+  }
+  /** Band-limited, indistinct announcer cadence and intermittent radio crackle. */
+  broadcast(active: boolean) {
+    const c = this.context;
+    if (!active || !c || c.state !== "running" || this.muted || this.volume <= 0) {
+      if (this.radio) {
+        this.radio.source.stop();
+        this.radio.source.disconnect();
+        this.radio.filter.disconnect();
+        this.radio.gain.disconnect();
+        this.radio = null;
+      }
+      return;
+    }
+    if (!this.radio) {
+      if (!this.radioBuffer) {
+        this.radioBuffer = c.createBuffer(1, c.sampleRate * 12, c.sampleRate);
+        const data = this.radioBuffer.getChannelData(0);
+        let phase = 0;
+        for (let i = 0; i < data.length; i++) {
+          const t = i / c.sampleRate;
+          phase += 2 * Math.PI * (112 + 18 * Math.sin(t * 2.7) + 8 * Math.sin(t * 13)) / c.sampleRate;
+          const phrase = Math.sin(t * 1.7) > -.3 ? 1 : .05;
+          const syllable = Math.pow(Math.max(0, Math.sin(t * 21 + Math.sin(t * 4))), 2);
+          const voice = (Math.sin(phase) + .4 * Math.sin(phase * 3) + .18 * Math.sin(phase * 7)) * syllable * phrase;
+          const crackle = (Math.random() * 2 - 1) * (Math.random() > .997 ? .8 : .055);
+          const fade = Math.min(1, t * 20, (12 - t) * 20);
+          data[i] = (voice * .3 + crackle) * fade;
+        }
+      }
+      const source = c.createBufferSource(), filter = c.createBiquadFilter(), gain = c.createGain();
+      source.buffer = this.radioBuffer;
+      source.loop = true;
+      filter.type = "bandpass";
+      filter.frequency.value = 720;
+      source.connect(filter).connect(gain).connect(c.destination);
+      gain.gain.value = 0;
+      source.start();
+      this.radio = { source, filter, gain };
+    }
+    this.radio.gain.gain.setTargetAtTime(this.volume * .18, c.currentTime, .15);
+  }
+  private bang(c: AudioContext) {
+    if (!this.bangBuffer) {
+      this.bangBuffer = c.createBuffer(1, c.sampleRate * .8, c.sampleRate);
+      const data = this.bangBuffer.getChannelData(0);
+      for (let i = 0; i < data.length; i++) {
+        const t = i / c.sampleRate;
+        const impact = (Math.random() * 2 - 1) * Math.exp(-t * 65);
+        const wood = Math.sin(2 * Math.PI * 83 * t) * Math.exp(-t * 12)
+          + .4 * Math.sin(2 * Math.PI * 179 * t) * Math.exp(-t * 19);
+        const tail = (Math.random() * 2 - 1) * Math.exp(-t * 9) * .15;
+        data[i] = (impact * .55 + wood * .4 + tail) * Math.min(1, t * 1500);
+      }
+    }
+    for (const [offset, strength] of [[0, 1], [.19, .65], [.46, .8]]) {
+      const source = c.createBufferSource(), gain = c.createGain();
+      source.buffer = this.bangBuffer;
+      gain.gain.value = this.volume * strength * (this.gentle ? .15 : .55);
+      source.connect(gain).connect(c.destination);
+      this.voices.add(source);
+      source.onended = () => { this.voices.delete(source); source.disconnect(); gain.disconnect(); };
+      source.start(c.currentTime + offset);
+      source.stop(c.currentTime + offset + .8);
+    }
   }
   ambience(level: number, cctv = false) {
     const c = this.context;
@@ -106,6 +174,7 @@ export class RoomAudio {
     const count =
       kind === "knock" ? 3 : kind === "news" ? 3 : kind === "stutter" ? 2 : 1;
     if (this.voices.size + count > 12) return;
+    if (kind === "knock") { this.bang(c); return; }
     for (let i = 0; i < count; i++) {
       const start = c.currentTime + i * (kind === "news" ? 0.18 : 0.23);
       const length =
@@ -182,6 +251,7 @@ export class RoomAudio {
     }
   }
   silence() {
+    this.broadcast(false);
     this.stopBed();
     for (const v of this.voices) {
       try {
@@ -193,12 +263,15 @@ export class RoomAudio {
     this.silence();
     void this.context?.close().catch(() => {});
     this.context = null;
+    this.radioBuffer = null;
+    this.bangBuffer = null;
     this.voices.clear();
   }
   diagnostics() {
     return {
       voices: this.voices.size,
       ambientSources: this.bed?.sources.length ?? 0,
+      broadcastSources: this.radio ? 1 : 0,
       context: this.context?.state ?? "locked",
     };
   }
