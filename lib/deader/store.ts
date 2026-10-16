@@ -50,7 +50,6 @@ import {
   type Question,
 } from "./visitors";
 import {
-  beginSurvival,
   tickSurvival,
   survivalBusy,
   readSettings,
@@ -385,7 +384,7 @@ export const useGame = create<State>((set, get) => ({
     }
     if (encounters.result?.decision === "timeout" && encounters.result !== old.result) {
       room = transitionDoor(room, { type: "reject" });
-      room = { ...room, visitorId:null, door: "CLOSING", view: "explore", survival: beginSurvival(encounters.result.id, false) };
+      room = { ...room, visitorId:null, door: "CLOSING", view: "explore" };
     }
     if (room.view === "arcade" && encounters.active?.phase === "waiting") { gameInput.reset(); room={...room,view:"console"}; }
     set({ room, prompt: encounters.result?.decision === "timeout" ? null : s.prompt });
@@ -449,9 +448,8 @@ export const useGame = create<State>((set, get) => ({
         rewardToast: save !== s.save ? {coins: encounters.result?.coins ?? 0, seconds:3} : room.rewardToast,
         residents: decision === "admit" && s.room.encounters.active ? admitResident(room.residents, id, s.room.encounters.active.visitor) : room.residents,
         view: "explore",
-        survival: encounters.result?.correct
-          ? room.survival
-          : beginSurvival(id, decision === "admit"),
+        // Mistakes are counted now; scare presentation belongs exclusively to dawn.
+        survival: room.survival,
       },
       save,
       storageFailed: save !== s.save ? persist(save) : s.storageFailed,

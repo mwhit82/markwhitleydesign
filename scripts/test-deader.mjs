@@ -491,7 +491,7 @@ test("wrong decisions count once and recover even with no trust remaining", asyn
     assert.equal(useGame.getState().room.encounters.trust, 0);
     useGame.getState().decideVisitor("test-run:1", decision);
     useGame.getState().roomView("cctv");
-    assert.equal(useGame.getState().room.view, "explore");
+    assert.equal(useGame.getState().room.view, "cctv");
     const frozen = useGame.getState().room;
     useGame.setState({ panel: "pause" });
     useGame.getState().tickVisitors(0.25);
@@ -517,7 +517,7 @@ test("wrong decisions count once and recover even with no trust remaining", asyn
   assert.equal(useGame.getState().room.survival.phase, "idle");
 });
 
-test("nonfatal recovery restores arrival spacing and lobby cancels every consequence phase", async () => {
+test("ordinary departure restores arrival spacing and lobby cancels every consequence phase", async () => {
   const { useGame } = await import(
     await moduleUrl(resolve("lib/deader/store.ts"))
   );
@@ -536,7 +536,7 @@ test("nonfatal recovery restores arrival spacing and lobby cancels every consequ
     },
   });
   useGame.getState().decideVisitor("test-run:1", "reject");
-  for (let i = 0; i < 11; i++) useGame.getState().tickVisitors(0.25);
+  for (let i = 0; i < 16; i++) useGame.getState().tickVisitors(0.25);
   assert.equal(useGame.getState().room.survival.phase, "idle");
   assert.equal(useGame.getState().room.encounters.trust, 2);
   assert.equal(useGame.getState().room.encounters.active, null);
@@ -1453,7 +1453,7 @@ test("decision deadlines are real active seconds, difficulty-specific and exactl
     }
   }
 });
-test("store freezes decision deadlines and resolves timeouts through survival",async()=>{
+test("store freezes decision deadlines and resolves timeouts without a scare",async()=>{
   const {useGame}=await import(await moduleUrl(resolve("lib/deader/store.ts")));
   useGame.setState({save:g.newSave(),focused:true,panel:null});
   useGame.getState().start();
@@ -1475,7 +1475,7 @@ test("store freezes decision deadlines and resolves timeouts through survival",a
   assert.equal(after.room.encounters.trust,2);
   assert.equal(after.room.encounters.result.decision,"timeout");
   assert.equal(after.room.view,"explore");
-  assert.equal(after.room.survival.kind,"mistake");
+  assert.equal(after.room.survival.phase,"idle");
   assert.equal(after.save.coins,150);
   useGame.getState().tickVisitors(.25);
   assert.equal(useGame.getState().room.encounters.trust,2);
@@ -1941,4 +1941,26 @@ test('opening to aim preserves the deadline and can be cancelled or answered',as
  useGame.getState().roomView('door');useGame.getState().aimDoor();useGame.getState().doorEvent({type:'opened'});useGame.getState().roomView('door');
  r=useGame.getState().room;assert.equal(room.canConfirmDoor(r,r.encounters.active.id),true);
  useGame.getState().decideVisitor(r.encounters.active.id,'admit');assert.equal(useGame.getState().save.coins,155);
+});
+
+test('all early mistakes remain playable and never start a jumpscare',async()=>{
+  for(const [visitor,decision] of [['three','admit'],['bea','reject']]){
+    const {useGame}=await combatStore(visitor);
+    const r=useGame.getState().room,id=r.encounters.active.id;
+    useGame.setState({room:{...r,view:'door',door:'VISITOR_WAITING',encounters:{...r.encounters,mistakes:2,trust:1}}});
+    useGame.getState().decideVisitor(id,decision);
+    assert.equal(useGame.getState().room.encounters.mistakes,3);
+    assert.equal(useGame.getState().room.judgement,null);
+    if(decision==='admit')useGame.getState().doorEvent({type:'opened'});
+    for(let i=0;i<80;i++){
+      useGame.getState().tickVisitors(.25);
+      assert.equal(useGame.getState().room.survival.phase,'idle');
+      assert.equal(useGame.getState().room.night.status,'running');
+    }
+    useGame.getState().roomView('cctv');assert.equal(useGame.getState().room.view,'cctv');
+    const latest=useGame.getState().room;
+    useGame.setState({room:{...latest,night:{...latest.night,elapsed:599.9}}});
+    useGame.getState().tickVisitors(.25);
+    assert.equal(useGame.getState().room.judgement.failed,true);
+  }
 });

@@ -204,3 +204,7 @@ Lobby music is an original gesture-unlocked synthesized loop, controlled by exis
 `judgement.ts` owns pure judgement/ammunition helpers; the room owns transient judgement, ammunition, removed-target IDs, per-shift mistake baseline and coin-toast state. Saved progress continues to use the existing v2 schema/key. Development-only rehearsal choices include an armed doorway and passing/failing dawn, gated to non-saving 60-second sessions. Production builds never expose these fixtures.
 
 Validation: 84 game tests, TypeScript/ESLint and production build; browser checks at 390×844, 844×390 and 820×1180 include touch-style aiming, one-hit removal, ammo spending, music source lifecycle, framed art and both dawn outcomes. The pre-existing Three.Clock deprecation warning remains. Physical iPhone/iPad multi-finger handling and subjective audio/scare intensity still need device playtesting. No publication in this change.
+
+### Fenn playtest correction — end-only scares
+
+Mistakes and timeouts now record their outcome without starting the old survival/lunge sequence or playing the gulp cue. Admitted Anomalies walk to the lounge like other visitors. All judgement scares remain at dawn. The gun retains its original side-wall shelf position, finish and sign, as preferred after playtesting. Added a regression test covering both early wrong decisions through three mistakes, continued movement/CCTV and eventual dawn failure. 85 tests pass; production build passes.

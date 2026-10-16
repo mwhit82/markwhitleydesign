@@ -11,8 +11,7 @@ export function GameAudio() {
   useEffect(() => {
     let seconds = 0,
       nextCreak = 19,
-      previousRun = "",
-      previousTrust = 3;
+      previousRun = "";
     const unlock = () => {
       if (!useGame.getState().save.settings.muted) roomAudio.unlock();
     };
@@ -49,7 +48,6 @@ export function GameAudio() {
       if (previousRun !== r.encounters.runId) {
         seconds = 0;
         nextCreak = 19;
-        previousTrust = 3;
         previousRun = r.encounters.runId;
       }
       if (s.scene === "room" && r.night?.status === "completed") {
@@ -69,10 +67,6 @@ export function GameAudio() {
               (s.scene === "lobby" ? 0.65 : 1),
         r.view === "cctv",
       );
-      if (s.scene === "room" && r.encounters.trust !== previousTrust) {
-        roomAudio.play("gulp", 0.6);
-        previousTrust = r.encounters.trust;
-      }
       if (seconds >= nextCreak) {
         nextCreak = seconds + 23 + (Math.floor(seconds) % 11);
         if (!busy && r.view === "explore" && settings.ambience > 0)
