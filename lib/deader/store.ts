@@ -11,6 +11,8 @@ import {
   type AccessoryCategory,
 } from "./cosmetics";
 import { create } from "zustand";
+import { loopBroadcast } from "./tv";
+import { gameInput } from "./input";
 import {
   newSave,
   reward,
@@ -26,7 +28,6 @@ import {
 } from "./game";
 import {
   newsForNight,
-  advanceBroadcast,
   broadcastDuration,
   freshRoom,
   transitionDoor,
@@ -135,6 +136,8 @@ export const useGame = create<State>((set, get) => ({
   session: null,
   runSeconds: 600,
   roomView: (view) => {
+    gameInput.reset();
+    if (view === "news") view = "explore";
     if (
       survivalBusy(get().room.survival) ||
       get().room.night?.status === "completed"
@@ -147,11 +150,12 @@ export const useGame = create<State>((set, get) => ({
         ? transitionDoor(get().room, { type: "leave-inspection" })
         : get().room;
     set({
-      room: { ...room, view, ...(view === "news" ? { newsSeconds: 0 } : {}) },
+      room: { ...room, view },
       prompt: null,
     });
   },
   doorEvent: (event) => {
+    gameInput.reset();
     const s = get(),
       active = s.room.encounters.active;
     if (s.panel || (!s.focused || !!s.suspension) || s.room.night?.status === "completed") return;
@@ -208,8 +212,7 @@ export const useGame = create<State>((set, get) => ({
       const night = advanceNight(
         s.room.night,
         delta,
-        survivalBusy(s.room.survival) ||
-          (s.room.view === "news" && s.room.night.introFinished),
+        survivalBusy(s.room.survival),
         s.room.encounters.trust,
       );
       if (night.status === "completed") {
@@ -276,22 +279,10 @@ export const useGame = create<State>((set, get) => ({
         s = get();
       }
     }
-    if (s.room.view === "news") {
-      const newsSeconds = advanceBroadcast(
-        s.room.newsSeconds,
-        delta,
-        false,
-        newsForNight(s.room.night?.number ?? 1),
-        nightRate(s.room.night),
-      );
-      set({ room: { ...s.room, newsSeconds } });
-      if (
-        newsSeconds >=
-        broadcastDuration(newsForNight(s.room.night?.number ?? 1))
-      )
-        get().finishNews();
-      return;
-    }
+    const report = newsForNight(s.room.night?.number ?? 1);
+    const newsSeconds = loopBroadcast(s.room.newsSeconds, delta, broadcastDuration(report));
+    set({ room: { ...s.room, newsSeconds } });
+    s = get();
     const old = s.room.encounters;
     if (survivalBusy(s.room.survival)) {
       const survival = tickSurvival(
@@ -332,7 +323,7 @@ export const useGame = create<State>((set, get) => ({
       delta,
       s.session?.difficulty ?? "easy",
       paused,
-      s.room.door === "CLOSED",
+      s.room.door === "CLOSED" || s.room.door === "INSPECTING",
       s.room.night
         ? {
             rate: nightRate(s.room.night),
@@ -428,13 +419,13 @@ export const useGame = create<State>((set, get) => ({
       prompt: null,
     });
   },
+  // Legacy integration hook; news no longer gates movement or the night clock.
   finishNews: () => {
     const s = get();
     if (
       s.scene !== "room" ||
       s.panel ||
       (!s.focused || !!s.suspension) ||
-      s.room.view !== "news" ||
       s.room.night?.status === "completed"
     )
       return;
@@ -511,10 +502,12 @@ export const useGame = create<State>((set, get) => ({
     set({ save, storageFailed: persist(save) });
   },
   open: (panel) => {
+    gameInput.reset();
     if (document.pointerLockElement) document.exitPointerLock();
     set({ panel });
   },
   start: () => {
+    gameInput.reset();
     const s = get();
     const number =
       s.mode === "infinite"
@@ -543,6 +536,7 @@ export const useGame = create<State>((set, get) => ({
     });
   },
   lobby: () => {
+    gameInput.reset();
     if (document.pointerLockElement) document.exitPointerLock();
     set({
       scene: "lobby",

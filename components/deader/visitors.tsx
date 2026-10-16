@@ -11,7 +11,7 @@ import { Cone } from "./character";
 export function Visitors() {
   const active = useGame((s) => s.room.encounters.active);
   const paused = useGame(
-    (s) => !!s.panel || (!s.focused || !!s.suspension) || s.room.view === "news",
+    (s) => !!s.panel || (!s.focused || !!s.suspension),
   );
   const survival = useGame((s) => s.room.survival);
   const group = useRef<THREE.Group>(null),

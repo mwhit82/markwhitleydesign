@@ -5,6 +5,7 @@ import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import { Box, Sign } from "../environment";
 import { Visitors } from "../visitors";
+import { RoomTV } from "../room-tv";
 import { RoomController } from "../room-controller";
 import { PlayerMirror, ReflectedPlayer } from "../player-reflection";
 import { RoomDoor } from "../room-door";
@@ -246,15 +247,7 @@ export default function Room() {
         material={m.dark}
       />
       <Donut materials={m} />
-      <Sign
-        text={"COSMETICS\nSKIN COLOR & MORE!"}
-        position={[3.65, 2.25, -0.9]}
-        rotation={[0, -Math.PI / 2, -0.025]}
-        width={1.1}
-        height={1.2}
-        background="#97835d"
-        colour="#302719"
-      />
+      <RoomTV />
       <Box
         position={[-2.1, 0.38, 1.25]}
         size={[1.6, 0.76, 1.2]}
@@ -268,7 +261,7 @@ export default function Room() {
       <group
         position={[-2.1, 1.22, 1.05]}
         rotation={[-0.12, 0, 0]}
-        userData={{ interaction: "CCTV / News" }}
+        userData={{ interaction: "CCTV" }}
       >
         <Box position={[0, 0, 0]} size={[1.23, 0.88, 0.55]} material={m.dark} />
         <Sign

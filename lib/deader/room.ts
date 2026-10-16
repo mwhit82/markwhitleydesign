@@ -33,7 +33,7 @@ export const freshRoom = (
   night: duration ? freshNight(duration, session) : null,
   survival: freshSurvival(),
   encounters: freshEncounters(runId),
-  view: "news",
+  view: "explore",
   door: "CLOSED",
   visitorId: null,
   resolved: [],
@@ -236,4 +236,12 @@ export function newsForNight(number: number): Broadcast {
       },
     ],
   };
+}
+
+/** Confirmation belongs to one still-waiting encounter, never the next visitor. */
+export function canConfirmDoor(room: RoomState, encounterId: string | null) {
+  const active = room.encounters.active;
+  return room.view === "door" && room.survival.phase === "idle" && room.night?.status !== "completed" &&
+    ["CLOSED", "VISITOR_WAITING", "INSPECTING"].includes(room.door) &&
+    (active ? active.id === encounterId && active.phase === "waiting" : encounterId === null);
 }

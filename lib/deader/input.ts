@@ -7,6 +7,15 @@ export function joystick(x: number, y: number, radius = 54) {
 }
 export class GameInput {
   keys = new Set<string>();
+  private held = new Set<string>();
+  private blocked = new Set<string>();
+  keyDown(code: string, repeat: boolean, enabled: boolean) {
+    if (!repeat) this.blocked.delete(code);
+    this.held.add(code);
+    if (!enabled || this.blocked.has(code) || (repeat && !this.keys.has(code))) { this.blocked.add(code); return; }
+    this.keys.add(code);
+  }
+  keyUp(code: string) { this.held.delete(code); this.blocked.delete(code); this.keys.delete(code); }
   axes = { x: 0, z: 0 };
   look = { x: 0, y: 0 };
   owners: { move: number | null; look: number | null } = { move: null, look: null };
@@ -27,11 +36,16 @@ export class GameInput {
     return { x: x / length, z: z / length };
   }
   consumeLook() { const value = this.look; this.look = { x: 0, y: 0 }; return value; }
-  reset() { this.keys.clear(); this.axes = { x: 0, z: 0 }; this.look = { x: 0, y: 0 }; this.owners = { move: null, look: null }; }
+  reset() { for (const code of this.held) this.blocked.add(code); this.keys.clear(); this.axes = { x: 0, z: 0 }; this.look = { x: 0, y: 0 }; this.owners = { move: null, look: null }; }
 }
 export const gameInput = new GameInput();
 
 /** Match swipe distance across orientations without amplifying tiny viewports. */
 export function touchLookScale(width: number, height: number): number {
   return 390 / Math.max(320, Math.min(width, height));
+}
+
+export type InterruptionEvent = "hidden" | "pagehide" | "blur" | "resize";
+export function requiresResume(event: InterruptionEvent) {
+  return event === "hidden" || event === "pagehide";
 }

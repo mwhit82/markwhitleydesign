@@ -42,7 +42,7 @@ export const freshNight = (
   elapsed: 0,
   duration,
   status: "running",
-  introFinished: false,
+  introFinished: true,
   cancelledVisitor: false,
 });
 /** Elapsed is in story seconds. The development run scales 60 real seconds to 600. */

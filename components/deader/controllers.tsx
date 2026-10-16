@@ -13,7 +13,6 @@ export function Controller() {
   const { camera } = useThree();
   const player = useRef<THREE.Group>(null);
   const pos = useRef({ x: 0, z: 0.8 });
-  const keys = useRef(gameInput.keys);
   const [walking, setWalking] = useState(false);
   const paused = useGame((s) => !!s.panel || (!s.focused || !!s.suspension));
   const stride = useRef(0);
@@ -26,7 +25,7 @@ export function Controller() {
       const s = useGame.getState();
       if (/^(KeyW|KeyA|KeyS|KeyD|Arrow)/.test(e.code) && !s.panel)
         e.preventDefault();
-      keys.current.add(e.code);
+      gameInput.keyDown(e.code, e.repeat, !s.panel && !s.suspension && s.focused);
       if (e.code === "KeyE" && !e.repeat && s.prompt && !s.panel && s.focused && !s.suspension)
         s.open(
           s.prompt === "Shop"
@@ -37,7 +36,7 @@ export function Controller() {
         );
       if (e.code === "Escape" && !e.repeat) s.escape();
     };
-    const up = (e: KeyboardEvent) => keys.current.delete(e.code);
+    const up = (e: KeyboardEvent) => gameInput.keyUp(e.code);
     const blur = () => {
       gameInput.reset();
       useGame.setState({ focused: false });

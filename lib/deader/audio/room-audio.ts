@@ -17,7 +17,7 @@ export type Cue =
 export class RoomAudio {
   private context: AudioContext | null = null;
   private voices = new Set<AudioScheduledSourceNode>();
-  private radio: { source: AudioBufferSourceNode; filter: BiquadFilterNode; gain: GainNode } | null = null;
+  private radio: { source: AudioBufferSourceNode; filter: BiquadFilterNode; gain: GainNode; pan: StereoPannerNode } | null = null;
   private radioBuffer: AudioBuffer | null = null;
   private bangBuffer: AudioBuffer | null = null;
   private bed: {
@@ -47,7 +47,7 @@ export class RoomAudio {
     return buffer;
   }
   /** Band-limited, indistinct announcer cadence and intermittent radio crackle. */
-  broadcast(active: boolean) {
+  broadcast(active: boolean, level = 1, position = 0) {
     const c = this.context;
     if (!active || !c || c.state !== "running" || this.muted || this.volume <= 0) {
       if (this.radio) {
@@ -55,6 +55,7 @@ export class RoomAudio {
         this.radio.source.disconnect();
         this.radio.filter.disconnect();
         this.radio.gain.disconnect();
+        this.radio.pan.disconnect();
         this.radio = null;
       }
       return;
@@ -75,17 +76,18 @@ export class RoomAudio {
           data[i] = (voice * .3 + crackle) * fade;
         }
       }
-      const source = c.createBufferSource(), filter = c.createBiquadFilter(), gain = c.createGain();
+      const source = c.createBufferSource(), filter = c.createBiquadFilter(), gain = c.createGain(), pan = c.createStereoPanner();
       source.buffer = this.radioBuffer;
       source.loop = true;
       filter.type = "bandpass";
       filter.frequency.value = 720;
-      source.connect(filter).connect(gain).connect(c.destination);
+      source.connect(filter).connect(gain).connect(pan).connect(c.destination);
       gain.gain.value = 0;
       source.start();
-      this.radio = { source, filter, gain };
+      this.radio = { source, filter, gain, pan };
     }
-    this.radio.gain.gain.setTargetAtTime(this.volume * .18, c.currentTime, .15);
+    this.radio.pan.pan.value = Math.max(-1, Math.min(1, position));
+    this.radio.gain.gain.setTargetAtTime(this.volume * .36 * Math.max(0, Math.min(1, level)), c.currentTime, .15);
   }
   private bang(c: AudioContext) {
     if (!this.bangBuffer) {

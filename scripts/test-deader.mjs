@@ -202,7 +202,7 @@ test("room store coordinates inspection, pause, viewed broadcasts and fresh sess
     setItem: (k, v) => memory.set(k, v),
   };
   useGame.getState().start();
-  assert.equal(useGame.getState().room.view, "news");
+  assert.equal(useGame.getState().room.view, "explore");
   useGame.getState().finishNews();
   assert.deepEqual(useGame.getState().save.viewedBroadcasts, ["night-1-intro"]);
   useGame.getState().roomView("door");
@@ -384,7 +384,7 @@ test("store rewards persist once, rejects stale decisions and holds departure fo
   assert.equal(useGame.getState().save.coins, 155);
   assert.equal(useGame.getState().room.encounters.trust, 3);
 });
-test("CCTV allows arrivals while pause and news freeze the shared scheduler", async () => {
+test("CCTV allows arrivals while manual pause freezes the shared scheduler", async () => {
   const { useGame } = await import(
     await moduleUrl(resolve("lib/deader/store.ts"))
   );
@@ -753,7 +753,8 @@ test("news, replay, pause, focus loss and survival share one clock with defeat p
   useGame.getState().finishNews();
   useGame.getState().roomView("news");
   useGame.getState().tickVisitors(0.25);
-  assert.equal(useGame.getState().room.night.elapsed, 0.25);
+  assert.equal(useGame.getState().room.view, "explore");
+  assert.equal(useGame.getState().room.night.elapsed, 0.5);
   useGame.getState().finishNews();
   for (const patch of [{ panel: "pause" }, { focused: false }]) {
     useGame.setState(patch);
@@ -1471,9 +1472,9 @@ test("store freezes decision deadlines and resolves timeouts through survival",a
   useGame.setState({panel:null,focused:false});
   useGame.getState().tickVisitors(.25);
   assert.equal(useGame.getState().room.encounters.active.elapsed,59.75);
-  useGame.setState({focused:true,room:{...room,view:"news"}});
+  useGame.setState({focused:true,room:{...room,view:"explore"}});
   useGame.getState().tickVisitors(.25);
-  assert.equal(useGame.getState().room.encounters.active.elapsed,59.75);
+  assert.equal(useGame.getState().room.encounters.result.decision,"timeout");
   useGame.setState({room});
   useGame.getState().tickVisitors(.25);
   const after=useGame.getState();
@@ -1574,4 +1575,55 @@ test("portrait and landscape swipes have equal sensitivity", async () => {
   assert.equal(touchLookScale(844,390),1);
   assert.equal(touchLookScale(820,1180),touchLookScale(1180,820));
   assert.equal(touchLookScale(200,300),390/320);
+});
+
+test("only real page departures require Resume", async () => {
+  const {requiresResume}=await import(await moduleUrl(resolve("lib/deader/input.ts")));
+  assert.equal(requiresResume("blur"),false);
+  assert.equal(requiresResume("resize"),false);
+  assert.equal(requiresResume("hidden"),true);
+  assert.equal(requiresResume("pagehide"),true);
+});
+test("CCTV transitions discard held keys, pointers and old look deltas", async () => {
+  const {gameInput}=await import(await moduleUrl(resolve("lib/deader/input.ts")));
+  const {useGame}=await import(await moduleUrl(resolve("lib/deader/store.ts")));
+  useGame.setState({save:g.newSave(),panel:null,suspension:null,focused:true});
+  useGame.getState().start();
+  gameInput.keyDown("KeyW",false,true);
+  gameInput.claim("move",12); gameInput.axes={x:0,z:-1}; gameInput.look={x:100,y:10};
+  useGame.getState().roomView("cctv");
+  useGame.getState().roomView("explore");
+  gameInput.keyDown("KeyW",true,true);
+  assert.deepEqual(gameInput.movement(),{x:0,z:0});
+  assert.deepEqual(gameInput.consumeLook(),{x:0,y:0});
+  assert.equal(gameInput.owners.move,null);
+  gameInput.keyUp("KeyW"); gameInput.keyDown("KeyW",false,true);
+  assert.equal(gameInput.movement().z,-1);
+  gameInput.keyUp("KeyW");gameInput.reset();
+});
+test("TV loops independently and attenuates from the physical player", async () => {
+  const tv=await import(await moduleUrl(resolve("lib/deader/tv.ts")));
+  assert.ok(Math.abs(tv.loopBroadcast(39.9,.25,40)-.15)<1e-8);
+  assert.equal(tv.loopBroadcast(2,NaN,40),2);
+  assert.ok(tv.tvSound(3,0,0).gain>tv.tvSound(-3,3,0).gain);
+  assert.ok(tv.tvSound(0,0,0).pan>0);
+  assert.ok(tv.tvSound(0,0,Math.PI).pan<0);
+  const {useGame}=await import(await moduleUrl(resolve("lib/deader/store.ts")));
+  useGame.setState({save:g.newSave(),panel:null,suspension:null,focused:true});useGame.getState().start();
+  const report=room.newsForNight(1), duration=room.broadcastDuration(report);
+  useGame.setState({room:{...useGame.getState().room,newsSeconds:duration-.1,night:{...useGame.getState().room.night,elapsed:100}}});
+  useGame.getState().tickVisitors(.25);
+  assert.equal(useGame.getState().room.view,"explore");
+  assert.equal(useGame.getState().room.night.elapsed,100.25);
+  assert.ok(useGame.getState().room.newsSeconds<.2);
+  assert.equal(useGame.getState().room.encounters.active.phase,"approaching");
+});
+test("door confirmation rejects departed, timed out and replacement encounters", () => {
+  const r={...room.freshRoom(),view:"door",door:"VISITOR_WAITING",encounters:waiting()};
+  const id=r.encounters.active.id;
+  assert.equal(room.canConfirmDoor(r,id),true);
+  assert.equal(room.canConfirmDoor(r,"old-visitor"),false);
+  assert.equal(room.canConfirmDoor({...r,view:"inspect"},id),false);
+  assert.equal(room.canConfirmDoor({...r,encounters:{...r.encounters,active:{...r.encounters.active,phase:"departing"}}},id),false);
+  assert.equal(room.canConfirmDoor({...r,survival:{...r.survival,phase:"tension"}},id),false);
 });

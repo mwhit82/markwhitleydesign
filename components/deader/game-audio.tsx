@@ -2,6 +2,8 @@
 import { useEffect, useRef } from "react";
 import { useGame } from "@/lib/deader/store";
 import { roomAudio } from "@/lib/deader/audio/room-audio";
+import { roomPlayerPose } from "./player-reflection";
+import { tvSound } from "@/lib/deader/tv";
 import { ambienceLevel } from "@/lib/deader/presentation";
 /** Audio follows the same pause/scene authority as gameplay; it never advances gameplay. */
 export function GameAudio() {
@@ -9,7 +11,6 @@ export function GameAudio() {
   useEffect(() => {
     let seconds = 0,
       nextCreak = 19,
-      previousView = "",
       previousRun = "",
       previousTrust = 3;
     const unlock = () => {
@@ -47,7 +48,6 @@ export function GameAudio() {
       if (previousRun !== r.encounters.runId) {
         seconds = 0;
         nextCreak = 19;
-        previousView = "";
         previousTrust = 3;
         previousRun = r.encounters.runId;
       }
@@ -58,17 +58,16 @@ export function GameAudio() {
       }
       seconds += 0.1;
       const busy = s.scene === "room" && r.survival.phase !== "idle";
-      roomAudio.broadcast(s.scene === "room" && r.view === "news" && !busy);
+      const spatial = tvSound(roomPlayerPose.x, roomPlayerPose.z, roomPlayerPose.yaw);
+      roomAudio.broadcast(s.scene === "room", spatial.gain * (busy ? .15 : 1), spatial.pan);
       roomAudio.ambience(
         busy
           ? 0
           : settings.ambience *
               ambienceLevel(seconds) *
-              (s.scene === "lobby" ? 0.65 : r.view === "news" ? 0.3 : 1),
+              (s.scene === "lobby" ? 0.65 : 1),
         r.view === "cctv",
       );
-      if (s.scene === "room" && r.view === "news" && previousView !== "news")
-        roomAudio.play("news");
       if (s.scene === "room" && r.encounters.trust !== previousTrust) {
         roomAudio.play("gulp", 0.6);
         previousTrust = r.encounters.trust;
@@ -78,7 +77,6 @@ export function GameAudio() {
         if (!busy && r.view === "explore" && settings.ambience > 0)
           roomAudio.play("vent", Math.sin(seconds) * 0.65);
       }
-      previousView = r.view;
     }, 100);
     return () => {
       clearInterval(timer);

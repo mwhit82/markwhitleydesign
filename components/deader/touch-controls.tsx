@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useRef, useState, type PointerEvent } from "react";
-import { gameInput, joystick, touchLookScale } from "@/lib/deader/input";
+import { gameInput, joystick, touchLookScale, requiresResume, type InterruptionEvent } from "@/lib/deader/input";
 import { useGame } from "@/lib/deader/store";
 import { roomAudio } from "@/lib/deader/audio/room-audio";
 import { interactRoom } from "./room-controller";
@@ -9,6 +9,13 @@ import styles from "./game.module.css";
 export function TouchControls() {
   const s = useGame();
   const [thumb, setThumb] = useState({ x: 0, z: 0 });
+  const captures = useRef(new Map<number, HTMLElement>());
+  const releaseCaptures = () => {
+    for (const [id, element] of captures.current) {
+      try { if (element.hasPointerCapture(id)) element.releasePointerCapture(id); } catch {}
+    }
+    captures.current.clear();
+  };
   const last = useRef({ x: 0, y: 0 });
   useEffect(() => {
     const choose = (touch: boolean) => {
@@ -26,34 +33,32 @@ export function TouchControls() {
     const key = (e: KeyboardEvent) => {
       if (/^(Key[WASDE]|Arrow)/.test(e.code)) choose(false);
     };
-    const interrupt = () => {
-      gameInput.reset();
-      roomAudio.silence();
-      useGame.setState({ suspension: "interrupted" });
+    const interrupt = (event: InterruptionEvent) => {
+      gameInput.reset(); releaseCaptures(); setThumb({ x: 0, z: 0 });
+      if (requiresResume(event)) {
+        roomAudio.silence();
+        useGame.setState({ suspension: "interrupted" });
+      }
     };
-    const visibility = () => { if (document.hidden) interrupt(); };
-    let portrait = window.innerHeight > window.innerWidth;
-    const orientation = () => {
-      const next = window.innerHeight > window.innerWidth;
-      if (next === portrait) return;
-      portrait = next;
-      interrupt();
-      setThumb({ x: 0, z: 0 });
-    };
+    const visibility = () => { if (document.hidden) interrupt("hidden"); else useGame.setState({ focused: true }); };
+    const blur = () => interrupt("blur");
+    const orientation = () => interrupt("resize");
+    const pagehide = () => interrupt("pagehide");
     choose(matchMedia("(pointer: coarse)").matches);
     window.addEventListener("pointerdown", pointer, true);
     window.addEventListener("keydown", key, true);
     window.addEventListener("resize", orientation);
-    window.addEventListener("blur", interrupt);
-    window.addEventListener("pagehide", interrupt);
+    window.addEventListener("blur", blur);
+    window.addEventListener("pagehide", pagehide);
     document.addEventListener("visibilitychange", visibility);
     return () => {
       gameInput.reset();
+      releaseCaptures();
       window.removeEventListener("pointerdown", pointer, true);
       window.removeEventListener("keydown", key, true);
       window.removeEventListener("resize", orientation);
-      window.removeEventListener("blur", interrupt);
-      window.removeEventListener("pagehide", interrupt);
+      window.removeEventListener("blur", blur);
+      window.removeEventListener("pagehide", pagehide);
       document.removeEventListener("visibilitychange", visibility);
     };
   }, [s.save.settings.controls]);
@@ -64,18 +69,21 @@ export function TouchControls() {
   }), []);
   useEffect(() => {
     gameInput.reset();
+    releaseCaptures();
     setThumb({ x: 0, z: 0 });
     if (s.touchActive && document.pointerLockElement) document.exitPointerLock();
   }, [s.panel, s.scene, s.room.view, s.room.survival.phase, s.suspension, s.touchActive]);
 
   const enabled = s.ready && s.touchActive && !s.panel && !s.suspension && s.focused &&
     (s.scene === "lobby" || (s.room.view === "explore" && s.room.survival.phase === "idle" && s.room.night?.status !== "completed"));
+  const canControl = () => { const state = useGame.getState(); return state.touchActive && !state.panel && !state.suspension && state.focused && (state.scene === "lobby" || (state.room.view === "explore" && state.room.survival.phase === "idle" && state.room.night?.status !== "completed")); };
   const release = (e: PointerEvent) => {
     gameInput.release(e.pointerId);
+    captures.current.delete(e.pointerId);
     setThumb({ ...gameInput.axes });
   };
   const move = (e: PointerEvent<HTMLDivElement>) => {
-    if (gameInput.owners.move !== e.pointerId) return;
+    if (!canControl() || gameInput.owners.move !== e.pointerId) return;
     const rect = e.currentTarget.getBoundingClientRect();
     gameInput.axes = joystick(e.clientX - rect.left - rect.width / 2, e.clientY - rect.top - rect.height / 2);
     setThumb({ ...gameInput.axes });
@@ -84,12 +92,13 @@ export function TouchControls() {
     {enabled && <div className={styles.touchLayer} aria-label="Touch game controls">
       {s.scene === "room" && <div className={styles.lookPad} onContextMenu={e => e.preventDefault()} aria-label="Swipe to look"
         onPointerDown={e => {
-          if (!gameInput.claim("look", e.pointerId)) return;
+          if (!canControl() || !gameInput.claim("look", e.pointerId)) return;
           e.currentTarget.setPointerCapture(e.pointerId);
+          captures.current.set(e.pointerId, e.currentTarget);
           last.current = { x: e.clientX, y: e.clientY };
         }}
         onPointerMove={e => {
-          if (gameInput.owners.look !== e.pointerId) return;
+          if (!canControl() || gameInput.owners.look !== e.pointerId) return;
           const scale = touchLookScale(window.innerWidth, window.innerHeight);
           gameInput.look.x += (e.clientX - last.current.x) * scale;
           gameInput.look.y += (e.clientY - last.current.y) * scale;
@@ -100,8 +109,9 @@ export function TouchControls() {
       </div>}
       <div className={styles.joystick} onContextMenu={e => e.preventDefault()} aria-label="Movement joystick"
         onPointerDown={e => {
-          if (!gameInput.claim("move", e.pointerId)) return;
+          if (!canControl() || !gameInput.claim("move", e.pointerId)) return;
           e.currentTarget.setPointerCapture(e.pointerId);
+          captures.current.set(e.pointerId, e.currentTarget);
           move(e);
         }}
         onPointerMove={move} onPointerUp={release} onPointerCancel={release} onLostPointerCapture={release}>

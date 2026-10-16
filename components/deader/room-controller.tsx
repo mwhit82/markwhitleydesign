@@ -12,7 +12,7 @@ import { roomPlayerPose } from "./player-reflection";
 
 const targets: Record<string, RoomView> = {
   Door: "door",
-  "CCTV / News": "cctv",
+  "CCTV": "cctv",
   Donut: "donut",
   Vent: "vent",
 };
@@ -43,7 +43,6 @@ export function RoomController() {
   const quality = useGame((s) => s.save.settings.quality);
   const pos = useRef({ x: 0, z: 3.2 });
   const angles = useRef({ yaw: 0, pitch: 0 });
-  const keys = useRef(gameInput.keys);
   const dragging = useRef(false);
   const reduced = useRef(false);
   const ray = useMemo(() => new THREE.Raycaster(), []);
@@ -100,11 +99,11 @@ export function RoomController() {
         !s.panel
       )
         e.preventDefault();
-      keys.current.add(e.code);
+      gameInput.keyDown(e.code, e.repeat, !s.panel && !s.suspension && s.focused && s.room.view === "explore");
       if (e.code === "KeyE" && !e.repeat) interactRoom();
       if (e.code === "Escape" && !e.repeat) s.escape();
     };
-    const up = (e: KeyboardEvent) => keys.current.delete(e.code);
+    const up = (e: KeyboardEvent) => gameInput.keyUp(e.code);
     const mouse = (e: MouseEvent) => {
       const s = useGame.getState();
       if (
@@ -153,6 +152,9 @@ export function RoomController() {
         gl.domElement.requestPointerLock?.()?.catch(() => {});
       } catch {}
     };
+    const unsubscribe = useGame.subscribe((state, previous) => {
+      if (state.room.view !== previous.room.view || state.panel !== previous.panel || state.suspension !== previous.suspension) { dragging.current = false; gameInput.reset(); }
+    });
     let wasLocked = false;
     const lockChange = () => {
       const locked = document.pointerLockElement === gl.domElement;
@@ -181,6 +183,7 @@ export function RoomController() {
     document.addEventListener("visibilitychange", visibility);
     gl.domElement.addEventListener("mousedown", press);
     return () => {
+      unsubscribe();
       document.removeEventListener("pointerlockchange", lockChange);
       q.removeEventListener("change", preference);
       window.removeEventListener("keydown", down);
