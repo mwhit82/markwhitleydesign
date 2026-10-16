@@ -168,11 +168,8 @@ export function RoomAtmosphere({ materials: m }: { materials: RoomMaterials }) {
         size={[0.2, 3.3, 7.6]}
         material={m.plaster}
       />
-      <Box
-        position={[0, 1.65, 3.8]}
-        size={[7.6, 3.3, 0.2]}
-        material={m.plaster}
-      />
+      {[-2.4,2.4].map(x=><Box key={x} position={[x,1.65,3.8]} size={[2.8,3.3,.2]} material={m.plaster}/>)}
+      <Box position={[0,2.95,3.8]} size={[2,.7,.2]} material={m.plaster}/>
       <Box position={[0, 3.33, 0]} size={[7.6, 0.12, 7.6]} material={m.wood} />
       {[0.14, 3.15].map((y) => (
         <group key={y}>

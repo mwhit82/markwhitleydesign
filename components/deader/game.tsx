@@ -298,7 +298,7 @@ function Progress() {
   );
 }
 function StartMenu() {
-  const { difficulty, mode, start, runSeconds, selectedNight, save } = useGame();
+  const { difficulty, mode, start, runSeconds, rehearsal, selectedNight, save } = useGame();
   const deadline = { easy: 60, medium: 45, hard: 30 }[difficulty];
   return (
     <Modal label="Start game" className={styles.setupModal}>
@@ -344,6 +344,7 @@ function StartMenu() {
             </button>;
           }) : <div className={styles.infiniteCard}><p className={styles.eyebrow}>UNTIL YOUR LUCK RUNS OUT</p><h3>The endless shift.</h3><p>Three lives. No reset at dawn. How long can you last?</p><small>Best night: {save.infiniteRecords.night} · Best streak: {save.infiniteRecords.streak}</small></div>}
           {process.env.NODE_ENV === "development" && <label className={styles.devRun}>Local test length<select value={runSeconds} onChange={e => useGame.setState({runSeconds: Number(e.target.value) === 60 ? 60 : 600, selectedNight: Number(e.target.value) === 60 ? selectedNight : Math.min(selectedNight, unlockedNight(save))})}><option value="600">Full night · 10 minutes</option><option value="60">Development rehearsal · 60 seconds · no rewards saved</option></select></label>}
+          {process.env.NODE_ENV === "development" && runSeconds === 60 && <label className={styles.devRun}>Rehearsal scene<select value={rehearsal} onChange={e=>useGame.setState({rehearsal:e.target.value as "standard"|"lounge"|"scare"})}><option value="standard">Normal arrivals</option><option value="lounge">Full lounge · 12 residents</option><option value="scare">Anomaly at the door</option></select></label>}
         </section>
       </div>
       <footer className={styles.setupFooter}>

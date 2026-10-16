@@ -135,7 +135,7 @@ export function Visitors() {
       });
     }
   });
-  if (!active) return null;
+  if (!active || (active.phase === "departing" && active.decision === "admit" && survival.phase === "idle") || survival.phase === "lunge") return null;
   const v = visitorById(active.visitor);
   const walking =
     !paused &&
@@ -147,9 +147,7 @@ export function Visitors() {
     <group ref={group}>
       <Cone
         animation={
-          survival.phase === "lunge"
-            ? "attack"
-            : survival.phase === "recovery"
+          survival.phase === "recovery"
               ? "react"
               : walking
                 ? active.decision !== "admit"

@@ -5,6 +5,8 @@ import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import { Box, Sign } from "../environment";
 import { Visitors } from "../visitors";
+import { Lounge } from "../lounge";
+import { ScareFace } from "../scare-face";
 import { RoomTV } from "../room-tv";
 import { RoomController } from "../room-controller";
 import { PlayerMirror, ReflectedPlayer } from "../player-reflection";
@@ -248,6 +250,8 @@ export default function Room() {
       />
       <Donut materials={m} />
       <RoomTV />
+      <Lounge materials={m}/>
+      <ScareFace/>
       <Box
         position={[-2.1, 0.38, 1.25]}
         size={[1.6, 0.76, 1.2]}

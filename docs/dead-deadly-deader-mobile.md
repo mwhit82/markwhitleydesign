@@ -53,3 +53,11 @@ Verification: 61 game checks, type check and production build; browser rehearsal
 The look surface now fills the room view behind joystick and action controls. Menu remains above it; informational HUD passes gestures through. Completed swipes retain their last movement until the next frame, including after implicit capture release. Height-only browser toolbar resizes preserve gestures, while width changes reset input for rotation. Sensitivity is fixed at gesture start. Touch rotation follows the finger directly rather than using desktop camera smoothing.
 
 Validation: 63 tests and production build pass. Portrait browser checks verified left-side swiping, full-view hit area, Menu access and no console errors. Physical iPhone multi-touch, Safari toolbar and perceived latency checks remain outstanding.
+
+## Lounge / TV / scare verification
+
+TV captions now require explicit selection. The lobby also accepts full-view swipes, orbiting the character while the joystick moves relative to camera direction. Six CCTV controls use three columns on narrow screens and six on wide screens.
+
+Browser checks on Apple M4 Pro (Mac16,8), Codex in-app browser, Standard graphics, 844×390 and 390×844: lobby orbit, walk-through doorway, TV selection with continuing timer, Answer the door, human admission, all 12 seated resident fixtures, rear door view, six-camera portrait layout, anomaly trust deduction and recovery. Full-lounge scene: 399 geometries / 29 textures; returning to lobby: 113 / 19. Office view with full resident roster sampled around 30 FPS (~33 ms/frame); surveillance samples around 20 FPS while using demand rendering. These samples describe this desktop browser only, not physical iPhone performance or guaranteed FPS.
+
+Final validation: 70 game tests, TypeScript/production build and targeted lint pass. Browser logs showed no errors during the final rehearsal. Portrait and landscape scare captures confirmed the close-up, followed by recovery with one trust life deducted. Gentle/reduced-motion pose behaviour is covered by tests. Physical iPhone multi-touch, perceived scare/audio intensity and frame times remain device-validation items.

@@ -1,4 +1,6 @@
 "use client";
+import { rehearse, type Rehearsal } from "./rehearsal";
+import { admitResident, tickResidents } from "./lounge";
 import {
   unlockAchievements,
   claimAchievement,
@@ -88,6 +90,7 @@ type State = {
   selectedNight: number;
   nextNight: () => void;
   session: Session | null;
+  rehearsal: Rehearsal;
   runSeconds: 600 | 60;
   hydrate: () => void;
   settings: (patch: Partial<Settings>) => void;
@@ -134,6 +137,7 @@ export const useGame = create<State>((set, get) => ({
     get().start();
   },
   session: null,
+  rehearsal: "standard",
   runSeconds: 600,
   roomView: (view) => {
     gameInput.reset();
@@ -281,7 +285,7 @@ export const useGame = create<State>((set, get) => ({
     }
     const report = newsForNight(s.room.night?.number ?? 1);
     const newsSeconds = loopBroadcast(s.room.newsSeconds, delta, broadcastDuration(report));
-    set({ room: { ...s.room, newsSeconds } });
+    set({ room: { ...s.room, newsSeconds, residents: tickResidents(s.room.residents, delta, s.room.door === "OPEN") } });
     s = get();
     const old = s.room.encounters;
     if (survivalBusy(s.room.survival)) {
@@ -409,6 +413,7 @@ export const useGame = create<State>((set, get) => ({
     set({
       room: {
         ...room,
+        residents: decision === "admit" && encounters.result?.correct && s.room.encounters.active ? admitResident(room.residents, id, s.room.encounters.active.visitor) : room.residents,
         view: "explore",
         survival: encounters.result?.correct
           ? room.survival
@@ -526,11 +531,11 @@ export const useGame = create<State>((set, get) => ({
     set({
       scene: "room",
       panel: null,
-      room: freshRoom(
+      room: rehearse(freshRoom(
         crypto.randomUUID(),
         process.env.NODE_ENV === "development" ? s.runSeconds : 600,
         session,
-      ),
+      ), process.env.NODE_ENV === "development" ? s.rehearsal : "standard"),
       prompt: null,
       session,
     });

@@ -73,3 +73,14 @@ export function ambienceLevel(seconds: number) {
         ? 0.1
         : 0.1 + ((t - 56) / 4) * 0.9;
 }
+
+/** Camera-relative attack presentation; never changes encounter or trust state. */
+export function closeScarePose(elapsed: number, gentle: boolean, reducedMotion: boolean) {
+  const t = Math.min(1, Math.max(0, Number.isFinite(elapsed) ? elapsed / .15 : 0));
+  const still = gentle || reducedMotion;
+  return {
+    distance: still ? 1.1 : 2.4 - 1.45 * t,
+    scale: gentle ? .42 : .7,
+    roll: still ? 0 : Math.sin(elapsed * 65) * .045,
+  };
+}

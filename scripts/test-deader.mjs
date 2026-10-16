@@ -1651,3 +1651,84 @@ test("browser toolbar height changes preserve swipes while rotation clears them"
   assert.equal(shouldResetTouchOnResize(390,844),true);
   assert.equal(shouldResetTouchOnResize(844,390),true);
 });
+
+test("lounge admissions allocate unique seats and clear with a fresh room",async()=>{
+  const l=await import(await moduleUrl(resolve('lib/deader/lounge.ts')));
+  const room=await import(await moduleUrl(resolve('lib/deader/room.ts')));
+  let residents=l.admitResident([], 'one','bea');
+  assert.equal(l.admitResident(residents,'one','bea'),residents);
+  assert.equal(l.tickResidents(residents,.25,false)[0].elapsed,0);
+  for(let i=0;i<32;i++)residents=l.tickResidents(residents,.25,true);
+  assert.equal(residents[0].phase,'seated');
+  assert.deepEqual(l.residentPosition(residents[0]),{...l.SEATS[0],y:.25});
+  for(let i=1;i<12;i++)residents=l.admitResident(residents,`resident-${i}`,'bea');
+  assert.equal(new Set(residents.map(r=>r.seat)).size,12);
+  residents=l.admitResident(residents,'overflow','bea');
+  assert.equal(residents[0].phase,'leaving');
+  assert.equal(l.tickResidents(residents,.25).at(-1).elapsed,0);
+  for(let i=0;i<12;i++)residents=l.tickResidents(residents,.25);
+  assert.equal(residents.length,12);
+  assert.ok(l.tickResidents(residents,.25).at(-1).elapsed>0);
+  assert.deepEqual(room.freshRoom().residents,[]);
+});
+test("office and lounge connect only through their doorway and seats block movement",async()=>{
+  const {moveInRooms}=await import(await moduleUrl(resolve('lib/deader/lounge.ts')));
+  let p={x:0,z:3.3};for(let i=0;i<25;i++)p=moveInRooms(p,0,1,.05,false);
+  assert.ok(p.z>6);
+  let blocked={x:2,z:3.3};for(let i=0;i<25;i++)blocked=moveInRooms(blocked,0,1,.05,false);
+  assert.ok(blocked.z<3.5);
+  let chair={x:1.2,z:4.5};for(let i=0;i<20;i++)chair=moveInRooms(chair,0,1,.05,false);
+  assert.ok(chair.z<5);
+  const diagonal=moveInRooms({x:0,z:0},1,1,.05,false),straight=moveInRooms({x:0,z:0},1,0,.05,false);
+  assert.ok(Math.abs(Math.hypot(diagonal.x,diagonal.z)-straight.x)<1e-9);
+  assert.deepEqual(moveInRooms({x:0,z:0},1,0,5,false),straight);
+});
+test("new surveillance views and nearest TV audio cover the lounge",async()=>{
+  const {FEEDS}=await import(await moduleUrl(resolve('lib/deader/room.ts')));
+  const {tvSound}=await import(await moduleUrl(resolve('lib/deader/tv.ts')));
+  assert.equal(FEEDS.length,6);
+  assert.equal(FEEDS[4].label,'Door rear');assert.ok(FEEDS[4].position[2]<-5.9);
+  assert.equal(FEEDS[5].label,'Holding lounge');
+  assert.ok(tvSound(0,9,Math.PI).gain>.6);
+});
+
+test("TV viewing keeps the night running and returns without stale movement",async()=>{
+  const {useGame}=await import(await moduleUrl(resolve('lib/deader/store.ts')));
+  useGame.setState({scene:'room',panel:null,focused:true,suspension:null,room:room.freshRoom('tv-test',600,g.createSession('easy','normal'))});
+  useGame.getState().roomView('tv');
+  useGame.getState().tickVisitors(.25);
+  assert.equal(useGame.getState().room.view,'tv');
+  assert.equal(useGame.getState().room.night.elapsed,.25);
+  assert.ok(useGame.getState().room.newsSeconds>0);
+  useGame.getState().escape();assert.equal(useGame.getState().room.view,'explore');
+  useGame.getState().roomView('lounge-tv');useGame.getState().escape();
+  assert.equal(useGame.getState().room.view,'explore');
+});
+test("only correctly admitted humans become residents, exactly once",async()=>{
+  const {useGame}=await import(await moduleUrl(resolve('lib/deader/store.ts')));
+  for(const [visitor,decision,expected] of [['bea','admit',1],['bea','reject',0],['three','admit',0],['three','reject',0]]){
+    useGame.setState({save:g.newSave(),scene:'room',panel:null,focused:true,suspension:null,room:{...room.freshRoom(),view:'door',door:'VISITOR_WAITING',visitorId:'test-run:1',encounters:waiting(visitor)}});
+    useGame.getState().decideVisitor('test-run:1',decision);
+    useGame.getState().decideVisitor('test-run:1',decision);
+    assert.equal(useGame.getState().room.residents.length,expected);
+  }
+});
+test("development rehearsal fixtures cannot seed production-length nights",async()=>{
+  const {rehearse}=await import(await moduleUrl(resolve('lib/deader/rehearsal.ts')));
+  const standard=room.freshRoom('prod',600,g.createSession('easy','normal'));
+  assert.equal(rehearse(standard,'scare'),standard);
+  const short=room.freshRoom('test',60,g.createSession('easy','normal'));
+  assert.equal(rehearse(short,'lounge').residents.length,12);
+  assert.equal(rehearse(short,'scare').encounters.active.visitor,'three');
+});
+
+test("close-up scares respect gentle and reduced-motion settings without changing timing", async()=>{
+  const {closeScarePose}=await import(await moduleUrl(resolve('lib/deader/presentation.ts')));
+  assert.equal(closeScarePose(0,false,false).distance,2.4);
+  assert.ok(closeScarePose(.15,false,false).distance<1);
+  assert.equal(closeScarePose(.65,false,false).distance,closeScarePose(.15,false,false).distance);
+  assert.deepEqual(closeScarePose(0,true,false),closeScarePose(.5,true,false));
+  assert.equal(closeScarePose(.4,false,true).roll,0);
+  assert.equal(closeScarePose(.4,false,true).distance,1.1);
+  assert.ok(closeScarePose(.4,true,false).scale<closeScarePose(.4,false,false).scale);
+});

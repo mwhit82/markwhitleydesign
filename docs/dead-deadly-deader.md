@@ -160,3 +160,15 @@ Touch gameplay is now implemented in portrait and landscape: left joystick, righ
 
 ### In-room TV and mobile interaction update
 The earlier full-screen news/intro flow is superseded by an animated TV above Donut, with local sound and light. Reports loop independently at real-time speed, including rehearsals; sessions start directly in exploration. Legacy broadcast-history save fields are retained without gating play. Door choices and countdown remain fixed while questions scroll. Both admission and rejection require confirmation tied to the current visitor. See the mobile document for input-reset and interruption behavior.
+
+## TV selection, holding lounge and scare update
+
+Select **Watch TV** (aim + E, mouse interaction or labelled touch button) for subtitles and a framed view. **Back to room** / Escape hides them immediately. Watching does not pause clocks, visitors or deadlines. An **Answer the door** shortcut appears while someone waits. The peephole action now also says **Answer the door**. Both televisions share a single animated broadcast texture and timeline; one spatial audio stream follows the nearer screen.
+
+The rear office doorway leads into a 12-seat lounge. Correctly admitted humans enter once, follow the aisle, sit and watch TV. Residents are transient, keyed by encounter ID, with entering/seated/leaving phases. They reset with a fresh night/session; once full, the oldest resident leaves through the lounge exit before the incoming resident uses that seat. Anomalies retain their survival sequence and do not enter the resident roster. A shared wear texture and lower-detail resident cones limit resources. Office and lounge movement use a connected boundary and chair collision geometry.
+
+CCTV adds **Door rear** and **Holding lounge**, sharing the existing renderer. Lobby touch swipes and desktop mouse drags orbit the visible player; movement follows camera yaw, with camera elevation limits and obstruction checks. Existing input reset and pointer ownership remain in force.
+
+Admitted anomalies trigger a camera-relative cone face rush (0.15 seconds) and brief close-up within the existing 0.65-second lunge phase. A bounded layered synthesized scare replaces the old soft tone. No additional trust penalty is introduced. Gentle scares use a smaller static reveal and quieter sound; reduced motion removes rush/shake; no strobe is added. The attack retains visitor colour and third-eye identity.
+
+Development setup offers full-lounge and anomaly-at-door fixtures only for the existing 60-second no-reward rehearsal. Production sessions always use standard arrivals. No save migration is needed.

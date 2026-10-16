@@ -9,6 +9,9 @@ import { createCharacterWear } from "./character-wear";
 export function Cone({
   colour = "#ffc928",
   walking = false,
+  seated = false,
+  wearTexture,
+  lowDetail = false,
   animation,
   animationKey,
   backpack = false,
@@ -20,6 +23,9 @@ export function Cone({
 }: {
   colour?: string;
   walking?: boolean;
+  seated?: boolean;
+  lowDetail?: boolean;
+  wearTexture?: ReturnType<typeof createCharacterWear>;
   animation?: AnimationState;
   animationKey?: string | number;
   backpack?: boolean;
@@ -50,13 +56,14 @@ export function Cone({
   const body = useRef<THREE.Group>(null);
   const left = useRef<THREE.Group>(null),
     right = useRef<THREE.Group>(null);
-  const wear = useMemo(createCharacterWear, []);
+  const wear = useMemo(() => wearTexture ?? createCharacterWear(), [wearTexture]);
   useEffect(
     () => () => {
+      if(wearTexture) return;
       wear.map.dispose();
       wear.relief.dispose();
     },
-    [wear],
+    [wear, wearTexture],
   );
   const points = useMemo(
     () => [
@@ -94,7 +101,7 @@ export function Cone({
       if (leg)
         leg.rotation.x = THREE.MathUtils.damp(
           leg.rotation.x,
-          walking && !reduced ? Math.sin(t * 12 + i * Math.PI) * 0.55 : 0,
+          seated ? -1.25 : walking && !reduced ? Math.sin(t * 12 + i * Math.PI) * 0.55 : 0,
           12,
           dt,
         );
@@ -115,8 +122,8 @@ export function Cone({
         </group>
       ))}
       <group ref={body}>
-        <mesh castShadow>
-          <latheGeometry args={[points, 40]} />
+        <mesh castShadow={!lowDetail}>
+          <latheGeometry args={[points, lowDetail ? 16 : 40]} />
           <meshStandardMaterial
             color={colour}
             map={wear.map}

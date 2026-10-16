@@ -163,6 +163,19 @@ export class RoomAudio {
     for (const n of this.bed.nodes) n.disconnect();
     this.bed = null;
   }
+  private scare(c: AudioContext) {
+    const buffer=c.createBuffer(1,Math.floor(c.sampleRate*.65),c.sampleRate),data=buffer.getChannelData(0);
+    let phase=0;
+    for(let i=0;i<data.length;i++){
+      const t=i/c.sampleRate;phase+=2*Math.PI*(110+650*Math.exp(-t*9))/c.sampleRate;
+      const envelope=Math.min(1,t/.004)*Math.pow(Math.max(0,1-t/.65),1.4);
+      data[i]=Math.tanh(Math.sin(phase)*.7+Math.sin(phase*1.49)*.4+(Math.random()*2-1)*.45)*envelope*.5;
+    }
+    const source=c.createBufferSource(),gain=c.createGain();source.buffer=buffer;
+    gain.gain.value=this.volume*(this.gentle?.12:.6);
+    source.connect(gain).connect(c.destination);this.voices.add(source);
+    source.onended=()=>{this.voices.delete(source);source.disconnect();gain.disconnect();};source.start();
+  }
   play(kind: Cue, pan = 0) {
     const c = this.context;
     if (
@@ -177,6 +190,7 @@ export class RoomAudio {
       kind === "knock" ? 3 : kind === "news" ? 3 : kind === "stutter" ? 2 : 1;
     if (this.voices.size + count > 12) return;
     if (kind === "knock") { this.bang(c); return; }
+    if (["scare","lean","stutter"].includes(kind)) { this.scare(c); return; }
     for (let i = 0; i < count; i++) {
       const start = c.currentTime + i * (kind === "news" ? 0.18 : 0.23);
       const length =

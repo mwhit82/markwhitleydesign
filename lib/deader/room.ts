@@ -1,3 +1,4 @@
+import type { Resident } from "./lounge";
 import type { Session } from "./game";
 import { freshNight, type Night } from "./night";
 import { freshSurvival, type Survival } from "./survival";
@@ -12,9 +13,10 @@ export type DoorState =
   | "CLOSING"
   | "LOCKED";
 export type RoomView =
-  "explore" | "door" | "inspect" | "cctv" | "news" | "donut" | "vent";
-export type Feed = 0 | 1 | 2 | 3;
+  "tv" | "lounge-tv" | "explore" | "door" | "inspect" | "cctv" | "news" | "donut" | "vent";
+export type Feed = 0 | 1 | 2 | 3 | 4 | 5;
 export type RoomState = {
+  residents: Resident[];
   night: Night | null;
   survival: Survival;
   view: RoomView;
@@ -30,6 +32,7 @@ export const freshRoom = (
   duration?: 600 | 60,
   session?: Session,
 ): RoomState => ({
+  residents: [],
   night: duration ? freshNight(duration, session) : null,
   survival: freshSurvival(),
   encounters: freshEncounters(runId),
@@ -119,6 +122,8 @@ export const FEEDS = [
     position: [2.4, 2.5, -10.8],
     target: [0.25, 1, -4.1],
   },
+  { label: "Door rear", position: [0.25, 1.8, -7.6], target: [0.25, 1, -3.8] },
+  { label: "Holding lounge", position: [-3.2, 2.9, 4.3], target: [0, 1, 8] },
 ] as const;
 export type Broadcast = {
   id: string;

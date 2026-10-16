@@ -2,15 +2,19 @@
 import { useEffect, useMemo, useRef } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
+import { moveInRooms } from "@/lib/deader/lounge";
+import { TV_POSITION, LOUNGE_TV_POSITION } from "@/lib/deader/tv";
 import { gameInput } from "@/lib/deader/input";
 import { useGame } from "@/lib/deader/store";
-import { move, ROOM_OBSTACLES, ROOM_CLOSED_OBSTACLES } from "@/lib/deader/game";
+
 import { FEEDS, type RoomView } from "@/lib/deader/room";
 import { renderScale } from "@/lib/deader/presentation";
 import { roomAudio } from "@/lib/deader/audio/room-audio";
 import { roomPlayerPose } from "./player-reflection";
 
 const targets: Record<string, RoomView> = {
+  "Watch TV": "tv",
+  "Watch lounge TV": "lounge-tv",
   Door: "door",
   "CCTV": "cctv",
   Donut: "donut",
@@ -223,13 +227,12 @@ export function RoomController() {
     }
     const beforeX = pos.current.x,
       beforeZ = pos.current.z;
-    pos.current = move(
+    pos.current = moveInRooms(
       pos.current,
       x * Math.cos(a.yaw) + z * Math.sin(a.yaw),
       -x * Math.sin(a.yaw) + z * Math.cos(a.yaw),
       dt,
-      3.8,
-      r.door === "OPEN" ? ROOM_OBSTACLES : ROOM_CLOSED_OBSTACLES,
+      r.door === "OPEN",
     );
     const travelled = Math.hypot(
       pos.current.x - beforeX,
@@ -279,6 +282,13 @@ export function RoomController() {
       dummy.position.copy(eye);
       dummy.lookAt(2.65, 1.54, -0.3);
       rotation.copy(dummy.quaternion);
+    } else if (r.view === "tv" || r.view === "lounge-tv") {
+      const lounge = r.view === "lounge-tv";
+      eye.set(lounge ? 0 : 1.4, 1.8, lounge ? 8.6 : -.65);
+      dummy.position.copy(eye);
+      dummy.lookAt(new THREE.Vector3(...(lounge ? LOUNGE_TV_POSITION : TV_POSITION)));
+      rotation.copy(dummy.quaternion);
+      fov = 55;
     } else if (r.view === "cctv") {
       const feed = FEEDS[r.feed];
       eye.fromArray(feed.position);

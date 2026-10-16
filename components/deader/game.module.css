@@ -1321,3 +1321,8 @@
 .touchGame .top { z-index: 6; }
 .touchGame .topRight { pointer-events: none; }
 .touchGame .topRight button, .touchGame .topRight a { pointer-events: auto; }
+
+.game .feedButtons { grid-template-columns: repeat(3,minmax(0,1fr)); }
+.tvCaption { pointer-events:auto; bottom:max(24px,env(safe-area-inset-bottom)); }
+.tvCaption button { min-height:48px; margin:4px; }
+@media (min-width:700px) { .game .feedButtons { grid-template-columns:repeat(6,minmax(0,1fr)); } }

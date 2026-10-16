@@ -44,7 +44,7 @@ export function RoomUI() {
               autoFocus
               onClick={() => s.doorEvent({ type: "leave-inspection" })}
             >
-              Make a choice · Step back
+              Answer the door
             </button>
           </div>
         </div>

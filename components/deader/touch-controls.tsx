@@ -95,7 +95,7 @@ export function TouchControls() {
   };
   return <>
     {enabled && <div className={styles.touchLayer} aria-label="Touch game controls">
-      {s.scene === "room" && <div className={styles.lookPad} onContextMenu={e => e.preventDefault()} aria-label="Swipe to look"
+      {<div className={styles.lookPad} onContextMenu={e => e.preventDefault()} aria-label="Swipe to look"
         onPointerDown={e => {
           if (!canControl() || !gameInput.claim("look", e.pointerId)) return;
           e.currentTarget.setPointerCapture(e.pointerId);
