@@ -221,7 +221,7 @@ test("room store coordinates inspection, pause, viewed broadcasts and fresh sess
     useGame.getState().room,
     room.freshRoom(
       useGame.getState().room.encounters.runId,
-      600,
+      300,
       useGame.getState().session,
     ),
   );
@@ -405,7 +405,7 @@ test("CCTV allows arrivals while manual pause freezes the shared scheduler", asy
   useGame.setState({ panel: null });
   useGame.getState().tickVisitors(100);
   assert.equal(useGame.getState().room.encounters, before.encounters); // News blocks arrivals, but counts toward the night.
-  assert.equal(useGame.getState().room.night.elapsed, 0.25);
+  assert.equal(useGame.getState().room.night.elapsed, 0.5);
 });
 
 const survival = await import(
@@ -573,7 +573,7 @@ test("active night clock is bounded, pauses without catch-up and maps exactly to
   assert.equal(nightLogic.advanceNight(n, 10, true, 3), n);
   assert.equal(nightLogic.advanceNight(n, NaN, false, 3), n);
   assert.equal(nightLogic.advanceNight(n, -1, false, 3), n);
-  assert.equal(nightLogic.advanceNight(n, 99, false, 3).elapsed, 0.25);
+  assert.equal(nightLogic.advanceNight(n, 99, false, 3).elapsed, 0.5);
   let fast = nightLogic.freshNight(60);
   for (let i = 0; i < 240; i++)
     fast = nightLogic.advanceNight(fast, 0.25, false, 3);
@@ -589,18 +589,18 @@ test("scheduled arrivals have fixed tutorial order, wait for prior visitors and 
   const e = visitors.freshEncounters("schedule");
   assert.equal(
     nightLogic.scheduledVisitor(
-      { ...nightLogic.freshNight(), elapsed: 89.9 },
+      { ...nightLogic.freshNight(), elapsed: 11.9 },
       e,
     ),
     null,
   );
   assert.equal(
-    nightLogic.scheduledVisitor({ ...nightLogic.freshNight(), elapsed: 90 }, e),
+    nightLogic.scheduledVisitor({ ...nightLogic.freshNight(), elapsed: 12 }, e),
     "bea",
   );
   assert.equal(
     nightLogic.scheduledVisitor(
-      { ...nightLogic.freshNight(), elapsed: 165 },
+      { ...nightLogic.freshNight(), elapsed: 90 },
       { ...e, sequence: 1 },
     ),
     "three",
@@ -620,7 +620,7 @@ test("scheduled arrivals have fixed tutorial order, wait for prior visitors and 
     null,
   );
 });
-test("full ten-minute run resolves seven visitors, saves 85 coins once and replays cleanly", async () => {
+test("full five-minute run resolves seven visitors, saves 85 coins once and replays cleanly", async () => {
   const { useGame } = await import(
     await moduleUrl(resolve("lib/deader/store.ts"))
   );
@@ -636,10 +636,10 @@ test("full ten-minute run resolves seven visitors, saves 85 coins once and repla
     panel: null,
     difficulty: "easy",
     mode: "normal",
-    runSeconds: 600,
+    runSeconds: 300,
   });
   useGame.getState().start();
-  for (let i = 0; i < 2400; i++) {
+  for (let i = 0; i < 1200; i++) {
     let s = useGame.getState();
     if (s.room.door === "OPENING") s.doorEvent({ type: "opened" });
     if (s.room.door === "CLOSING") s.doorEvent({ type: "closed" });
@@ -695,7 +695,7 @@ test("dawn safely cancels inspection, waiting and departure; rehearsal never sav
       panel: null,
       save: g.newSave(),
       room: {
-        ...room.freshRoom("dawn-" + view, 600),
+        ...room.freshRoom("dawn-" + view, 300),
         view,
         night: {
           ...nightLogic.freshNight(),
@@ -745,16 +745,16 @@ test("news, replay, pause, focus loss and survival share one clock with defeat p
     scene: "room",
     focused: true,
     panel: null,
-    room: room.freshRoom("clock", 600),
+    room: room.freshRoom("clock", 300),
   });
   useGame.getState().tickVisitors(0.25);
-  assert.equal(useGame.getState().room.night.elapsed, 0.25);
+  assert.equal(useGame.getState().room.night.elapsed, 0.5);
   assert.equal(useGame.getState().room.newsSeconds, 0.25);
   useGame.getState().finishNews();
   useGame.getState().roomView("news");
   useGame.getState().tickVisitors(0.25);
   assert.equal(useGame.getState().room.view, "explore");
-  assert.equal(useGame.getState().room.night.elapsed, 0.5);
+  assert.equal(useGame.getState().room.night.elapsed, 1);
   useGame.getState().finishNews();
   for (const patch of [{ panel: "pause" }, { focused: false }]) {
     useGame.setState(patch);
@@ -812,7 +812,7 @@ test("Phase 6 save additions validate without losing legacy progress or cosmetic
 test("all story schedules remain bounded and every later visitor has fair evidence", () => {
   for (const difficulty of ["easy", "medium", "hard"])
     for (let number = 1; number <= 3; number++) {
-      const n = nightLogic.freshNight(600, {
+      const n = nightLogic.freshNight(300, {
         difficulty,
         mode: "normal",
         night: number,
@@ -847,7 +847,7 @@ test("story unlocks, continuation, per-difficulty completion and ending are guar
     difficulty: "hard",
     panel: null,
     focused: true,
-    runSeconds: 600,
+    runSeconds: 300,
   });
   useGame.getState().start();
   assert.equal(useGame.getState().room.night.number, 1);
@@ -883,7 +883,7 @@ test("story unlocks, continuation, per-difficulty completion and ending are guar
   assert.deepEqual(g.readSave(JSON.stringify(end.save)), end.save);
 });
 test("Infinite crosses dawn without completion, caps speed and counts milestones once", async () => {
-  const n = nightLogic.freshNight(600, {
+  const n = nightLogic.freshNight(300, {
     night: 1,
     mode: "infinite",
     difficulty: "hard",
@@ -908,7 +908,7 @@ test("Infinite crosses dawn without completion, caps speed and counts milestones
     difficulty: "hard",
     panel: null,
     focused: true,
-    runSeconds: 600,
+    runSeconds: 300,
   });
   useGame.getState().start();
   assert.equal(useGame.getState().room.night.number, 1);
@@ -965,7 +965,7 @@ test("all nine story/difficulty combinations finish full runs with their schedul
         difficulty,
         panel: null,
         focused: true,
-        runSeconds: 600,
+        runSeconds: 300,
       });
       useGame.getState().start();
       const expected = nightLogic.storyArrivals(
@@ -1125,9 +1125,9 @@ test("store completion unlocks Trust Expert only for real, non-idle, mistake-fre
     await moduleUrl(resolve("lib/deader/store.ts"))
   );
   for (const [duration, correct, mistakes, expected] of [
-    [600, 1, 0, true],
-    [600, 0, 0, false],
-    [600, 1, 1, false],
+    [300, 1, 0, true],
+    [300, 0, 0, false],
+    [300, 1, 1, false],
     [60, 1, 0, false],
   ]) {
     const r = room.freshRoom("achievement-test", duration, {
@@ -1153,7 +1153,7 @@ test("store completion unlocks Trust Expert only for real, non-idle, mistake-fre
     );
     assert.equal(
       useGame.getState().save.achievements.includes("first-survivor"),
-      duration === 600,
+      duration === 300,
     );
   }
 });
@@ -1490,7 +1490,7 @@ test("store freezes decision deadlines and resolves timeouts through survival",a
 test("ignoring visitors reaches Game Over without completion rewards", async () => {
   const {useGame}=await import(await moduleUrl(resolve("lib/deader/store.ts")));
   for (const difficulty of ["easy","medium","hard"]) {
-    useGame.setState({save:g.newSave(),selectedNight:1,mode:"normal",difficulty,panel:null,focused:true,runSeconds:600});
+    useGame.setState({save:g.newSave(),selectedNight:1,mode:"normal",difficulty,panel:null,focused:true,runSeconds:300});
     useGame.getState().start();
     for(let i=0;i<2600;i++){
       const s=useGame.getState();
@@ -1554,7 +1554,7 @@ test("mobile settings migrate without changing visual defaults or saved progress
 test("interruption suspension freezes encounters, night and survival in either orientation",async()=>{
   const {useGame}=await import(await moduleUrl(resolve("lib/deader/store.ts")));
   for(const suspension of ["interrupted"]){
-    useGame.setState({save:g.newSave(),focused:true,panel:null,suspension:null,runSeconds:600});
+    useGame.setState({save:g.newSave(),focused:true,panel:null,suspension:null,runSeconds:300});
     useGame.getState().start();
     useGame.setState({suspension});
     const room=useGame.getState().room;
@@ -1614,7 +1614,7 @@ test("TV loops independently and attenuates from the physical player", async () 
   useGame.setState({room:{...useGame.getState().room,newsSeconds:duration-.1,night:{...useGame.getState().room.night,elapsed:100}}});
   useGame.getState().tickVisitors(.25);
   assert.equal(useGame.getState().room.view,"explore");
-  assert.equal(useGame.getState().room.night.elapsed,100.25);
+  assert.equal(useGame.getState().room.night.elapsed,100.5);
   assert.ok(useGame.getState().room.newsSeconds<.2);
   assert.equal(useGame.getState().room.encounters.active.phase,"approaching");
 });
@@ -1694,11 +1694,11 @@ test("new surveillance views and nearest TV audio cover the lounge",async()=>{
 
 test("TV viewing keeps the night running and returns without stale movement",async()=>{
   const {useGame}=await import(await moduleUrl(resolve('lib/deader/store.ts')));
-  useGame.setState({scene:'room',panel:null,focused:true,suspension:null,room:room.freshRoom('tv-test',600,g.createSession('easy','normal'))});
+  useGame.setState({scene:'room',panel:null,focused:true,suspension:null,room:room.freshRoom('tv-test',300,g.createSession('easy','normal'))});
   useGame.getState().roomView('tv');
   useGame.getState().tickVisitors(.25);
   assert.equal(useGame.getState().room.view,'tv');
-  assert.equal(useGame.getState().room.night.elapsed,.25);
+  assert.equal(useGame.getState().room.night.elapsed,.5);
   assert.ok(useGame.getState().room.newsSeconds>0);
   useGame.getState().escape();assert.equal(useGame.getState().room.view,'explore');
   useGame.getState().roomView('lounge-tv');useGame.getState().escape();
@@ -1715,7 +1715,7 @@ test("only correctly admitted humans become residents, exactly once",async()=>{
 });
 test("development rehearsal fixtures cannot seed production-length nights",async()=>{
   const {rehearse}=await import(await moduleUrl(resolve('lib/deader/rehearsal.ts')));
-  const standard=room.freshRoom('prod',600,g.createSession('easy','normal'));
+  const standard=room.freshRoom('prod',300,g.createSession('easy','normal'));
   assert.equal(rehearse(standard,'scare'),standard);
   const short=room.freshRoom('test',60,g.createSession('easy','normal'));
   assert.equal(rehearse(short,'lounge').residents.length,12);
@@ -1731,4 +1731,25 @@ test("close-up scares respect gentle and reduced-motion settings without changin
   assert.equal(closeScarePose(.4,false,true).roll,0);
   assert.equal(closeScarePose(.4,false,true).distance,1.1);
   assert.ok(closeScarePose(.4,true,false).scale<closeScarePose(.4,false,false).scale);
+});
+
+test("five active minutes reach dawn and the first knock arrives in fifteen seconds",async()=>{
+  const {useGame}=await import(await moduleUrl(resolve('lib/deader/store.ts')));
+  for(const difficulty of ['easy','medium','hard']) {
+    useGame.setState({save:g.newSave(),scene:'lobby',panel:null,focused:true,suspension:null,selectedNight:1,mode:'normal',difficulty,runSeconds:300,rehearsal:'standard'});
+    useGame.getState().start();
+    for(let tick=0;tick<59;tick++)useGame.getState().tickVisitors(.25);
+    assert.equal(useGame.getState().room.encounters.active.phase,'approaching');
+    useGame.getState().tickVisitors(.25);
+    assert.equal(useGame.getState().room.encounters.active.phase,'waiting');
+    assert.equal(useGame.getState().room.encounters.active.visitor,'bea');
+    for(let tick=0;tick<40;tick++)useGame.getState().tickVisitors(.25);
+    assert.equal(useGame.getState().room.encounters.active.elapsed,10); // Decision time remains real time.
+    assert.equal(visitors.DECISION_SECONDS[difficulty],{easy:60,medium:45,hard:30}[difficulty]);
+  }
+  let n=nightLogic.freshNight();
+  for(let tick=0;tick<1199;tick++) n=nightLogic.advanceNight(n,.25,false,3);
+  assert.equal(n.status,'running');
+  n=nightLogic.advanceNight(n,.25,false,3);
+  assert.equal(n.status,'completed');assert.equal(g.clockLabel(n.elapsed),'5:55 AM');
 });

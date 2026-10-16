@@ -3,7 +3,7 @@ import { recordStory } from "./progression";
 import type { Session, Save } from "./game";
 import { reward } from "./game";
 
-export const NIGHT_ONE_ARRIVALS = [90, 165, 240, 315, 405, 480, 555] as const;
+export const NIGHT_ONE_ARRIVALS = [12, 90, 170, 250, 330, 410, 480] as const;
 export const NIGHT_ONE_VISITORS = [
   "bea",
   "three",
@@ -25,19 +25,19 @@ export type Night = {
   nextArrival: number;
   endingSeconds: number;
   elapsed: number;
-  duration: 600 | 60;
+  duration: 300 | 60;
   status: "running" | "completed" | "failed";
   introFinished: boolean;
   cancelledVisitor: boolean;
 };
 export const freshNight = (
-  duration: 600 | 60 = 600,
+  duration: 300 | 60 = 300,
   session?: Session,
 ): Night => ({
   number: session?.night ?? 1,
   mode: session?.mode ?? "normal",
   difficulty: session?.difficulty ?? "easy",
-  nextArrival: 90,
+  nextArrival: 12,
   endingSeconds: 0,
   elapsed: 0,
   duration,
@@ -45,9 +45,9 @@ export const freshNight = (
   introFinished: true,
   cancelledVisitor: false,
 });
-/** Elapsed is in story seconds. The development run scales 60 real seconds to 600. */
+/** The clock uses 600 story units; production takes 300 real seconds, rehearsal 60. */
 export const nightRate = (night: Night | null) =>
-  night?.duration === 60 ? 10 : 1;
+  night ? 600 / night.duration : 1;
 export function advanceNight(
   night: Night,
   delta: number,
@@ -88,7 +88,7 @@ export function storyArrivals(night: Night): number[] {
       (night.number - 1) * 2 +
       { easy: 0, medium: 1, hard: 2 }[night.difficulty],
   );
-  return Array.from({ length: count }, (_, i) => 75 + i * (480 / (count - 1)));
+  return Array.from({ length: count }, (_, i) => 12 + i * (468 / (count - 1)));
 }
 export function scheduledVisitor(
   night: Night,
@@ -129,7 +129,7 @@ export function completeNightReward(
     return save;
   return night.status === "completed" &&
     night.mode === "normal" &&
-    night.duration === 600 &&
+    night.duration === 300 &&
     runId
     ? recordStory(
         reward(save, `night:${night.number}:${runId}`, 50, night.number),

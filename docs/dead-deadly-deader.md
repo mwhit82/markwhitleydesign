@@ -172,3 +172,8 @@ CCTV adds **Door rear** and **Holding lounge**, sharing the existing renderer. L
 Admitted anomalies trigger a camera-relative cone face rush (0.15 seconds) and brief close-up within the existing 0.65-second lunge phase. A bounded layered synthesized scare replaces the old soft tone. No additional trust penalty is introduced. Gentle scares use a smaller static reveal and quieter sound; reduced motion removes rush/shake; no strobe is added. The attack retains visitor colour and third-eye identity.
 
 Development setup offers full-lounge and anomaly-at-door fixtures only for the existing 60-second no-reward rehearsal. Production sessions always use standard arrivals. No save migration is needed.
+
+## Faster night pacing
+Production nights now last 300 active seconds (five minutes), while the clock still spans 12:00 AM–5:55 AM using 600 internal story units. The 60-second development rehearsal remains reward-free. Night 1's first visitor starts approaching after six real seconds and knocks around 15 seconds. Its seven story arrivals are now at internal times 12, 90, 170, 250, 330, 410 and 480; later nights/difficulties retain their visitor counts with arrivals distributed from 12 through 480. Infinite uses the same five-minute night clock and earlier opening arrival. Waiting decision timers remain 60/45/30 real seconds. Pauses and survival sequences still suspend the night clock; rewards, saved progression and the displayed clock mapping remain unchanged.
+
+Validation: 71 tests pass, including exact 300-second completion, first knock at 15 seconds, unchanged real-time decision deadlines, all story/difficulty schedules, Infinite milestones and reward eligibility. Production build passes.

@@ -91,7 +91,7 @@ type State = {
   nextNight: () => void;
   session: Session | null;
   rehearsal: Rehearsal;
-  runSeconds: 600 | 60;
+  runSeconds: 300 | 60;
   hydrate: () => void;
   settings: (patch: Partial<Settings>) => void;
   buyAccessory: (id: AccessoryId) => void;
@@ -138,7 +138,7 @@ export const useGame = create<State>((set, get) => ({
   },
   session: null,
   rehearsal: "standard",
-  runSeconds: 600,
+  runSeconds: 300,
   roomView: (view) => {
     gameInput.reset();
     if (view === "news") view = "explore";
@@ -201,7 +201,7 @@ export const useGame = create<State>((set, get) => ({
           n.endingSeconds + Math.min(delta, 0.25),
         );
         const save =
-          endingSeconds === 14 && n.duration === 600
+          endingSeconds === 14 && n.duration === 300
             ? { ...s.save, endingViewed: true }
             : s.save;
         set({
@@ -226,7 +226,7 @@ export const useGame = create<State>((set, get) => ({
           s.room.encounters.runId,
         );
         const save =
-          night.duration === 600
+          night.duration === 300
             ? unlockAchievements(
                 completedSave,
                 s.room.encounters.mistakes === 0 &&
@@ -255,7 +255,7 @@ export const useGame = create<State>((set, get) => ({
       if (night !== s.room.night) {
         let save =
           night.mode === "infinite" &&
-          night.duration === 600 &&
+          night.duration === 300 &&
           (night.number !== s.room.night.number || night.status === "failed")
             ? recordInfinite(s.save, {
                 streak: s.room.encounters.bestStreak,
@@ -266,7 +266,7 @@ export const useGame = create<State>((set, get) => ({
             : s.save;
         if (
           night.mode === "infinite" &&
-          night.duration === 600 &&
+          night.duration === 300 &&
           night.number > s.room.night.number
         )
           save = recordInfiniteNight(
@@ -274,7 +274,7 @@ export const useGame = create<State>((set, get) => ({
             s.room.encounters.runId,
             night.number - 1,
           );
-        if (night.duration === 600) save = unlockAchievements(save);
+        if (night.duration === 300) save = unlockAchievements(save);
         set({
           save,
           storageFailed: save !== s.save ? persist(save) : s.storageFailed,
@@ -403,7 +403,7 @@ export const useGame = create<State>((set, get) => ({
       encounters.result?.coins && s.room.night?.duration !== 60
         ? reward(s.save, `visitor:${id}`, encounters.result.coins)
         : s.save;
-    if (room.night?.mode === "infinite" && room.night.duration === 600)
+    if (room.night?.mode === "infinite" && room.night.duration === 300)
       save = recordInfinite(save, {
         streak: encounters.bestStreak,
         night: room.night.number,
@@ -533,7 +533,7 @@ export const useGame = create<State>((set, get) => ({
       panel: null,
       room: rehearse(freshRoom(
         crypto.randomUUID(),
-        process.env.NODE_ENV === "development" ? s.runSeconds : 600,
+        process.env.NODE_ENV === "development" ? s.runSeconds : 300,
         session,
       ), process.env.NODE_ENV === "development" ? s.rehearsal : "standard"),
       prompt: null,

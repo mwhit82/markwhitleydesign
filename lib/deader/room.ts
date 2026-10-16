@@ -29,7 +29,7 @@ export type RoomState = {
 };
 export const freshRoom = (
   runId = "preview",
-  duration?: 600 | 60,
+  duration?: 300 | 60,
   session?: Session,
 ): RoomState => ({
   residents: [],

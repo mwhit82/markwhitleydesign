@@ -331,7 +331,7 @@ function StartMenu() {
           </fieldset>
           <details className={styles.setupHelp}>
             <summary>How to play</summary>
-            <p>Inspect visitors, ask questions and decide who to let in. Three trust lives. Missing a deadline costs one life. Story has three ten-minute nights; Infinite keeps going. Progress saves on this device.</p>
+            <p>Inspect visitors, ask questions and decide who to let in. Three trust lives. Missing a deadline costs one life. Story has three five-minute nights; Infinite keeps going. Progress saves on this device.</p>
           </details>
         </section>
         <section className={styles.shiftList} aria-label="Story nights">
@@ -339,11 +339,11 @@ function StartMenu() {
             const locked = i + 1 > unlockedNight(save) && !(process.env.NODE_ENV === "development" && runSeconds === 60);
             return <button key={title} disabled={locked} aria-pressed={selectedNight === i + 1} onClick={() => useGame.setState({ selectedNight: i + 1 })}>
               <span className={styles.shiftNumber}>{String(i + 1).padStart(2, "0")}</span>
-              <span><strong>{title}</strong><small>{locked ? `Complete Night ${i} to unlock` : save.completions[difficulty].includes(i + 1) ? "Completed · Replay" : "10 minutes · Three lives"}</small></span>
+              <span><strong>{title}</strong><small>{locked ? `Complete Night ${i} to unlock` : save.completions[difficulty].includes(i + 1) ? "Completed · Replay" : "5 minutes · Three lives"}</small></span>
               <span aria-hidden="true">{locked ? "Locked" : selectedNight === i + 1 ? "✓" : ""}</span>
             </button>;
           }) : <div className={styles.infiniteCard}><p className={styles.eyebrow}>UNTIL YOUR LUCK RUNS OUT</p><h3>The endless shift.</h3><p>Three lives. No reset at dawn. How long can you last?</p><small>Best night: {save.infiniteRecords.night} · Best streak: {save.infiniteRecords.streak}</small></div>}
-          {process.env.NODE_ENV === "development" && <label className={styles.devRun}>Local test length<select value={runSeconds} onChange={e => useGame.setState({runSeconds: Number(e.target.value) === 60 ? 60 : 600, selectedNight: Number(e.target.value) === 60 ? selectedNight : Math.min(selectedNight, unlockedNight(save))})}><option value="600">Full night · 10 minutes</option><option value="60">Development rehearsal · 60 seconds · no rewards saved</option></select></label>}
+          {process.env.NODE_ENV === "development" && <label className={styles.devRun}>Local test length<select value={runSeconds} onChange={e => useGame.setState({runSeconds: Number(e.target.value) === 60 ? 60 : 300, selectedNight: Number(e.target.value) === 60 ? selectedNight : Math.min(selectedNight, unlockedNight(save))})}><option value="300">Full night · 5 minutes</option><option value="60">Development rehearsal · 60 seconds · no rewards saved</option></select></label>}
           {process.env.NODE_ENV === "development" && runSeconds === 60 && <label className={styles.devRun}>Rehearsal scene<select value={rehearsal} onChange={e=>useGame.setState({rehearsal:e.target.value as "standard"|"lounge"|"scare"})}><option value="standard">Normal arrivals</option><option value="lounge">Full lounge · 12 residents</option><option value="scare">Anomaly at the door</option></select></label>}
         </section>
       </div>
