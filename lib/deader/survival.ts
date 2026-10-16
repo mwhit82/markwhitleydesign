@@ -32,7 +32,7 @@ const durations = {
 export function tickSurvival(
   s: Survival,
   dt: number,
-  trust: number,
+  _trust: number,
   paused: boolean,
   doorOpen: boolean,
 ): Survival {
@@ -55,9 +55,7 @@ export function tickSurvival(
       : s.phase === "lunge"
         ? "recovery"
         : s.phase === "recovery"
-          ? trust === 0
-            ? "donut"
-            : "idle"
+          ? "idle"
           : s.phase === "donut"
             ? "blackout"
             : "gameover";

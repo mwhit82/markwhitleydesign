@@ -1,3 +1,4 @@
+import { freshWeapon, type Weapon, type Judgement } from "./judgement";
 import type { Resident } from "./lounge";
 import type { Session } from "./game";
 import { freshNight, type Night } from "./night";
@@ -16,6 +17,10 @@ export type RoomView =
   "console" | "arcade" | "tv" | "lounge-tv" | "explore" | "door" | "inspect" | "cctv" | "news" | "donut" | "vent";
 export type Feed = 0 | 1 | 2 | 3 | 4 | 5;
 export type RoomState = {
+  judgement: Judgement | null;
+  mistakeBaseline: number;
+  weapon: Weapon;
+  rewardToast: { coins: number; seconds: number } | null;
   residents: Resident[];
   night: Night | null;
   survival: Survival;
@@ -32,6 +37,7 @@ export const freshRoom = (
   duration?: 300 | 60,
   session?: Session,
 ): RoomState => ({
+  judgement: null, mistakeBaseline: 0, weapon: freshWeapon(), rewardToast: null,
   residents: [],
   night: duration ? freshNight(duration, session) : null,
   survival: freshSurvival(),
@@ -170,7 +176,7 @@ export const NIGHT_ONE_NEWS: Broadcast = {
       seconds: 7,
       headline: "THREE CHANCES",
       subtitle:
-        "A wrong decision costs one trust heart. Watch the decision countdown, look for evidence and choose before it ends. A missed deadline also costs one heart.",
+        "A wrong decision or missed deadline adds a mistake. The Auditor arrives at dawn. Three mistakes fail the judgement. Correct decisions earn five coins.",
     },
     {
       seconds: 6,
@@ -237,7 +243,7 @@ export function newsForNight(number: number): Broadcast {
         seconds: 12,
         headline: "THREE CHANCES",
         subtitle:
-          "Your three trust lives remain. Donut is watching. Stay until 5:55 AM.",
+          "The Auditor judges every five minutes. Keep this shift below three mistakes. Donut is watching.",
       },
     ],
   };
@@ -246,7 +252,7 @@ export function newsForNight(number: number): Broadcast {
 /** Confirmation belongs to one still-waiting encounter, never the next visitor. */
 export function canConfirmDoor(room: RoomState, encounterId: string | null) {
   const active = room.encounters.active;
-  return room.view === "door" && room.survival.phase === "idle" && room.night?.status !== "completed" &&
-    ["CLOSED", "VISITOR_WAITING", "INSPECTING"].includes(room.door) &&
+  return room.view === "door" && room.survival.phase === "idle" && room.night?.status !== "completed" && !room.judgement &&
+    (["CLOSED", "VISITOR_WAITING", "INSPECTING"].includes(room.door) || (room.door === "OPEN" && !!active)) &&
     (active ? active.id === encounterId && active.phase === "waiting" : encounterId === null);
 }

@@ -1,4 +1,5 @@
 "use client";
+import { UncPortrait } from './unc-portrait';
 import { useEffect, useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
@@ -14,6 +15,7 @@ export function Lounge({materials:m}:{materials:RoomMaterials}) {
   useEffect(()=>()=>{wear.map.dispose();wear.relief.dispose();},[wear]);
   const residents=useGame(s=>s.room.residents), paused=useGame(s=>!!s.panel||!s.focused||!!s.suspension);
   return <group>
+    <UncPortrait/>
     <Box position={[0,-.11,7.3]} size={[7.6,.2,7]} material={m.floor}/>
     <Box position={[0,3.33,7.3]} size={[7.6,.12,7]} material={m.wood}/>
     {[-3.8,3.8].map(x=><Box key={x} position={[x,1.65,7.3]} size={[.2,3.3,7]} material={m.plaster}/>)}
@@ -38,5 +40,5 @@ function LoungeResident({resident:r,paused,wear}:{resident:Resident;paused:boole
     if(r.phase!=="seated"&&Math.hypot(dx,dz)>.01)group.current.rotation.y=Math.atan2(dx,dz);
     if(r.phase==="seated")group.current.rotation.y=0;
     group.current.position.lerp(new THREE.Vector3(p.x,p.y,p.z),1-Math.exp(-dt*18));});
-  return <group ref={group} visible={r.phase!=="entering"||r.elapsed>0} position={[initial.x,initial.y,initial.z]}><Cone colour={v.colour} appearance={v.appearance} seated={r.phase==='seated'} walking={r.phase!=='seated'} paused={paused} wearTexture={wear} lowDetail/></group>;
+  return <group ref={group} userData={{shotTarget:r.id}} visible={r.phase!=="entering"||r.elapsed>0} position={[initial.x,initial.y,initial.z]}><Cone colour={v.colour} appearance={v.appearance} seated={r.phase==='seated'} walking={r.phase!=='seated'} paused={paused} wearTexture={wear} lowDetail/></group>;
 }

@@ -296,8 +296,7 @@ export function tickEncounters(
   if (
     paused ||
     !Number.isFinite(delta) ||
-    delta <= 0 ||
-    (s.trust === 0 && !s.active)
+    delta <= 0
   )
     return s;
   const dt = Math.min(delta, 0.25) * (options.rate ?? 1),
@@ -370,7 +369,7 @@ export function resolveEncounter(
     e.id !== id ||
     e.phase !== "waiting" ||
     s.resolved.includes(id) ||
-    !(decision === "admit" || decision === "reject")
+    !(decision === "admit" || decision === "reject" || decision === "shoot")
   )
     return s;
   const v = visitorById(e.visitor),

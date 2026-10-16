@@ -1,5 +1,6 @@
 /** Gesture-unlocked synthesis. One context for the game; bounded voices, explicit cleanup. */
 export type Cue =
+  | "shot"
   | "bark"
   | "jump"
   | "knock"
@@ -18,6 +19,8 @@ export type Cue =
   | "stutter";
 export class RoomAudio {
   private context: AudioContext | null = null;
+  private music: {source: AudioBufferSourceNode; gain: GainNode} | null = null;
+  private musicBuffer: AudioBuffer | null = null;
   private voices = new Set<AudioScheduledSourceNode>();
   private radio: { source: AudioBufferSourceNode; filter: BiquadFilterNode; gain: GainNode; pan: StereoPannerNode } | null = null;
   private radioBuffer: AudioBuffer | null = null;
@@ -37,6 +40,31 @@ export class RoomAudio {
     } catch {
       /* Silent play remains available. */
     }
+  }
+  lobbyMusic(level: number) {
+    const c=this.context;
+    if(!c||c.state!=="running"||this.muted||!this.volume||level<=0){
+      if(this.music){const old=this.music;old.gain.gain.setTargetAtTime(0,c?.currentTime??0,.12);old.source.stop((c?.currentTime??0)+.6);old.source.onended=()=>{old.source.disconnect();old.gain.disconnect();};this.music=null;}
+      return;
+    }
+    if(!this.music){
+      if(!this.musicBuffer){
+        const length=24;this.musicBuffer=c.createBuffer(1,c.sampleRate*length,c.sampleRate);const data=this.musicBuffer.getChannelData(0);
+        const notes=[146.83,155.56,110,130.81,146.83,103.83,155.56,110];
+        for(let i=0;i<data.length;i++){const t=i/c.sampleRate;const phrase=t%3;const n=notes[Math.floor(t/3)];const envelope=Math.sin(Math.PI*phrase/3)**2;
+          const drone=(Math.sin(2*Math.PI*55*t)+Math.sin(2*Math.PI*55.125*t))*.055;
+          const note=(Math.sin(2*Math.PI*n*t)+.2*Math.sin(2*Math.PI*(n*2+.3)*t))*envelope*.11;
+          data[i]=(drone+note)*Math.min(1,t, length-t);
+        }
+      }
+      const source=c.createBufferSource(),gain=c.createGain();source.buffer=this.musicBuffer;source.loop=true;source.connect(gain).connect(c.destination);gain.gain.value=0;source.start();this.music={source,gain};
+    }
+    this.music.gain.gain.setTargetAtTime(Math.min(1,level)*this.volume,c.currentTime,.5);
+  }
+  private gunshot(c: AudioContext) {
+    const source=c.createBufferSource(),gain=c.createGain();const buffer=c.createBuffer(1,Math.ceil(c.sampleRate*.24),c.sampleRate),data=buffer.getChannelData(0);
+    for(let i=0;i<data.length;i++){const t=i/c.sampleRate;data[i]=((Math.random()*2-1)*Math.exp(-t*38)+Math.sin(2*Math.PI*90*t)*Math.exp(-t*24))*.5;}
+    source.buffer=buffer;gain.gain.value=this.volume*(this.gentle?.16:.65);source.connect(gain).connect(c.destination);this.voices.add(source);source.onended=()=>{this.voices.delete(source);source.disconnect();gain.disconnect();};source.start();
   }
   private noise(c: AudioContext) {
     const buffer = c.createBuffer(1, c.sampleRate * 2, c.sampleRate),
@@ -191,6 +219,7 @@ export class RoomAudio {
     const count =
       kind === "knock" ? 3 : kind === "bark" ? 2 : kind === "news" ? 3 : kind === "stutter" ? 2 : 1;
     if (this.voices.size + count > 12) return;
+    if (kind === "shot") { this.gunshot(c); return; }
     if (kind === "knock") { this.bang(c); return; }
     if (["scare","lean","stutter"].includes(kind)) { this.scare(c); return; }
     for (let i = 0; i < count; i++) {
@@ -269,6 +298,7 @@ export class RoomAudio {
     }
   }
   silence() {
+    if(this.music){this.music.source.stop();this.music.source.disconnect();this.music.gain.disconnect();this.music=null;}
     this.broadcast(false);
     this.stopBed();
     for (const v of this.voices) {
@@ -282,11 +312,13 @@ export class RoomAudio {
     void this.context?.close().catch(() => {});
     this.context = null;
     this.radioBuffer = null;
+    this.musicBuffer = null;
     this.bangBuffer = null;
     this.voices.clear();
   }
   diagnostics() {
     return {
+      musicSources: this.music ? 1 : 0,
       voices: this.voices.size,
       ambientSources: this.bed?.sources.length ?? 0,
       broadcastSources: this.radio ? 1 : 0,

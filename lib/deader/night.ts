@@ -1,18 +1,9 @@
+import { VISITORS } from "./visitors";
 import type { Encounters } from "./visitors";
 import { recordStory } from "./progression";
 import type { Session, Save } from "./game";
 import { reward } from "./game";
 
-export const NIGHT_ONE_ARRIVALS = [12, 90, 170, 250, 330, 410, 480] as const;
-export const NIGHT_ONE_VISITORS = [
-  "bea",
-  "three",
-  "pippa",
-  "echo",
-  "sam",
-  "grin",
-  "three",
-] as const;
 export const NIGHT_TITLES = [
   "They’re Here",
   "Trust Nobody",
@@ -26,7 +17,7 @@ export type Night = {
   endingSeconds: number;
   elapsed: number;
   duration: 300 | 60;
-  status: "running" | "completed" | "failed";
+  status: "running" | "judging" | "completed" | "failed";
   introFinished: boolean;
   cancelledVisitor: boolean;
 };
@@ -52,73 +43,50 @@ export function advanceNight(
   night: Night,
   delta: number,
   paused: boolean,
-  trust: number,
+  _trust: number,
 ): Night {
+  void _trust; // Legacy mood value no longer determines defeat.
   if (night.status !== "running") return night;
-  if (trust <= 0) return { ...night, status: "failed" };
   if (paused || !Number.isFinite(delta) || delta <= 0) return night;
   const elapsed = Math.min(
-    night.mode === "infinite" ? Number.MAX_SAFE_INTEGER : 600,
+    night.mode === "infinite" ? night.number * 600 : 600,
     night.elapsed + Math.min(delta, 0.25) * nightRate(night),
   );
   return {
     ...night,
     elapsed: night.mode === "normal" && elapsed >= 600 - 1e-8 ? 600 : elapsed,
     number:
-      night.mode === "infinite" ? Math.floor(elapsed / 600) + 1 : night.number,
+      night.number,
     status:
-      night.mode === "normal" && elapsed >= 600 - 1e-8
-        ? "completed"
+      elapsed >= (night.mode === "infinite" ? night.number * 600 : 600) - 1e-8
+        ? "judging"
         : "running",
   };
 }
-export function infiniteInterval(night: Night) {
-  return Math.max(
-    35,
-    { easy: 75, medium: 60, hard: 48 }[night.difficulty] -
-      Math.min(10, night.number - 1) * 3,
-  );
-}
+export function infiniteInterval(night: Night) { return 540 / ({easy:10,medium:12,hard:14}[night.difficulty] - 1); }
 export function storyArrivals(night: Night): number[] {
-  if (night.number === 1 && night.difficulty === "easy")
-    return [...NIGHT_ONE_ARRIVALS];
-  const count = Math.min(
-    13,
-    7 +
-      (night.number - 1) * 2 +
-      { easy: 0, medium: 1, hard: 2 }[night.difficulty],
-  );
-  return Array.from({ length: count }, (_, i) => 12 + i * (468 / (count - 1)));
+  const count = {easy:10,medium:12,hard:14}[night.difficulty];
+  return Array.from({length:count},(_,i)=>12+i*540/(count-1));
 }
-export function scheduledVisitor(
-  night: Night,
-  encounters: Encounters,
-): string | null {
-  if (night.status !== "running" || encounters.active) return null;
-  const i = encounters.sequence;
-  if (night.mode === "infinite") {
-    if (night.elapsed < night.nextArrival) return null;
-    const pool = [
-      "bea",
-      "echo",
-      "pippa",
-      "grin",
-      "sam",
-      "three",
-      "porter",
-      "loop",
-      "tenant",
-    ];
-    return pool[(Math.imul(encounters.seed, 1664525) >>> 0) % pool.length];
+/** A reproducible bag per run; all identities appear before any repeat. */
+export function shuffledVisitor(runId: string, index: number): string {
+  let seed = [...runId].reduce((n,c)=>(Math.imul(n,31)+c.charCodeAt(0))>>>0,927);
+  let previous = "";
+  for(let cycle=0; cycle<=Math.floor(index/VISITORS.length); cycle++) {
+    const bag=VISITORS.map(v=>v.id);
+    for(let i=bag.length-1;i>0;i--){seed=(Math.imul(seed,1664525)+1013904223)>>>0;const j=seed%(i+1);[bag[i],bag[j]]=[bag[j],bag[i]];}
+    if(bag[0]===previous)[bag[0],bag[1]]=[bag[1],bag[0]];
+    if(cycle===Math.floor(index/VISITORS.length))return bag[index%bag.length];
+    previous=bag[bag.length-1];
   }
-  const times = storyArrivals(night);
-  if (i >= times.length || night.elapsed < times[i]) return null;
-  if (night.number === 1 && i < 7) return NIGHT_ONE_VISITORS[i];
-  const pool =
-    night.number === 2
-      ? ["pippa", "loop", "sam", "echo", "porter", "grin", "three"]
-      : ["tenant", "echo", "loop", "bea", "porter", "three", "grin"];
-  return pool[(i + (night.difficulty === "hard" ? 1 : 0)) % pool.length];
+  return "bea";
+}
+export function scheduledVisitor(night: Night, encounters: Encounters): string | null {
+  if(night.status!=="running" || encounters.active || night.elapsed < night.nextArrival) return null;
+  // No new approaches in the final fifteen seconds. A delayed decision never creates a burst.
+  const shiftTime=night.mode==="infinite"?night.elapsed-(night.number-1)*600:night.elapsed;
+  if(shiftTime>=570)return null;
+  return shuffledVisitor(encounters.runId,encounters.sequence);
 }
 export function completeNightReward(
   save: Save,

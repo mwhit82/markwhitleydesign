@@ -61,7 +61,7 @@ export type Visitor = {
   evidence: string[];
   dialogue: string[];
 };
-export type Decision = "admit" | "reject";
+export type Decision = "admit" | "reject" | "shoot";
 export const NIGHT = { seconds: 600, trust: 3, normalNights: 3 } as const;
 export const difficultyConfig = {
   easy: { visitorInterval: 55, clueSubtlety: 0.2 },

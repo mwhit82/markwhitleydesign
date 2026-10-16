@@ -74,3 +74,10 @@ Validation on October 16, 2026:
 - Browser flow checked: lobby tablet, movement/look tutorial steps, questions and rear-door camera; production shop purchase/equip/refresh; console selection, arcade failure/re-entry, live knock interruption and Space-key focus protection. Complete tutorial progression including TV and retry behavior additionally verified through store tests.
 - Apple M4 Pro, Mac16,8, 24GB; Standard graphics. Lobby samples ranged 117–120 frames/sec (approximately 8.3–8.5ms per frame) in this local browser. Three shop/Sidekicks open-close cycles returned to 153 geometries and 30 textures in the main renderer. These are local samples, not a device-wide FPS guarantee or a full GPU memory profile. No browser errors during the checked flows; existing Three.Clock deprecation warning remains.
 - Physical iPhone/iPad touch feel, audio perception and sustained thermal performance still need Fenn’s device playtest. Changes remain local; no GitHub push or publication in this phase.
+
+### Dawn judgement and six-shot controls
+
+- Portrait mistake HUD uses a compact two-line label, with a separate decision countdown.
+- Fire is a dedicated touch button above the existing interaction control. Look swipes retain independent ownership and cannot fire; no firing from CCTV/TV/arcade or menus.
+- Armed result feedback sits above the aim area rather than covering Fire. Open-door aiming includes a Close door action and retains the original decision deadline.
+- Browser sizes checked: 390×844, 844×390, 820×1180. Physical simultaneous move/look/fire on iOS remains a device acceptance check.

@@ -14,6 +14,8 @@ import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
 import { GameSettings, SurvivalUI } from "./survival-ui";
 import { TouchControls } from "./touch-controls";
+import { WeaponUI } from "./weapon";
+import { JudgementUI } from "./judgement";
 import { GameAudio } from "./game-audio";
 import { supportsWebGL2 } from "@/lib/deader/compatibility";
 import { renderScale } from "@/lib/deader/presentation";
@@ -334,7 +336,7 @@ function StartMenu() {
           </fieldset>
           <details className={styles.setupHelp}>
             <summary>How to play</summary>
-            <p>Inspect visitors, ask questions and decide who to let in. Three trust lives. Missing a deadline costs one life. Story has three five-minute nights; Infinite keeps going. Progress saves on this device.</p>
+            <p>Inspect visitors, ask questions and decide who to let in. Three mistakes fail the dawn judgement. Missing a deadline adds one mistake. Story has three five-minute nights; Infinite keeps going. Progress saves on this device.</p>
           </details>
         </section>
         <section className={styles.shiftList} aria-label="Story nights">
@@ -342,16 +344,16 @@ function StartMenu() {
             const locked = i + 1 > unlockedNight(save) && !(process.env.NODE_ENV === "development" && runSeconds === 60);
             return <button key={title} disabled={locked} aria-pressed={selectedNight === i + 1} onClick={() => useGame.setState({ selectedNight: i + 1 })}>
               <span className={styles.shiftNumber}>{String(i + 1).padStart(2, "0")}</span>
-              <span><strong>{title}</strong><small>{locked ? `Complete Night ${i} to unlock` : save.completions[difficulty].includes(i + 1) ? "Completed · Replay" : "5 minutes · Three lives"}</small></span>
+              <span><strong>{title}</strong><small>{locked ? `Complete Night ${i} to unlock` : save.completions[difficulty].includes(i + 1) ? "Completed · Replay" : "5 minutes · Judgement at dawn"}</small></span>
               <span aria-hidden="true">{locked ? "Locked" : selectedNight === i + 1 ? "✓" : ""}</span>
             </button>;
-          }) : <div className={styles.infiniteCard}><p className={styles.eyebrow}>UNTIL YOUR LUCK RUNS OUT</p><h3>The endless shift.</h3><p>Three lives. No reset at dawn. How long can you last?</p><small>Best night: {save.infiniteRecords.night} · Best streak: {save.infiniteRecords.streak}</small></div>}
+          }) : <div className={styles.infiniteCard}><p className={styles.eyebrow}>UNTIL YOUR LUCK RUNS OUT</p><h3>The endless shift.</h3><p>Judgement every five minutes. Survive with fewer than three mistakes, then start a fresh shift.</p><small>Best night: {save.infiniteRecords.night} · Best streak: {save.infiniteRecords.streak}</small></div>}
           {process.env.NODE_ENV === "development" && <label className={styles.devRun}>Local test length<select value={runSeconds} onChange={e => useGame.setState({runSeconds: Number(e.target.value) === 60 ? 60 : 300, selectedNight: Number(e.target.value) === 60 ? selectedNight : Math.min(selectedNight, unlockedNight(save))})}><option value="300">Full night · 5 minutes</option><option value="60">Development rehearsal · 60 seconds · no rewards saved</option></select></label>}
-          {process.env.NODE_ENV === "development" && runSeconds === 60 && <label className={styles.devRun}>Rehearsal scene<select value={rehearsal} onChange={e=>useGame.setState({rehearsal:e.target.value as "standard"|"lounge"|"scare"})}><option value="standard">Normal arrivals</option><option value="lounge">Full lounge · 12 residents</option><option value="scare">Anomaly at the door</option></select></label>}
+          {process.env.NODE_ENV === "development" && runSeconds === 60 && <label className={styles.devRun}>Rehearsal scene<select value={rehearsal} onChange={e=>useGame.setState({rehearsal:e.target.value as typeof rehearsal})}><option value="standard">Normal arrivals</option><option value="lounge">Full lounge · 12 residents</option><option value="scare">Anomaly at the door</option><option value="armed">Gun · open doorway</option><option value="judgement-pass">Dawn · pass</option><option value="judgement-fail">Dawn · fail</option></select></label>}
         </section>
       </div>
       <footer className={styles.setupFooter}>
-        <span>{mode === "normal" ? `Night ${selectedNight}` : "Infinite"} · {difficulty}<small>1 player · Three lives</small></span>
+        <span>{mode === "normal" ? `Night ${selectedNight}` : "Infinite"} · {difficulty}<small>1 player · Six shots</small></span>
         <button className={styles.primary} onClick={start}>Start shift <span aria-hidden="true">→</span></button>
       </footer>
     </Modal>
@@ -372,9 +374,11 @@ export default function Game() {
   }, [lost]);
   return (
     <div
-      className={`${styles.game} ${s.touchActive ? styles.touchGame : ""} ${s.scene === "room" && s.room.view === "cctv" ? styles.surveillance : ""}`}
+      className={`${styles.game} ${s.scene === "room" && s.room.weapon.collected ? styles.armed : ""} ${s.touchActive ? styles.touchGame : ""} ${s.scene === "room" && s.room.view === "cctv" ? styles.surveillance : ""}`}
     >
       <GameAudio />
+      <WeaponUI />
+      <JudgementUI />
       <TouchControls />
       {s.scene === "room" && s.save.settings.effects && (
         <div className={styles.filmGrain} aria-hidden="true" />
@@ -446,11 +450,10 @@ export default function Game() {
             )}
           </span>
           <span
-            className={styles.hearts}
-            aria-label={`${s.room.encounters.trust} trust lives`}
+            className={styles.mistakeCount}
+            aria-label={`${s.room.encounters.mistakes-s.room.mistakeBaseline} mistakes. Judgement at dawn.`}
           >
-            {"♥".repeat(s.room.encounters.trust)}
-            {"♡".repeat(3 - s.room.encounters.trust)}
+            <strong>{s.room.encounters.mistakes-s.room.mistakeBaseline} mistakes</strong><small>Judgement at dawn</small>
           </span>
           <small>
             {s.session?.difficulty} / {s.session?.mode} ·{" "}
@@ -536,8 +539,8 @@ export default function Game() {
           <p className={styles.eyebrow}>TAKE A BREATHER</p>
           <h2>Off the clock.</h2>
           <p>
-            The shift clock and visitors are paused. Inspect carefully, protect
-            your three trust lives and survive until 5:55 AM.
+            The shift clock and visitors are paused. Inspect carefully and
+            choose who to trust. Three mistakes fail the judgement at 5:55 AM.
           </p>
           <button onClick={() => s.open("progress")}>
             Achievements & rewards

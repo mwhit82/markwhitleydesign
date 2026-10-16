@@ -12,7 +12,7 @@ export function DoorMenu() {
   const [choice, setChoice] = useState<{id: string | null; admit: boolean} | null>(null);
   useEffect(() => setChoice(null), [visitor?.id, visitor?.phase, s.suspension, s.focused, s.panel]);
   const waiting = visitor?.phase === "waiting";
-  const ready = ["CLOSED", "VISITOR_WAITING", "INSPECTING"].includes(r.door);
+  const ready = ["CLOSED", "VISITOR_WAITING", "INSPECTING"].includes(r.door) || (waiting && r.door==="OPEN");
   const canOpen = ready && (!visitor || waiting);
   const pending = choice && choice.id === (visitor?.id ?? null) && canOpen;
   return <Modal label="Door choices" className={styles.doorModal} onClose={() => s.roomView("explore")}>
@@ -31,6 +31,7 @@ export function DoorMenu() {
         <button className={styles.primary} disabled={!canOpen} onClick={() => setChoice({id: visitor?.id ?? null, admit:true})}>{waiting ? "Let in" : "Open door"}</button>
         {waiting ? <button disabled={!ready} onClick={() => setChoice({id:visitor.id,admit:false})}>Send away</button> : <button disabled={r.door !== "OPEN"} onClick={() => s.doorEvent({type:"close"})}>Close door</button>}
       </div>}
+      {waiting && r.weapon.collected && !s.tutorial && <button onClick={s.aimDoor}>Open doorway to aim · does not admit</button>}
       <div className={styles.doorSecondary}><button disabled={!ready} onClick={() => s.doorEvent({type:"inspect"})}>Look again</button><button onClick={() => s.roomView("explore")}>Step away</button></div>
     </footer>
   </Modal>;

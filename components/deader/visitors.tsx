@@ -144,7 +144,7 @@ export function Visitors() {
         (v.movement !== "stop-start" ||
           ((active.elapsed / 22) * 8) % 1 < 0.5)));
   return (
-    <group ref={group}>
+    <group ref={group} userData={{shotTarget:active.id}}>
       <Cone
         animation={
           survival.phase === "recovery"

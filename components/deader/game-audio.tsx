@@ -45,6 +45,7 @@ export function GameAudio() {
         roomAudio.silence();
         return;
       }
+      roomAudio.lobbyMusic(s.scene === "lobby" ? settings.ambience : 0);
       if (previousRun !== r.encounters.runId) {
         seconds = 0;
         nextCreak = 19;
@@ -57,7 +58,7 @@ export function GameAudio() {
         return;
       }
       seconds += 0.1;
-      const busy = s.scene === "room" && r.survival.phase !== "idle";
+      const busy = s.scene === "room" && (r.survival.phase !== "idle" || !!r.judgement);
       const spatial = tvSound(roomPlayerPose.x, roomPlayerPose.z, roomPlayerPose.yaw);
       roomAudio.broadcast(s.scene === "room", spatial.gain * (busy ? .15 : 1), spatial.pan);
       roomAudio.ambience(

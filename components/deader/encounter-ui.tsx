@@ -12,7 +12,7 @@ export function DecisionCountdown() {
   return <div className={styles.decisionClock} data-urgent={remaining <= 10}>
     <div><strong role="timer" aria-live="off">{remaining}<small> sec</small></strong><span>{remaining <= 10 ? "Choose now!" : "Time to choose"}</span></div>
     <progress aria-label="Time left to choose" max={DECISION_SECONDS[s.session?.difficulty ?? "easy"]} value={remaining} />
-    <small>No choice in time costs one heart.</small>
+    <small>No choice in time adds one mistake.</small>
   </div>;
 }
 export function VisitorQuestions({ showCountdown = true }: { showCountdown?: boolean }) {
@@ -61,7 +61,7 @@ export function EncounterUI() {
   if (
     s.panel ||
     r.survival.phase !== "idle" ||
-    r.night?.status === "completed"
+    (r.night?.status === "completed" || !!r.judgement)
   )
     return null;
   return (
@@ -101,7 +101,7 @@ export function EncounterUI() {
           <b>
             {result.correct
               ? `Correct · +${result.coins} ${r.night?.duration === 60 ? "practice coins" : "coins"}`
-              : result.decision === "timeout" ? "Time expired · −1 trust" : "Incorrect · −1 trust"}
+              : result.decision === "timeout" ? "Time expired · +1 mistake" : "Incorrect · +1 mistake"}
           </b>
           <p>
             {result.name} was {result.kind === "human" ? "human" : "an Anomaly"}

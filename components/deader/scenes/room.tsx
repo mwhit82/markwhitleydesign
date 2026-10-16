@@ -1,4 +1,6 @@
 "use client";
+import { Weapon } from "../weapon";
+import { Judge } from "../judgement";
 import { Sidekick } from "../sidekick";
 import { useGame } from "@/lib/deader/store";
 import { useRef } from "react";
@@ -148,6 +150,8 @@ export default function Room() {
       <RoomController />
       <ReflectedPlayer />
       <Sidekick />
+      <Weapon />
+      <Judge />
       <Visitors />
       <RoomDoor materials={m} />
       <Surveillance materials={m} />

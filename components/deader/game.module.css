@@ -1369,3 +1369,16 @@
 }
 .arcade { background:#080b0f; }
 .arcade canvas { flex:1 1 0; height:0; min-height:140px; aspect-ratio:auto; }
+
+/* Readable, thumb-safe judgement and weapon HUD. */
+.rewardToast { position:absolute; z-index:32; top:26%; left:50%; transform:translateX(-50%); padding:12px 20px; border:1px solid #fff8; border-radius:12px; background:#101216ee; color:white; pointer-events:none; font-size:18px; }
+.weaponControls { position:absolute; z-index:31; right:max(18px,env(safe-area-inset-right)); bottom:calc(190px + env(safe-area-inset-bottom)); display:flex; flex-direction:column; align-items:center; gap:6px; color:white; }
+.weaponControls span {background:#101216dd;padding:5px 12px;border-radius:8px;font-size:14px;}
+.weaponControls button {min-width:76px;min-height:64px;border-radius:50%;border:1px solid #fff9;background:#14161de8;color:white;font-size:19px;touch-action:manipulation;}
+.judgement {position:absolute;inset:0;z-index:40;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding:24px 20px max(30px,env(safe-area-inset-bottom));text-align:center;color:white;background:linear-gradient(transparent 40%,#000c);pointer-events:auto;}
+.judgement h2 {font-size:clamp(24px,4vw,40px);margin:8px 0;}.judgement p {margin:6px 0;}.judgement button{margin-top:12px;padding:8px 20px;background:#13151be0;color:white;border:1px solid #fff7;border-radius:8px;}
+.judgementBlack{background:#000;}
+@media(max-height:500px){.weaponControls{bottom:110px;right:24px;}.weaponControls button{min-height:54px;}.judgement{padding-bottom:16px;}.judgement h2{font-size:24px;}}
+.mistakeCount {display:flex;flex-direction:column;gap:2px;font-size:15px;letter-spacing:0;color:#f0f2f4;}.mistakeCount strong{font-weight:600;}.mistakeCount small{font-size:10px;text-transform:none;}
+.armed .outcome {top:220px;bottom:auto;left:18px;max-width:min(420px,calc(100% - 36px));max-height:100px;overflow:auto;font-size:12px;}
+@media(orientation:landscape) and (max-height:500px){.armed .outcome{top:170px;max-width:45vw;max-height:75px;}}

@@ -145,7 +145,7 @@ export function SurvivalUI() {
     s.focused,
     s.suspension,
   ]);
-  if (s.panel) return null;
+  if (s.panel || r.judgement) return null;
   if (
     r.night?.status === "completed" &&
     r.night.number === 3 &&
@@ -185,15 +185,15 @@ export function SurvivalUI() {
           5:55 AM / NIGHT {r.night.number} COMPLETE
         </p>
         <h2>You made it to morning.</h2>
-        <p>Donut lets you clock off. For now.</p>
+        <p>The Auditor lets you clock off. For now.</p>
         <dl className={styles.results}>
           <div>
             <dt>Correct decisions</dt>
             <dd>{r.encounters.correct}</dd>
           </div>
           <div>
-            <dt>Trust remaining</dt>
-            <dd>{r.encounters.trust} / 3</dd>
+            <dt>Mistakes this shift</dt>
+            <dd>{r.encounters.mistakes-r.mistakeBaseline} / 3</dd>
           </div>
           <div>
             <dt>
@@ -242,10 +242,10 @@ export function SurvivalUI() {
     return (
       <Modal label="Game Over" onClose={s.lobby}>
         <p className={styles.eyebrow}>
-          NIGHT {r.night?.number ?? s.session?.night ?? 1} / NO TRUST REMAINING
+          NIGHT {r.night?.number ?? s.session?.night ?? 1} / JUDGEMENT FAILED
         </p>
         <h2>THE ANOMALOUS</h2>
-        <p>Donut has ended your shift.</p>
+        <p>The Auditor counted three or more mistakes.</p>
         <dl className={styles.results}>
           <div>
             <dt>Correct decisions</dt>
@@ -263,7 +263,7 @@ export function SurvivalUI() {
         {r.night?.mode === "infinite" && (
           <p>
             Best streak this run: {r.encounters.bestStreak} · Nights survived:{" "}
-            {Math.floor(r.night.elapsed / 600)}
+            {Math.max(0,r.night.number-1)}
           </p>
         )}
         <p>Your earned coins and cosmetics are safe.</p>
@@ -295,7 +295,7 @@ export function SurvivalUI() {
       : seq.phase === "lunge"
         ? "Get back!"
         : seq.phase === "recovery"
-          ? `−1 trust · Donut is ${donutMood(r.encounters.trust)}.`
+          ? `+1 mistake · Donut is ${donutMood(r.encounters.trust)}.`
           : seq.phase === "donut"
             ? "Donut has had enough."
             : "GULP.";

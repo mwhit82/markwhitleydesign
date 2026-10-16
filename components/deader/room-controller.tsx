@@ -26,11 +26,12 @@ export function interactRoom() {
     s.panel ||
     (!s.focused || !!s.suspension) ||
     s.room.survival.phase !== "idle" ||
-    s.room.night?.status === "completed" ||
+    s.room.night?.status === "completed" || !!s.room.judgement ||
     s.room.view !== "explore" ||
     !s.prompt
   )
     return;
+  if(s.prompt==="Take gun"){s.collectWeapon();return;}
   const view = targets[s.prompt];
   if (view) {
     roomAudio.unlock();
@@ -48,6 +49,7 @@ export function RoomController() {
   const pos = useRef({ x: 0, z: 3.2 });
   const angles = useRef({ yaw: 0, pitch: 0 });
   const dragging = useRef(false);
+  const clickStart = useRef<{x:number;y:number}|null>(null);
   const reduced = useRef(false);
   const ray = useMemo(() => new THREE.Raycaster(), []);
   const centre = useMemo(() => new THREE.Vector2(), []);
@@ -114,8 +116,7 @@ export function RoomController() {
         s.touchActive || s.panel ||
         s.room.view !== "explore" ||
         s.room.survival.phase !== "idle" ||
-        s.room.night?.status === "completed" ||
-        s.room.encounters.trust === 0 ||
+        s.room.night?.status === "completed" || !!s.room.judgement ||
         (!s.focused || !!s.suspension) ||
         !(document.pointerLockElement === gl.domElement || dragging.current)
       )
@@ -142,16 +143,17 @@ export function RoomController() {
         s.panel ||
         s.room.view !== "explore" ||
         s.room.survival.phase !== "idle" ||
-        s.room.night?.status === "completed" ||
-        s.room.encounters.trust === 0
+        s.room.night?.status === "completed" || !!s.room.judgement
       )
         return;
       roomAudio.unlock();
+      if(s.room.weapon.collected && document.pointerLockElement===gl.domElement){window.dispatchEvent(new Event("anomalous-fire"));return;}
       if (s.prompt) {
         interactRoom();
         return;
       }
       dragging.current = true;
+      clickStart.current={x:e.clientX,y:e.clientY};
       try {
         gl.domElement.requestPointerLock?.()?.catch(() => {});
       } catch {}
@@ -169,14 +171,15 @@ export function RoomController() {
         !s.panel &&
         s.room.view === "explore" &&
         s.room.survival.phase === "idle" &&
-        s.room.night?.status !== "completed"
+        s.room.night?.status !== "completed" && !s.room.judgement
       )
         s.open("pause");
       wasLocked = locked;
     };
     document.addEventListener("pointerlockchange", lockChange);
-    const release = () => {
-      dragging.current = false;
+    const release = (e:MouseEvent) => {
+      if(dragging.current&&clickStart.current&&Math.hypot(e.clientX-clickStart.current.x,e.clientY-clickStart.current.y)<5&&!document.pointerLockElement)window.dispatchEvent(new Event("anomalous-fire"));
+      clickStart.current=null;dragging.current=false;
     };
     window.addEventListener("keydown", down);
     window.addEventListener("keyup", up);
@@ -214,7 +217,7 @@ export function RoomController() {
       !s.panel &&
       r.view === "explore" &&
       s.focused && !s.suspension &&
-      r.encounters.trust > 0 &&
+      !r.judgement &&
       r.survival.phase === "idle" &&
       r.night?.status !== "completed";
     if (!enabled) gameInput.reset();

@@ -25,7 +25,7 @@ export function RoomUI() {
     if (s.panel || (!s.focused || !!s.suspension)) roomAudio.silence();
   }, [s.panel, s.focused, s.suspension]);
   const exit = () => s.roomView("explore");
-  if (s.panel || r.survival.phase !== "idle" || r.night?.status === "completed")
+  if (s.panel || r.survival.phase !== "idle" || (r.night?.status === "completed" || !!r.judgement))
     return null;
   return (
     <>
@@ -115,7 +115,7 @@ export function RoomUI() {
           <h2>{r.view === "donut" ? "Meet Donut." : "Something above you."}</h2>
           <p>
             {r.view === "donut"
-              ? `Donut is ${donutMood(r.encounters.trust)}. ${r.encounters.trust === 3 ? "He drifts quietly in his bowl." : r.encounters.trust === 2 ? "He keeps turning to watch you." : "He circles impatiently. One more mistake will end your shift."}`
+              ? `Donut is ${donutMood(r.encounters.trust)}. ${r.encounters.trust === 3 ? "He drifts quietly in his bowl." : r.encounters.trust === 2 ? "He keeps turning to watch you." : "He circles impatiently. The Auditor will count your mistakes at dawn."}`
               : "The ladder leads to a sealed ventilation shaft. Check CAM 2 for a better look."}
           </p>
           {r.view === "vent" && (

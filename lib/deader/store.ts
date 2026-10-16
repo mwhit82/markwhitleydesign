@@ -1,4 +1,6 @@
 "use client";
+import { beginJudgement, tickJudgement, JUDGEMENT_SECONDS, judgementMistakes, spendShot } from "./judgement";
+import { visitorById } from "./visitors";
 import { tutorialRoom, rewardsAllowed, type TutorialStep } from "./tutorial";
 import { purchasePet, equipPet, type PetId } from "./pets";
 import type { ArcadeState } from "./arcade";
@@ -70,6 +72,9 @@ import { loadLocalSave, writeLocalSave } from "./persistence";
 export { SAVE_KEY } from "./persistence";
 export type Panel = "shop" | "wardrobe" | "start" | "pause" | "progress" | "tutorial" | null;
 type State = {
+  collectWeapon: () => void;
+  aimDoor: () => void;
+  fireWeapon: (target: string | null) => boolean;
   tutorial: TutorialStep | null;
   tutorialMessage: string | null;
   tutorialAdvance: (event: TutorialStep) => void;
@@ -122,6 +127,39 @@ function persist(save: Save) {
   }
 }
 export const useGame = create<State>((set, get) => ({
+  collectWeapon: () => {
+    const s=get(); if(s.tutorial||s.scene!=="room"||s.panel||s.suspension||!s.focused||s.room.judgement||s.room.view!=="explore"||s.prompt!=="Take gun"||s.room.survival.phase!=="idle"||s.room.night?.status!=="running")return;
+    set({room:{...s.room,weapon:{...s.room.weapon,collected:true}},prompt:null});
+  },
+  aimDoor: () => {
+    const s=get(); if(s.tutorial||s.panel||s.suspension||!s.focused||s.room.judgement||s.room.night?.status!=="running"||s.room.survival.phase!=="idle"||s.room.view!=="door"||!s.room.weapon.collected||s.room.encounters.active?.phase!=="waiting")return;
+    gameInput.reset();
+    set({room:{...s.room,view:"explore",door:"OPENING"},prompt:null});
+  },
+  fireWeapon: target => {
+    const s=get(), r=s.room;
+    if(s.scene!=="room"||s.tutorial||s.panel||s.suspension||!s.focused||r.view!=="explore"||r.judgement||r.night?.status!=="running"||r.survival.phase!=="idle")return false;
+    const weapon=spendShot(r.weapon); if(weapon===r.weapon)return false;
+    let room={...r,weapon}, save=s.save;
+    const active=r.encounters.active;
+    if(target && !weapon.removed.includes(target)) {
+      if(active?.id===target && active.phase==="waiting" && r.door==="OPEN") {
+        const encounters=resolveEncounter(r.encounters,target,"shoot");
+        const coins=encounters.result?.coins??0;
+        if(coins && rewardsAllowed(s.tutorial,r.night?.duration)) save=reward(save,`visitor:${target}`,coins);
+        room={...room,door:"CLOSING",visitorId:null,encounters:{...encounters,active:null},weapon:{...weapon,removed:[...weapon.removed,target]},rewardToast:save!==s.save?{coins,seconds:3}:null,night:r.night?{...r.night,nextArrival:Math.max(r.night.nextArrival,r.night.elapsed+10)}:null};
+      } else {
+        const resident=r.residents.find(v=>v.id===target);
+        if(resident) {
+          const visitor=visitorById(resident.visitor), human=visitor.kind==="human";
+          const e=r.encounters;
+          room={...room,rewardToast:null,residents:r.residents.filter(v=>v.id!==target),weapon:{...weapon,removed:[...weapon.removed,target]},encounters:{...(human?{...e,mistakes:e.mistakes+1,trust:Math.max(0,e.trust-1),streak:0}:e),result:{id:`${target}:shot`,name:visitor.name,kind:visitor.kind,decision:"shoot",correct:!human,coins:0,explanation:human?"You shot a human who was sheltering inside. This adds one mistake.":"Anomaly removed. The earlier admission mistake remains; no extra coins are awarded."}}};
+        }
+      }
+    }
+    set({room,save,storageFailed:save!==s.save?persist(save):s.storageFailed});
+    return true;
+  },
   tutorial: null, tutorialMessage: null, arcade: null,
   beginTutorial: () => { get().lobby(); set({ tutorial: "move" }); },
   tutorialAdvance: (event) => {
@@ -175,7 +213,7 @@ export const useGame = create<State>((set, get) => ({
     if (view === "news") view = "explore";
     if (
       survivalBusy(get().room.survival) ||
-      get().room.night?.status === "completed"
+      (get().room.night?.status === "completed" || !!get().room.judgement)
     )
       return;
     if (typeof document !== "undefined" && document.pointerLockElement)
@@ -193,7 +231,7 @@ export const useGame = create<State>((set, get) => ({
     gameInput.reset();
     const s = get(),
       active = s.room.encounters.active;
-    if (s.panel || (!s.focused || !!s.suspension) || s.room.night?.status === "completed") return;
+    if (s.panel || (!s.focused || !!s.suspension) || (s.room.night?.status === "completed" || !!s.room.judgement)) return;
     if (
       survivalBusy(s.room.survival) &&
       event.type !== "opened" &&
@@ -210,6 +248,8 @@ export const useGame = create<State>((set, get) => ({
         return;
       }
     }
+    if(active?.phase==="waiting"&&event.type==="close"&&s.room.door==="OPEN"){set({room:{...s.room,door:"CLOSING",view:"explore"}});return;}
+    if(active?.phase==="waiting"&&event.type==="closed"&&s.room.door==="CLOSING"){set({room:{...s.room,door:"VISITOR_WAITING"}});return;}
     if (active && (event.type === "lock" || event.type === "close")) return;
     if (event.type === "inspect") get().tutorialAdvance("inspect");
     const room = transitionDoor(get().room, event);
@@ -230,96 +270,40 @@ export const useGame = create<State>((set, get) => ({
       set({room:{...s.room,newsSeconds:loopBroadcast(s.room.newsSeconds,delta,broadcastDuration(report)),residents:tickResidents(s.room.residents,delta,s.room.door==="OPEN")}});
       return;
     }
-    if (s.room.night?.status === "completed") {
-      const n = s.room.night;
-      if (n.number === 3 && n.endingSeconds < 14) {
-        const endingSeconds = Math.min(
-          14,
-          n.endingSeconds + Math.min(delta, 0.25),
-        );
-        const save =
-          endingSeconds === 14 && rewardsAllowed(s.tutorial,n.duration)
-            ? { ...s.save, endingViewed: true }
-            : s.save;
-        set({
-          save,
-          storageFailed: save !== s.save ? persist(save) : s.storageFailed,
-          room: { ...s.room, night: { ...n, endingSeconds } },
-        });
+    const dt=Math.min(delta,.25);
+    if(s.room.night?.status==="completed"||s.room.night?.status==="failed")return;
+    if(s.room.judgement) {
+      const judgement=tickJudgement(s.room.judgement,delta);
+      if(judgement.elapsed<JUDGEMENT_SECONDS) {set({room:{...s.room,judgement}});return;}
+      const n=s.room.night!;
+      const allowed=rewardsAllowed(s.tutorial,n.duration);
+      if(judgement.failed) {
+        let save=s.save;
+        if(n.mode==="infinite"&&allowed)save=recordInfinite(save,{streak:s.room.encounters.bestStreak,night:n.number,correct:s.room.encounters.correct,totalNights:n.number-1});
+        set({save,storageFailed:save!==s.save?persist(save):s.storageFailed,room:{...s.room,judgement:null,night:{...n,status:"failed"},survival:{...s.room.survival,phase:"gameover"}}});
+      } else if(n.mode==="infinite") {
+        let save=allowed?recordInfiniteNight(s.save,s.room.encounters.runId,n.number):s.save;
+        if(allowed)save=unlockAchievements(recordInfinite(save,{streak:s.room.encounters.bestStreak,night:n.number+1,correct:s.room.encounters.correct,totalNights:n.number}));
+        set({save,storageFailed:save!==s.save?persist(save):s.storageFailed,room:{...s.room,judgement:null,mistakeBaseline:s.room.encounters.mistakes,encounters:{...s.room.encounters,trust:3},weapon:{...s.room.weapon,ammo:6,cooldown:0},night:{...n,number:n.number+1,status:"running",nextArrival:n.elapsed+12}}});
+      } else {
+        const night={...n,status:"completed" as const,endingSeconds:14};
+        let save=allowed?completeNightReward(s.save,night,s.room.encounters.runId):s.save;
+        if(allowed)save=unlockAchievements({...save,endingViewed:save.endingViewed||n.number===3},s.room.encounters.mistakes===0&&s.room.encounters.correct>0);
+        set({save,storageFailed:save!==s.save?persist(save):s.storageFailed,room:{...s.room,judgement:null,night}});
       }
       return;
     }
-    if (s.room.night) {
-      const night = advanceNight(
-        s.room.night,
-        delta,
-        survivalBusy(s.room.survival),
-        s.room.encounters.trust,
-      );
-      if (night.status === "completed") {
-        const completedSave = rewardsAllowed(s.tutorial, night.duration) ? completeNightReward(
-          s.save,
-          night,
-          s.room.encounters.runId,
-        ) : s.save;
-        const save =
-          rewardsAllowed(s.tutorial,night.duration)
-            ? unlockAchievements(
-                completedSave,
-                s.room.encounters.mistakes === 0 &&
-                  s.room.encounters.correct > 0,
-              )
-            : completedSave;
-        set({
-          save,
-          storageFailed: save !== s.save ? persist(save) : s.storageFailed,
-          prompt: null,
-          arcade: null,
-          room: {
-            ...s.room,
-            night: { ...night, cancelledVisitor: !!s.room.encounters.active },
-            view: "explore",
-            visitorId: null,
-            door: ["OPEN", "OPENING"].includes(s.room.door)
-              ? "CLOSING"
-              : "CLOSED",
-            encounters: { ...s.room.encounters, active: null },
-          },
-        });
-        if (typeof document !== "undefined" && document.pointerLockElement)
-          document.exitPointerLock();
+    set({room:{...s.room,weapon:{...s.room.weapon,cooldown:Math.max(0,s.room.weapon.cooldown-dt)},rewardToast:s.room.rewardToast&&s.room.rewardToast.seconds>dt?{...s.room.rewardToast,seconds:s.room.rewardToast.seconds-dt}:null}});
+    s=get();
+    if(s.room.night) {
+      const night=advanceNight(s.room.night,delta,false,s.room.encounters.trust);
+      if(night.status==="judging") {
+        gameInput.reset();
+        set({arcade:null,prompt:null,room:{...s.room,night:{...night,cancelledVisitor:!!s.room.encounters.active},judgement:beginJudgement(judgementMistakes(s.room.encounters.mistakes,s.room.mistakeBaseline)),view:"explore",visitorId:null,door:"CLOSED",encounters:{...s.room.encounters,active:null},survival:{...s.room.survival,phase:"idle"}}});
+        if(typeof document!=="undefined"&&document.pointerLockElement)document.exitPointerLock();
         return;
       }
-      if (night !== s.room.night) {
-        let save =
-          night.mode === "infinite" &&
-          rewardsAllowed(s.tutorial,night.duration) &&
-          (night.number !== s.room.night.number || night.status === "failed")
-            ? recordInfinite(s.save, {
-                streak: s.room.encounters.bestStreak,
-                night: night.number,
-                correct: s.room.encounters.correct,
-                totalNights: Math.floor(night.elapsed / 600),
-              })
-            : s.save;
-        if (
-          night.mode === "infinite" &&
-          rewardsAllowed(s.tutorial,night.duration) &&
-          night.number > s.room.night.number
-        )
-          save = recordInfiniteNight(
-            save,
-            s.room.encounters.runId,
-            night.number - 1,
-          );
-        if (rewardsAllowed(s.tutorial,night.duration)) save = unlockAchievements(save);
-        set({
-          save,
-          storageFailed: save !== s.save ? persist(save) : s.storageFailed,
-          room: { ...s.room, night },
-        });
-        s = get();
-      }
+      if(night!==s.room.night){set({room:{...s.room,night}});s=get();}
     }
     const report = newsForNight(s.room.night?.number ?? 1);
     const newsSeconds = loopBroadcast(s.room.newsSeconds, delta, broadcastDuration(report));
@@ -342,6 +326,7 @@ export const useGame = create<State>((set, get) => ({
       ) {
         room = {
           ...room,
+          night: room.night ? {...room.night,nextArrival:Math.max(room.night.nextArrival,room.night.elapsed+10)}:null,
           encounters: {
             ...old,
             active: null,
@@ -394,15 +379,13 @@ export const useGame = create<State>((set, get) => ({
         type: "arrival",
         id: encounters.active.id,
       });
-    if (
-      old.active?.phase === "departing" &&
-      !encounters.active &&
-      room.door === "OPEN"
-    )
-      room = transitionDoor(room, { type: "close" });
+    if (old.active?.phase === "departing" && !encounters.active) {
+      if(room.night)room={...room,night:{...room.night,nextArrival:Math.max(room.night.nextArrival,room.night.elapsed+10)}};
+      if(room.door==="OPEN")room=transitionDoor(room,{type:"close"});
+    }
     if (encounters.result?.decision === "timeout" && encounters.result !== old.result) {
       room = transitionDoor(room, { type: "reject" });
-      room = { ...room, view: "explore", survival: beginSurvival(encounters.result.id, false) };
+      room = { ...room, visitorId:null, door: "CLOSING", view: "explore", survival: beginSurvival(encounters.result.id, false) };
     }
     if (room.view === "arcade" && encounters.active?.phase === "waiting") { gameInput.reset(); room={...room,view:"console"}; }
     set({ room, prompt: encounters.result?.decision === "timeout" ? null : s.prompt });
@@ -412,7 +395,7 @@ export const useGame = create<State>((set, get) => ({
     if (
       s.panel ||
       (!s.focused || !!s.suspension) ||
-      s.room.night?.status === "completed" ||
+      (s.room.night?.status === "completed" || !!s.room.judgement) ||
       survivalBusy(s.room.survival) ||
       !["door", "inspect"].includes(s.room.view)
     )
@@ -427,12 +410,13 @@ export const useGame = create<State>((set, get) => ({
     if (
       s.panel ||
       (!s.focused || !!s.suspension) ||
-      s.room.night?.status === "completed" ||
+      (s.room.night?.status === "completed" || !!s.room.judgement) ||
       survivalBusy(s.room.survival) ||
       !["door", "inspect"].includes(s.room.view)
     )
       return;
-    if (!["VISITOR_WAITING", "INSPECTING"].includes(s.room.door)) return;
+    if (!["VISITOR_WAITING", "INSPECTING", "OPEN"].includes(s.room.door)) return;
+    if(decision==="shoot")return; // Shooting must pass ammunition and ray-hit guards.
     if (s.tutorial) {
       if(s.tutorial!=="decide") { set({tutorialMessage:"Finish the practice steps before choosing."}); return; }
       if(decision!=="admit") { set({tutorialMessage:"Try again: Bea’s appearance and answers agree. Let her shelter inside."}); return; }
@@ -445,7 +429,7 @@ export const useGame = create<State>((set, get) => ({
     const encounters = resolveEncounter(s.room.encounters, id, decision);
     if (encounters === s.room.encounters) return;
     const room = transitionDoor(
-      { ...s.room, encounters },
+      { ...s.room, encounters, door:s.room.door==="OPEN"?"VISITOR_WAITING":s.room.door },
       { type: decision === "admit" ? "open-confirmed" : "reject" },
     );
     let save =
@@ -462,7 +446,8 @@ export const useGame = create<State>((set, get) => ({
     set({
       room: {
         ...room,
-        residents: decision === "admit" && encounters.result?.correct && s.room.encounters.active ? admitResident(room.residents, id, s.room.encounters.active.visitor) : room.residents,
+        rewardToast: save !== s.save ? {coins: encounters.result?.coins ?? 0, seconds:3} : room.rewardToast,
+        residents: decision === "admit" && s.room.encounters.active ? admitResident(room.residents, id, s.room.encounters.active.visitor) : room.residents,
         view: "explore",
         survival: encounters.result?.correct
           ? room.survival
@@ -481,7 +466,7 @@ export const useGame = create<State>((set, get) => ({
       s.scene !== "room" ||
       s.panel ||
       (!s.focused || !!s.suspension) ||
-      s.room.night?.status === "completed"
+      (s.room.night?.status === "completed" || !!s.room.judgement)
     )
       return;
     const save = {
@@ -558,8 +543,8 @@ export const useGame = create<State>((set, get) => ({
   },
   open: (panel) => {
     gameInput.reset();
-    if (document.pointerLockElement) document.exitPointerLock();
     set({ panel });
+    if (document.pointerLockElement) document.exitPointerLock();
   },
   start: () => {
     gameInput.reset();

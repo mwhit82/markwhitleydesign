@@ -80,8 +80,8 @@ export function TouchControls() {
   }, [s.panel, s.scene, s.room.view, s.room.survival.phase, s.suspension, s.touchActive]);
 
   const enabled = s.ready && s.touchActive && !s.panel && !s.suspension && s.focused &&
-    (s.scene === "lobby" || (s.room.view === "explore" && s.room.survival.phase === "idle" && s.room.night?.status !== "completed"));
-  const canControl = () => { const state = useGame.getState(); return state.touchActive && !state.panel && !state.suspension && state.focused && (state.scene === "lobby" || (state.room.view === "explore" && state.room.survival.phase === "idle" && state.room.night?.status !== "completed")); };
+    (s.scene === "lobby" || (s.room.view === "explore" && s.room.survival.phase === "idle" && s.room.night?.status !== "completed" && !s.room.judgement));
+  const canControl = () => { const state = useGame.getState(); return state.touchActive && !state.panel && !state.suspension && state.focused && (state.scene === "lobby" || (state.room.view === "explore" && state.room.survival.phase === "idle" && state.room.night?.status !== "completed" && !state.room.judgement)); };
   const release = (e: PointerEvent) => {
     gameInput.release(e.pointerId, e.type === "pointercancel" || e.type === "lostpointercapture");
     captures.current.delete(e.pointerId);
