@@ -313,7 +313,9 @@ export function RoomController() {
       lastView.current === "cctv";
     const alpha = snap ? 1 : 1 - Math.exp(-Math.min(dt, 0.05) * 12);
     camera.position.lerp(eye, alpha);
-    camera.quaternion.slerp(rotation, alpha);
+    // Direct finger tracking avoids the delayed, floating feel of mouse-style smoothing.
+    const directTouchLook = s.touchActive && enabled && lastView.current === "explore";
+    camera.quaternion.slerp(rotation, directTouchLook ? 1 : alpha);
     if (camera instanceof THREE.PerspectiveCamera) {
       // Keep enough horizontal context for visitor clues on an upright phone.
       if (s.touchActive && camera.aspect < 1) {

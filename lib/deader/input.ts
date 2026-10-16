@@ -24,9 +24,13 @@ export class GameInput {
     this.owners[kind] = id;
     return true;
   }
-  release(id: number) {
+  release(id: number, cancelled = false) {
     if (this.owners.move === id) { this.owners.move = null; this.axes = { x: 0, z: 0 }; }
-    if (this.owners.look === id) { this.owners.look = null; this.look = { x: 0, y: 0 }; }
+    if (this.owners.look === id) {
+      this.owners.look = null;
+      // A completed swipe still needs its final delta rendered, even after finger-up.
+      if (cancelled) this.look = { x: 0, y: 0 };
+    }
   }
   movement() {
     const k = this.keys;
@@ -48,4 +52,9 @@ export function touchLookScale(width: number, height: number): number {
 export type InterruptionEvent = "hidden" | "pagehide" | "blur" | "resize";
 export function requiresResume(event: InterruptionEvent) {
   return event === "hidden" || event === "pagehide";
+}
+
+/** Browser chrome can change height during a swipe; only a width change invalidates its layout. */
+export function shouldResetTouchOnResize(previousWidth: number, width: number) {
+  return Math.abs(previousWidth - width) > 1;
 }

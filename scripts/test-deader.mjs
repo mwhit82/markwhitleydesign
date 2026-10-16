@@ -1627,3 +1627,27 @@ test("door confirmation rejects departed, timed out and replacement encounters",
   assert.equal(room.canConfirmDoor({...r,encounters:{...r.encounters,active:{...r.encounters.active,phase:"departing"}}},id),false);
   assert.equal(room.canConfirmDoor({...r,survival:{...r.survival,phase:"tension"}},id),false);
 });
+
+test("quick swipes retain their final movement until the next rendered frame", async () => {
+  const {GameInput}=await import(await moduleUrl(resolve("lib/deader/input.ts")));
+  const input=new GameInput();
+  input.claim("move",1); input.axes={x:.5,z:-.5};
+  input.claim("look",2); input.look={x:90,y:-12};
+  input.release(2);
+  // Browser automatically releases capture after pointer-up: it must not erase the completed swipe.
+  input.release(2,true);
+  assert.deepEqual(input.consumeLook(),{x:90,y:-12});
+  assert.deepEqual(input.consumeLook(),{x:0,y:0});
+  assert.deepEqual(input.axes,{x:.5,z:-.5});
+  input.claim("look",3);input.look={x:20,y:10};input.release(3,true);
+  assert.deepEqual(input.consumeLook(),{x:0,y:0});
+  input.claim("look",4);input.look={x:20,y:10};input.reset();
+  assert.deepEqual(input.consumeLook(),{x:0,y:0});
+});
+test("browser toolbar height changes preserve swipes while rotation clears them", async () => {
+  const {shouldResetTouchOnResize}=await import(await moduleUrl(resolve("lib/deader/input.ts")));
+  assert.equal(shouldResetTouchOnResize(390,390),false);
+  assert.equal(shouldResetTouchOnResize(390,390.5),false);
+  assert.equal(shouldResetTouchOnResize(390,844),true);
+  assert.equal(shouldResetTouchOnResize(844,390),true);
+});

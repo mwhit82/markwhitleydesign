@@ -19,7 +19,7 @@ export function GameSettings() {
           <option value="auto">Auto</option><option value="touch">Touch</option><option value="keyboard">Keyboard and mouse</option>
         </select>
       </label>
-      <p>Touch: left joystick to move, swipe right to look, tap the labelled button to interact. Play upright or sideways. If play feels slow, try Low graphics below.</p>
+      <p>Touch: left joystick to move, swipe the room view to look, tap the labelled button to interact. Play upright or sideways. If play feels slow, try Low graphics below.</p>
       <label>
         Sound volume{" "}
         <input

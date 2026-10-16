@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useRef, useState, type PointerEvent } from "react";
-import { gameInput, joystick, touchLookScale, requiresResume, type InterruptionEvent } from "@/lib/deader/input";
+import { gameInput, joystick, touchLookScale, shouldResetTouchOnResize, requiresResume, type InterruptionEvent } from "@/lib/deader/input";
 import { useGame } from "@/lib/deader/store";
 import { roomAudio } from "@/lib/deader/audio/room-audio";
 import { interactRoom } from "./room-controller";
@@ -17,6 +17,7 @@ export function TouchControls() {
     captures.current.clear();
   };
   const last = useRef({ x: 0, y: 0 });
+  const swipeScale = useRef(1);
   useEffect(() => {
     const choose = (touch: boolean) => {
       const state = useGame.getState();
@@ -42,7 +43,11 @@ export function TouchControls() {
     };
     const visibility = () => { if (document.hidden) interrupt("hidden"); else useGame.setState({ focused: true }); };
     const blur = () => interrupt("blur");
-    const orientation = () => interrupt("resize");
+    let viewportWidth = window.innerWidth;
+    const orientation = () => {
+      if (shouldResetTouchOnResize(viewportWidth, window.innerWidth)) interrupt("resize");
+      viewportWidth = window.innerWidth;
+    };
     const pagehide = () => interrupt("pagehide");
     choose(matchMedia("(pointer: coarse)").matches);
     window.addEventListener("pointerdown", pointer, true);
@@ -78,7 +83,7 @@ export function TouchControls() {
     (s.scene === "lobby" || (s.room.view === "explore" && s.room.survival.phase === "idle" && s.room.night?.status !== "completed"));
   const canControl = () => { const state = useGame.getState(); return state.touchActive && !state.panel && !state.suspension && state.focused && (state.scene === "lobby" || (state.room.view === "explore" && state.room.survival.phase === "idle" && state.room.night?.status !== "completed")); };
   const release = (e: PointerEvent) => {
-    gameInput.release(e.pointerId);
+    gameInput.release(e.pointerId, e.type === "pointercancel" || e.type === "lostpointercapture");
     captures.current.delete(e.pointerId);
     setThumb({ ...gameInput.axes });
   };
@@ -96,10 +101,11 @@ export function TouchControls() {
           e.currentTarget.setPointerCapture(e.pointerId);
           captures.current.set(e.pointerId, e.currentTarget);
           last.current = { x: e.clientX, y: e.clientY };
+          swipeScale.current = touchLookScale(window.innerWidth, window.innerHeight);
         }}
         onPointerMove={e => {
           if (!canControl() || gameInput.owners.look !== e.pointerId) return;
-          const scale = touchLookScale(window.innerWidth, window.innerHeight);
+          const scale = swipeScale.current;
           gameInput.look.x += (e.clientX - last.current.x) * scale;
           gameInput.look.y += (e.clientY - last.current.y) * scale;
           last.current = { x: e.clientX, y: e.clientY };

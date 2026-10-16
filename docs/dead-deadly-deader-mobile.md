@@ -3,7 +3,7 @@
 Touch gameplay is implemented for local review. Physical iPhone/iPad Safari sign-off and Android hardware testing are outstanding. This is not verified on every mobile device.
 
 ## Controls
-Portrait and landscape gameplay use a left joystick, right-side swipe-to-look in the room, and a labelled interaction button. The lobby retains its follow camera. Movement has a 15% dead zone and proportional speed, with existing collisions and diagonal speed cap. Movement/look pointers own independent gestures; a third finger can tap interaction. Release, cancellation and lost capture clear input. Swipes never activate objects.
+Portrait and landscape gameplay use a left joystick, full-view swipe-to-look in the room, and a labelled interaction button. The lobby retains its follow camera. Movement has a 15% dead zone and proportional speed, with existing collisions and diagonal speed cap. Movement/look pointers own independent gestures; a third finger can tap interaction. Release ends pointer ownership; completed swipe deltas are rendered once, while cancellation and scene transitions clear pending input. Swipes never activate objects.
 
 Settings offer Auto, Touch, or Keyboard and mouse, plus separate touch sensitivity. Auto follows input type. Visual quality stays Standard by default; saved choices are preserved, with Low available. The cosmetic preview respects the same resolution cap.
 
@@ -48,3 +48,8 @@ Door decisions use a fixed large timer and action area with two-tap confirmation
 DDD News is now a looping in-room TV above Donut. Sessions begin in exploration and TV playback does not gate visitors or night progression. Its reusable 768×432 canvas texture updates at 12 Hz (6 Hz on Low); no additional scene render is used. One local light has no shadows and obeys reduced-flash/motion settings. Audio attenuation and stereo position use the physical player pose even during CCTV. Nearby players looking at the TV get readable captions. Legacy broadcast-history save fields remain compatible.
 
 Verification: 61 game checks, type check and production build; browser rehearsal verified direct room entry, in-room TV/captions, rotation without a Resume prompt, portrait/landscape door layout, cancelling rejection and confirming admission. Physical iOS/Android multi-touch and background lifecycle checks remain necessary; browser simulation is not device performance evidence.
+
+## Swipe responsiveness fix
+The look surface now fills the room view behind joystick and action controls. Menu remains above it; informational HUD passes gestures through. Completed swipes retain their last movement until the next frame, including after implicit capture release. Height-only browser toolbar resizes preserve gestures, while width changes reset input for rotation. Sensitivity is fixed at gesture start. Touch rotation follows the finger directly rather than using desktop camera smoothing.
+
+Validation: 63 tests and production build pass. Portrait browser checks verified left-side swiping, full-view hit area, Menu access and no console errors. Physical iPhone multi-touch, Safari toolbar and perceived latency checks remain outstanding.
