@@ -1,4 +1,4 @@
-# Dead Deadly Deader — project status
+# The Anomalous — project status
 
 Updated: 15 October 2026. Specification: roadmap v0.5.
 
@@ -21,7 +21,7 @@ Performance: Apple M4 Pro / 24 GB, Codex in-app browser, development at 1280×72
 No forced decision timeout yet: waiting visitors block later approaches and leave at dawn without another penalty/reward. Fenn should assess whether this permits overly easy survival and whether a fair waiting rule is needed. Retained first-report duration is 40 seconds rather than the roadmap's provisional 45. Refresh restarts transient night progress; earned coins remain saved. Physical mobile, normal-browser pointer lock and audio listening review remain outstanding.
 
 ## Completed
-Preserved the fullscreen game, atmospheric room/lobby, worn characters, shop, saved cosmetics, START settings, first-person controls, interactive door, peephole, four CCTV views and DDD News.
+Preserved the fullscreen game, atmospheric room/lobby, worn characters, shop, saved cosmetics, START settings, first-person controls, interactive door, peephole, four CCTV views and Anomalous News.
 
 Added six data-driven visitors: three humans and three Anomalies with visual, movement and dialogue evidence. The first four encounters teach identification in a fixed order; later choices use a run-seeded pool. Visitors approach on the surveillance stairs, knock, wait for inspection/questions, and depart after a deliberate decision. Only one encounter is active. The solo office has no decorative multiplayer characters.
 

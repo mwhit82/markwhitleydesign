@@ -1326,3 +1326,46 @@
 .tvCaption { pointer-events:auto; bottom:max(24px,env(safe-area-inset-bottom)); }
 .tvCaption button { min-height:48px; margin:4px; }
 @media (min-width:700px) { .game .feedButtons { grid-template-columns:repeat(6,minmax(0,1fr)); } }
+
+/* Accessible terminal additions: fixed exits, scrollable content, generous targets. */
+.joystick { --stick-travel: 40px; }
+.joystick > span { transform: translate(calc(var(--move-x, 0) * var(--stick-travel)), calc(var(--move-z, 0) * var(--stick-travel))); }
+@media (max-width: 600px) and (orientation: portrait) { .touchGame .joystick { --stick-travel: 32px; } }
+@media (min-width: 600px) and (min-height: 600px) { .touchGame .joystick { width:176px; height:176px; --stick-travel:56px; } .touchGame .joystick > span { width:64px; height:64px; } }
+.game .shopModal { display:flex; flex-direction:column; overflow:hidden; padding:16px; gap:12px; height:min(760px, calc(100dvh - 32px)); }
+.game .shopModal > .close { position:static; align-self:flex-start; min-height:52px; flex-shrink:0; font-size:16px!important; padding:10px 20px!important; }
+.shopScroll { overflow:auto; min-height:0; overscroll-behavior:contain; padding:0 8px; }
+.game .shopModal .purchase { flex-shrink:0; margin:0; padding:12px 8px 0; }
+.game .shopModal .purchase p { font-size:12px; line-height:1.4; margin:4px 0; }
+.consoleChoices { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin:18px 0; }
+.consoleChoices button { display:flex; flex-direction:column; text-align:left; gap:12px; min-height:110px; }
+.consoleChoices span { font-size:14px; color:#b9bdc5; }
+.tutorialGuide { position:absolute; z-index:12; top:max(80px,env(safe-area-inset-top)); left:max(16px,env(safe-area-inset-left)); width:min(440px,calc(100% - 32px)); padding:14px 18px; background:#080c10ed; border:1px solid #ffffff55; border-radius:8px; pointer-events:none; }
+.tutorialGuide h2 { font-size:20px; margin:4px 0; }
+.tutorialGuide p { font-size:14px; line-height:1.45; margin:8px 0; }
+.tutorialGuide small { color:#e2c889; letter-spacing:2px; font-size:10px; }
+.tutorialGuide button { pointer-events:auto; min-height:44px; }
+.petCaption { position:absolute; z-index:16; bottom:12px; left:50%; transform:translateX(-50%); max-width:560px; width:calc(100% - 32px); padding:10px 16px; border:1px solid #ffffff44; border-radius:6px; background:#080b0fe8; font-size:13px; pointer-events:none; }
+.arcade { position:absolute; z-index:22; inset:max(12px,env(safe-area-inset-top)) max(12px,env(safe-area-inset-right)) max(12px,env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left)); background:#080b0ff5; border:1px solid #ffffff55; border-radius:8px; padding:16px; display:flex; flex-direction:column; gap:8px; overflow:auto; }
+.arcade header { display:flex; justify-content:space-between; align-items:center; gap:12px; }
+.arcade h2 { font-size:24px; margin:4px 0; }
+.arcade small { color:#c3b390; letter-spacing:2px; }
+.arcade canvas { width:100%; aspect-ratio:8/3; min-height:0; flex:1 1 auto; object-fit:contain; touch-action:none; }
+.arcade progress { width:100%; height:5px; accent-color:#e8c878; flex-shrink:0; }
+.arcadeStats { display:flex; justify-content:space-between; font-family:monospace; }
+.arcadeActions { display:flex; align-items:center; gap:16px; }
+.arcadeActions p { color:#b5bac1; font-size:13px; max-width:480px; }
+.arcadeActions button { min-height:56px; min-width:160px; touch-action:none; }
+@media (max-width:600px) { .consoleChoices { grid-template-columns:1fr; } .arcadeActions { flex-direction:column; } .arcadeActions button { width:100%; } .arcade h2 { font-size:20px; } .game .shopModal .purchase > div { display:none; } }
+@media (max-height:500px) { .tutorialGuide { top:10px; left:10px; width:310px; padding:8px 12px; } .tutorialGuide h2 { font-size:16px; } .tutorialGuide p { font-size:12px; margin:4px 0; } .arcade { padding:8px 12px; gap:2px; } .arcade h2 { font-size:18px; } .arcadeActions p { margin:0; } .arcadeActions button { min-height:44px; } .game .shopModal .purchase > div { display:none; } }
+.practiceNote { margin:8px 42px 12px 0; border-left:2px solid #d8c395; padding-left:12px; }
+.practiceNote p { font-size:13px; margin:4px 0; }
+.practiceNote button { min-height:44px; }
+@media (max-height:500px) {
+  .game .shopModal .shopScroll > .eyebrow, .game .shopModal .shopScroll > h2 { display:none; }
+  .game .shopModal .balance { position:absolute; top:26px; right:24px; font-size:18px; }
+  .game .shopModal .categories { margin:0 0 10px; }
+  .game .shopModal .preview { min-height:130px; height:150px; }
+}
+.arcade { background:#080b0f; }
+.arcade canvas { flex:1 1 0; height:0; min-height:140px; aspect-ratio:auto; }

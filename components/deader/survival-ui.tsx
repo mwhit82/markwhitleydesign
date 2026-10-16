@@ -159,7 +159,7 @@ export function SurvivalUI() {
       >
         {t < 6 ? (
           <>
-            <p className={styles.eyebrow}>DDD NEWS / ALL CLEAR</p>
+            <p className={styles.eyebrow}>ANOMALOUS NEWS / ALL CLEAR</p>
             <h2>You survived.</h2>
             <p>The streets are quiet. Authorities say the danger has passed.</p>
           </>
@@ -244,7 +244,7 @@ export function SurvivalUI() {
         <p className={styles.eyebrow}>
           NIGHT {r.night?.number ?? s.session?.night ?? 1} / NO TRUST REMAINING
         </p>
-        <h2>DEAD. DEADLY. DEADER.</h2>
+        <h2>THE ANOMALOUS</h2>
         <p>Donut has ended your shift.</p>
         <dl className={styles.results}>
           <div>

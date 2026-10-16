@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef, useState, type PointerEvent } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type PointerEvent } from "react";
 import { gameInput, joystick, touchLookScale, shouldResetTouchOnResize, requiresResume, type InterruptionEvent } from "@/lib/deader/input";
 import { useGame } from "@/lib/deader/store";
 import { roomAudio } from "@/lib/deader/audio/room-audio";
@@ -90,7 +90,7 @@ export function TouchControls() {
   const move = (e: PointerEvent<HTMLDivElement>) => {
     if (!canControl() || gameInput.owners.move !== e.pointerId) return;
     const rect = e.currentTarget.getBoundingClientRect();
-    gameInput.axes = joystick(e.clientX - rect.left - rect.width / 2, e.clientY - rect.top - rect.height / 2);
+    gameInput.axes = joystick(e.clientX - rect.left - rect.width / 2, e.clientY - rect.top - rect.height / 2, (rect.width - (rect.width >= 176 ? 64 : 48)) / 2);
     setThumb({ ...gameInput.axes });
   };
   return <>
@@ -121,14 +121,14 @@ export function TouchControls() {
           move(e);
         }}
         onPointerMove={move} onPointerUp={release} onPointerCancel={release} onLostPointerCapture={release}>
-        <span style={{ transform: `translate(${thumb.x * 44}px, ${thumb.z * 44}px)` }} />
+        <span style={{ "--move-x": thumb.x, "--move-z": thumb.z } as CSSProperties} />
         <small>Move</small>
       </div>
       <button className={styles.touchInteract} disabled={!s.prompt} onClick={() => {
         gameInput.reset();
         roomAudio.unlock();
         if (s.scene === "room") interactRoom();
-        else if (s.prompt) s.open(s.prompt === "Shop" ? "shop" : s.prompt === "Customise" ? "wardrobe" : "start");
+        else s.interactLobby();
       }}>{s.prompt ?? (s.scene === "lobby" ? "Walk to a station" : "Look at an object")}</button>
     </div>}
     {s.suspension && !s.panel && <div className={styles.suspendScrim}>

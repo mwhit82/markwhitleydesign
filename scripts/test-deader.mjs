@@ -363,7 +363,7 @@ test("store rewards persist once, rejects stale decisions and holds departure fo
     panel: null,
     scene: "room",
     room: {
-      ...room.freshRoom(),
+      ...room.freshRoom("test-run", 300),
       view: "door",
       door: "VISITOR_WAITING",
       visitorId: "test-run:1",
@@ -1752,4 +1752,101 @@ test("five active minutes reach dawn and the first knock arrives in fifteen seco
   assert.equal(n.status,'running');
   n=nightLogic.advanceNight(n,.25,false,3);
   assert.equal(n.status,'completed');assert.equal(g.clockLabel(n.elapsed),'5:55 AM');
+});
+
+const petsModule = await import(await moduleUrl(resolve('lib/deader/pets.ts')));
+const arcadeModule = await import(await moduleUrl(resolve('lib/deader/arcade.ts')));
+const tutorialModule = await import(await moduleUrl(resolve('lib/deader/tutorial.ts')));
+test('sidekick purchases, equipment and additive save loading preserve balances',()=>{
+  const original=g.newSave();
+  const bought=petsModule.purchasePet(original,'pip');
+  assert.equal(bought.coins,100);
+  assert.equal(petsModule.purchasePet(bought,'pip'),bought);
+  assert.equal(petsModule.purchasePet({...original,coins:49},'pip').coins,49);
+  assert.equal(petsModule.equipPet(original,'pip'),original);
+  const equipped=petsModule.equipPet(bought,'pip');
+  assert.deepEqual(g.readSave(JSON.stringify(equipped)),equipped);
+  assert.equal(petsModule.equipPet(equipped,null).equippedPet,null);
+  const legacy={...original,coins:12,ownedPets:undefined,equippedPet:undefined};
+  assert.equal(g.readSave(JSON.stringify(legacy)).coins,12);
+  assert.deepEqual(g.readSave(JSON.stringify(legacy)).ownedPets,[]);
+  const malformed=g.readSave(JSON.stringify({...legacy,ownedPets:['pip','pip','fake'],equippedPet:'shadow'}));
+  assert.deepEqual(malformed.ownedPets,['pip']);assert.equal(malformed.equippedPet,null);
+});
+test('pets only describe observed visual and movement evidence, never hidden classifications',()=>{
+  const visible=visitors.visitorById('three'),dialogue=visitors.visitorById('echo');
+  assert.equal(petsModule.petHint(visible,[]),null);
+  assert.match(petsModule.petHint(visible,['visual']),/third eye/i);
+  assert.match(petsModule.petHint(visible,['cctv']),/Stops and starts/);
+  assert.equal(petsModule.petHint(dialogue,['visual','cctv']),null);
+  assert.equal(petsModule.petHint({...visible,kind:'human'},['visual']),petsModule.petHint(visible,['visual']));
+});
+test('arcade collisions, landing, hold jumps and frame gaps are deterministic',()=>{
+  const start={...arcadeModule.freshArcade(),status:'running'};
+  assert.equal(arcadeModule.stepArcade(arcadeModule.freshArcade(),1,true).x,0);
+  assert.deepEqual(arcadeModule.stepArcade(start,10,false),arcadeModule.stepArcade(start,.05,false));
+  assert.equal(arcadeModule.stepArcade(start,NaN,true),start);
+  assert.ok(arcadeModule.stepArcade(start,.05,true).y>0);
+  assert.equal(arcadeModule.stepArcade({...start,x:11.4},.05,false).status,'crashed');
+  const landed=arcadeModule.stepArcade({...start,x:31.2,y:1.02,vy:-2,grounded:false},.02,false);
+  assert.equal(landed.y,1);assert.equal(landed.grounded,true);
+  assert.ok(arcadeModule.stepArcade(landed,.02,true).y>1);
+  assert.equal(arcadeModule.stepArcade({...start,x:224.9},.05,false).status,'won');
+  // An obstacle-aware simulated player can complete the handcrafted level.
+  let run=start;
+  for(let frame=0;frame<6000&&run.status==='running';frame++){
+    const next=arcadeModule.arcadeLevel.filter(o=>o.x+o.w>run.x&&o.h>run.y+.1).sort((a,b)=>a.x-b.x)[0];
+    const jump=!!next&&next.x-run.x<1.65;
+    run=arcadeModule.stepArcade(run,1/120,jump);
+  }
+  assert.equal(run.status,'won');
+});
+test('guided practice freezes deadlines, protects rewards and permits forgiving retries',async()=>{
+  const {useGame}=await import(await moduleUrl(resolve('lib/deader/store.ts')));
+  globalThis.document={pointerLockElement:null};
+  const save=g.newSave();useGame.setState({save,focused:true,suspension:null});
+  useGame.getState().beginTutorial();assert.equal(useGame.getState().tutorial,'move');
+  useGame.getState().tutorialAdvance('move');useGame.getState().tutorialAdvance('look');
+  useGame.setState({prompt:'Learn to play'});useGame.getState().interactLobby();
+  assert.equal(useGame.getState().tutorial,'inspect');
+  for(let i=0;i<3000;i++)useGame.getState().tickVisitors(.25);
+  let s=useGame.getState();assert.equal(s.room.encounters.active.elapsed,0);assert.equal(s.room.encounters.trust,3);
+  s.doorEvent({type:'inspect'});const id=s.room.encounters.active.id;
+  for(const q of ['identity','purpose','origin'])useGame.getState().askVisitor(id,q);
+  assert.equal(useGame.getState().tutorial,'camera');
+  useGame.getState().tutorialAdvance('camera');
+  useGame.getState().decideVisitor(id,'reject');assert.equal(useGame.getState().room.encounters.trust,3);
+  assert.match(useGame.getState().tutorialMessage,/Try again/);
+  useGame.getState().decideVisitor(id,'admit');assert.equal(useGame.getState().tutorial,'tv');
+  assert.deepEqual(useGame.getState().save,save);assert.equal(useGame.getState().room.residents.length,1);
+  useGame.getState().roomView('tv');assert.equal(useGame.getState().tutorial,'finish');
+  useGame.getState().lobby();assert.equal(useGame.getState().tutorial,null);
+  assert.equal(tutorialModule.rewardsAllowed('finish',300),false);
+  assert.equal(tutorialModule.rewardsAllowed(null,60),false);
+  assert.equal(tutorialModule.rewardsAllowed(null,300),true);
+});
+test('arcade keeps night active, yields to knock and blocks relaunch until departure',async()=>{
+  const {useGame}=await import(await moduleUrl(resolve('lib/deader/store.ts')));
+  globalThis.document={pointerLockElement:null};
+  useGame.setState({scene:'room',tutorial:null,panel:null,focused:true,suspension:null,session:g.createSession('easy','normal'),room:room.freshRoom('arcade-check',300)});
+  useGame.getState().roomView('arcade');assert.equal(useGame.getState().room.view,'arcade');
+  for(let i=0;i<70;i++)useGame.getState().tickVisitors(.1);
+  useGame.getState().roomView('console');useGame.getState().roomView('arcade');
+  assert.equal(useGame.getState().room.view,'arcade');
+  for(let i=0;i<90;i++)useGame.getState().tickVisitors(.1);
+  assert.equal(useGame.getState().room.view,'console');
+  assert.equal(useGame.getState().room.encounters.active.phase,'waiting');
+  assert.ok(useGame.getState().room.night.elapsed>=29);
+  useGame.getState().roomView('arcade');assert.equal(useGame.getState().room.view,'console');
+  const before=useGame.getState().room.encounters.active.elapsed;
+  useGame.getState().tickVisitors(.1);assert.ok(useGame.getState().room.encounters.active.elapsed>before);
+  useGame.getState().lobby();assert.equal(useGame.getState().arcade,null);
+});
+test('larger tablet joystick preserves full speed and proportional dead zones',async()=>{
+  const {joystick}=await import(await moduleUrl(resolve('lib/deader/input.ts')));
+  for(const radius of [32,40,56]){
+    assert.deepEqual(joystick(radius,0,radius),{x:1,z:0});
+    assert.deepEqual(joystick(radius*.1,0,radius),{x:0,z:0});
+    assert.ok(Math.abs(joystick(radius*.5,0,radius).x-(.5-.15)/.85)<1e-9);
+  }
 });

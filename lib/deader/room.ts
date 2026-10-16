@@ -13,7 +13,7 @@ export type DoorState =
   | "CLOSING"
   | "LOCKED";
 export type RoomView =
-  "tv" | "lounge-tv" | "explore" | "door" | "inspect" | "cctv" | "news" | "donut" | "vent";
+  "console" | "arcade" | "tv" | "lounge-tv" | "explore" | "door" | "inspect" | "cctv" | "news" | "donut" | "vent";
 export type Feed = 0 | 1 | 2 | 3 | 4 | 5;
 export type RoomState = {
   residents: Resident[];
@@ -139,7 +139,7 @@ export type Broadcast = {
 };
 export const NIGHT_ONE_NEWS: Broadcast = {
   id: "night-1-intro",
-  channel: "DEAD DEADLY DEADER NEWS OFFICIAL",
+  channel: "THE ANOMALOUS NEWS OFFICIAL",
   title: "They're here.",
   segments: [
     {
@@ -176,7 +176,7 @@ export const NIGHT_ONE_NEWS: Broadcast = {
       seconds: 6,
       headline: "STAY UNTIL 5:55 AM",
       subtitle:
-        "Survive until 5:55 AM. This has been Dead Deadly Deader News Official. Our advice: remain calm. Our presenter has not.",
+        "Survive until 5:55 AM. This has been The Anomalous News Official. Our advice: remain calm. Our presenter has not.",
     },
   ],
 };
@@ -211,7 +211,7 @@ export function newsForNight(number: number): Broadcast {
   return {
     ...NIGHT_ONE_NEWS,
     id: `night-${Math.min(3, number)}-intro`,
-    title: number === 2 ? "Trust Nobody" : "Dead Deadly Deader",
+    title: number === 2 ? "Trust Nobody" : "The Anomalous",
     segments: [
       {
         seconds: 8,

@@ -16,7 +16,7 @@ const targets: Record<string, RoomView> = {
   "Watch TV": "tv",
   "Watch lounge TV": "lounge-tv",
   Door: "door",
-  "CCTV": "cctv",
+  "CCTV": "console",
   Donut: "donut",
   Vent: "vent",
 };
@@ -60,7 +60,7 @@ export function RoomController() {
     stepDistance = useRef(0);
   useEffect(() => {
     // The selected feed uses the existing renderer, at 15 Hz and <= 720px wide.
-    if (view !== "cctv") return;
+    if (view !== "cctv" && view !== "arcade") return;
     setDpr(Math.min(1, 720 / Math.max(gl.domElement.clientWidth, 1)));
     setFrameloop("demand");
     const id = window.setInterval(() => invalidate(), 1000 / 15);

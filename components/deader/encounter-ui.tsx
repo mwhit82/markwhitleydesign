@@ -7,7 +7,7 @@ import { DECISION_SECONDS, QUESTIONS, visitorForDifficulty } from "@/lib/deader/
 import styles from "./game.module.css";
 export function DecisionCountdown() {
   const s = useGame(), e = s.room.encounters.active;
-  if (e?.phase !== "waiting") return null;
+  if (s.tutorial || e?.phase !== "waiting") return null;
   const remaining = Math.max(0, Math.ceil(DECISION_SECONDS[s.session?.difficulty ?? "easy"] - e.elapsed));
   return <div className={styles.decisionClock} data-urgent={remaining <= 10}>
     <div><strong role="timer" aria-live="off">{remaining}<small> sec</small></strong><span>{remaining <= 10 ? "Choose now!" : "Time to choose"}</span></div>
@@ -66,7 +66,7 @@ export function EncounterUI() {
     return null;
   return (
     <>
-      {!["door", "inspect"].includes(r.view) && (
+      {!s.tutorial && !["door", "inspect"].includes(r.view) && (
         <div className={styles.encounterStatus} data-urgent={e?.phase === "waiting" || e?.phase === "approaching"}>
           <DecisionCountdown />
           {e?.phase === "approaching"

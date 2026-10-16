@@ -1,4 +1,7 @@
 "use client";
+import { tutorialRoom, rewardsAllowed, type TutorialStep } from "./tutorial";
+import { purchasePet, equipPet, type PetId } from "./pets";
+import type { ArcadeState } from "./arcade";
 import { rehearse, type Rehearsal } from "./rehearsal";
 import { admitResident, tickResidents } from "./lounge";
 import {
@@ -65,8 +68,16 @@ import {
 } from "./progression";
 import { loadLocalSave, writeLocalSave } from "./persistence";
 export { SAVE_KEY } from "./persistence";
-export type Panel = "shop" | "wardrobe" | "start" | "pause" | "progress" | null;
+export type Panel = "shop" | "wardrobe" | "start" | "pause" | "progress" | "tutorial" | null;
 type State = {
+  tutorial: TutorialStep | null;
+  tutorialMessage: string | null;
+  tutorialAdvance: (event: TutorialStep) => void;
+  beginTutorial: () => void;
+  interactLobby: () => void;
+  arcade: ArcadeState | null;
+  buyPet: (id: PetId) => void;
+  wearPet: (id: PetId | null) => void;
   save: Save;
   ready: boolean;
   storageFailed: boolean;
@@ -111,6 +122,24 @@ function persist(save: Save) {
   }
 }
 export const useGame = create<State>((set, get) => ({
+  tutorial: null, tutorialMessage: null, arcade: null,
+  beginTutorial: () => { get().lobby(); set({ tutorial: "move" }); },
+  tutorialAdvance: (event) => {
+    const step=get().tutorial;
+    const next: Partial<Record<TutorialStep,TutorialStep>>={move:"look",look:"tablet",inspect:"questions",questions:"camera",camera:"decide",tv:"finish"};
+    if(step===event&&next[event]) set({tutorial:next[event],tutorialMessage:null});
+  },
+  interactLobby: () => {
+    const s=get(); if(s.panel||s.suspension||!s.focused)return;
+    if(s.prompt==="Learn to play") {
+      if(s.tutorial==="tablet") { gameInput.reset(); set({scene:"room",panel:null,tutorial:"inspect",room:tutorialRoom(freshRoom(crypto.randomUUID())),session:createSession("easy","normal"),prompt:null}); }
+      else s.open("tutorial");
+    } else if(s.prompt==="Shop")s.open("shop");
+    else if(s.prompt==="Customise")s.open("wardrobe");
+    else if(s.prompt==="Start"&&!s.tutorial)s.open("start");
+  },
+  buyPet: id => {const save=purchasePet(get().save,id);set({save,storageFailed:persist(save)});},
+  wearPet: id => {const save=equipPet(get().save,id);set({save,storageFailed:persist(save)});},
   save: newSave(),
   ready: false,
   storageFailed: false,
@@ -141,6 +170,8 @@ export const useGame = create<State>((set, get) => ({
   runSeconds: 300,
   roomView: (view) => {
     gameInput.reset();
+    if (view === "arcade" && ((get().room.encounters.active && get().room.encounters.active?.phase !== "approaching") || get().tutorial)) return;
+    if (view === "tv") get().tutorialAdvance("tv");
     if (view === "news") view = "explore";
     if (
       survivalBusy(get().room.survival) ||
@@ -180,6 +211,7 @@ export const useGame = create<State>((set, get) => ({
       }
     }
     if (active && (event.type === "lock" || event.type === "close")) return;
+    if (event.type === "inspect") get().tutorialAdvance("inspect");
     const room = transitionDoor(get().room, event);
     if (room !== get().room) set({ room, prompt: null });
   },
@@ -193,6 +225,11 @@ export const useGame = create<State>((set, get) => ({
       delta <= 0
     )
       return;
+    if (s.tutorial) {
+      const report=newsForNight(1);
+      set({room:{...s.room,newsSeconds:loopBroadcast(s.room.newsSeconds,delta,broadcastDuration(report)),residents:tickResidents(s.room.residents,delta,s.room.door==="OPEN")}});
+      return;
+    }
     if (s.room.night?.status === "completed") {
       const n = s.room.night;
       if (n.number === 3 && n.endingSeconds < 14) {
@@ -201,7 +238,7 @@ export const useGame = create<State>((set, get) => ({
           n.endingSeconds + Math.min(delta, 0.25),
         );
         const save =
-          endingSeconds === 14 && n.duration === 300
+          endingSeconds === 14 && rewardsAllowed(s.tutorial,n.duration)
             ? { ...s.save, endingViewed: true }
             : s.save;
         set({
@@ -220,13 +257,13 @@ export const useGame = create<State>((set, get) => ({
         s.room.encounters.trust,
       );
       if (night.status === "completed") {
-        const completedSave = completeNightReward(
+        const completedSave = rewardsAllowed(s.tutorial, night.duration) ? completeNightReward(
           s.save,
           night,
           s.room.encounters.runId,
-        );
+        ) : s.save;
         const save =
-          night.duration === 300
+          rewardsAllowed(s.tutorial,night.duration)
             ? unlockAchievements(
                 completedSave,
                 s.room.encounters.mistakes === 0 &&
@@ -237,6 +274,7 @@ export const useGame = create<State>((set, get) => ({
           save,
           storageFailed: save !== s.save ? persist(save) : s.storageFailed,
           prompt: null,
+          arcade: null,
           room: {
             ...s.room,
             night: { ...night, cancelledVisitor: !!s.room.encounters.active },
@@ -255,7 +293,7 @@ export const useGame = create<State>((set, get) => ({
       if (night !== s.room.night) {
         let save =
           night.mode === "infinite" &&
-          night.duration === 300 &&
+          rewardsAllowed(s.tutorial,night.duration) &&
           (night.number !== s.room.night.number || night.status === "failed")
             ? recordInfinite(s.save, {
                 streak: s.room.encounters.bestStreak,
@@ -266,7 +304,7 @@ export const useGame = create<State>((set, get) => ({
             : s.save;
         if (
           night.mode === "infinite" &&
-          night.duration === 300 &&
+          rewardsAllowed(s.tutorial,night.duration) &&
           night.number > s.room.night.number
         )
           save = recordInfiniteNight(
@@ -274,7 +312,7 @@ export const useGame = create<State>((set, get) => ({
             s.room.encounters.runId,
             night.number - 1,
           );
-        if (night.duration === 300) save = unlockAchievements(save);
+        if (rewardsAllowed(s.tutorial,night.duration)) save = unlockAchievements(save);
         set({
           save,
           storageFailed: save !== s.save ? persist(save) : s.storageFailed,
@@ -313,7 +351,7 @@ export const useGame = create<State>((set, get) => ({
         if (room.door === "OPEN")
           room = transitionDoor(room, { type: "close" });
       }
-      set({ room });
+      set({ room, arcade: survival.phase === "gameover" ? null : s.arcade });
       return;
     }
     const paused =
@@ -366,6 +404,7 @@ export const useGame = create<State>((set, get) => ({
       room = transitionDoor(room, { type: "reject" });
       room = { ...room, view: "explore", survival: beginSurvival(encounters.result.id, false) };
     }
+    if (room.view === "arcade" && encounters.active?.phase === "waiting") { gameInput.reset(); room={...room,view:"console"}; }
     set({ room, prompt: encounters.result?.decision === "timeout" ? null : s.prompt });
   },
   askVisitor: (id, question) => {
@@ -381,6 +420,7 @@ export const useGame = create<State>((set, get) => ({
     const encounters = askQuestion(s.room.encounters, id, question);
     if (encounters !== s.room.encounters)
       set({ room: { ...s.room, encounters } });
+    if (encounters.active?.asked.length === 3) get().tutorialAdvance("questions");
   },
   decideVisitor: (id, decision) => {
     const s = get();
@@ -393,6 +433,15 @@ export const useGame = create<State>((set, get) => ({
     )
       return;
     if (!["VISITOR_WAITING", "INSPECTING"].includes(s.room.door)) return;
+    if (s.tutorial) {
+      if(s.tutorial!=="decide") { set({tutorialMessage:"Finish the practice steps before choosing."}); return; }
+      if(decision!=="admit") { set({tutorialMessage:"Try again: Bea’s appearance and answers agree. Let her shelter inside."}); return; }
+      if(s.room.encounters.active?.id!==id)return;
+      gameInput.reset();
+      const room=transitionDoor(s.room,{type:"open-confirmed"});
+      set({tutorial:"tv",tutorialMessage:null,room:{...room,view:"explore",residents:admitResident(room.residents,id,"bea"),encounters:{...room.encounters,active:null}}});
+      return;
+    }
     const encounters = resolveEncounter(s.room.encounters, id, decision);
     if (encounters === s.room.encounters) return;
     const room = transitionDoor(
@@ -400,10 +449,10 @@ export const useGame = create<State>((set, get) => ({
       { type: decision === "admit" ? "open-confirmed" : "reject" },
     );
     let save =
-      encounters.result?.coins && s.room.night?.duration !== 60
+      encounters.result?.coins && rewardsAllowed(s.tutorial, s.room.night?.duration)
         ? reward(s.save, `visitor:${id}`, encounters.result.coins)
         : s.save;
-    if (room.night?.mode === "infinite" && room.night.duration === 300)
+    if (room.night?.mode === "infinite" && rewardsAllowed(s.tutorial,room.night.duration))
       save = recordInfinite(save, {
         streak: encounters.bestStreak,
         night: room.night.number,
@@ -427,6 +476,7 @@ export const useGame = create<State>((set, get) => ({
   // Legacy integration hook; news no longer gates movement or the night clock.
   finishNews: () => {
     const s = get();
+    if(s.tutorial)return;
     if (
       s.scene !== "room" ||
       s.panel ||
@@ -530,6 +580,7 @@ export const useGame = create<State>((set, get) => ({
     const session = { ...createSession(s.difficulty, s.mode), night: number };
     set({
       scene: "room",
+      tutorial: null, tutorialMessage: null, arcade: null,
       panel: null,
       room: rehearse(freshRoom(
         crypto.randomUUID(),
@@ -545,6 +596,7 @@ export const useGame = create<State>((set, get) => ({
     if (document.pointerLockElement) document.exitPointerLock();
     set({
       scene: "lobby",
+      tutorial: null, tutorialMessage: null, arcade: null,
       panel: null,
       room: freshRoom(),
       prompt: null,

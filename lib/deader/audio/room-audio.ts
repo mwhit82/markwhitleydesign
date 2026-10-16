@@ -1,5 +1,7 @@
 /** Gesture-unlocked synthesis. One context for the game; bounded voices, explicit cleanup. */
 export type Cue =
+  | "bark"
+  | "jump"
   | "knock"
   | "open"
   | "close"
@@ -187,7 +189,7 @@ export class RoomAudio {
     )
       return;
     const count =
-      kind === "knock" ? 3 : kind === "news" ? 3 : kind === "stutter" ? 2 : 1;
+      kind === "knock" ? 3 : kind === "bark" ? 2 : kind === "news" ? 3 : kind === "stutter" ? 2 : 1;
     if (this.voices.size + count > 12) return;
     if (kind === "knock") { this.bang(c); return; }
     if (["scare","lean","stutter"].includes(kind)) { this.scare(c); return; }
@@ -212,7 +214,7 @@ export class RoomAudio {
       osc.type =
         kind === "open" || kind === "plastic" ? "sawtooth" : "triangle";
       const frequency =
-        kind === "news"
+        kind === "bark" ? 260 : kind === "jump" ? 540 : kind === "news"
           ? [220, 277, 330][i]
           : kind === "voice"
             ? 160

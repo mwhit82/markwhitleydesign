@@ -16,7 +16,7 @@ export const NIGHT_ONE_VISITORS = [
 export const NIGHT_TITLES = [
   "They’re Here",
   "Trust Nobody",
-  "Dead Deadly Deader",
+  "The Anomalous",
 ] as const;
 export type Night = {
   number: number;

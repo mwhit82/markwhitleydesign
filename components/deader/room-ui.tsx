@@ -1,5 +1,5 @@
 "use client";
-import { useEffect } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import { clockLabel } from "@/lib/deader/game";
 import { donutMood } from "@/lib/deader/survival";
 import { useGame } from "@/lib/deader/store";
@@ -8,11 +8,14 @@ import {
   type Feed,
 } from "@/lib/deader/room";
 import { roomAudio } from "@/lib/deader/audio/room-audio";
+import { ConsoleUI } from "./console-ui";
 import { EncounterUI } from "./encounter-ui";
 import { DoorMenu } from "./door-menu";
 import { TVCaptions } from "./room-tv";
 import { Modal } from "./modal";
 import styles from "./game.module.css";
+
+const ArcadeUI = lazy(() => import("./arcade-ui"));
 
 export function RoomUI() {
   const s = useGame(),
@@ -26,7 +29,9 @@ export function RoomUI() {
     return null;
   return (
     <>
-      <EncounterUI />
+      {r.view !== "arcade" && r.view !== "console" && <EncounterUI />}
+      {r.view === "console" && <ConsoleUI />}
+      {r.view === "arcade" && <Suspense fallback={<p>Loading arcade…</p>}><ArcadeUI /></Suspense>}
       {r.view === "explore" && (
         <div className={styles.crosshair} aria-hidden="true">
           +
@@ -87,6 +92,7 @@ export function RoomUI() {
                 key={f.label}
                 aria-pressed={r.feed === i}
                 onClick={() => {
+                  if (i === 4) s.tutorialAdvance("camera");
                   roomAudio.unlock();
                   roomAudio.play("switch");
                   useGame.setState({

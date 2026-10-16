@@ -43,7 +43,7 @@ export function RoomTV() {
     const motion = systemReduced.current || s.save.settings.reducedMotion ? 0 : t;
     c.fillStyle = "#152332"; c.fillRect(0,0,768,432);
     for(let i=0;i<12;i++) { c.fillStyle = i%2 ? "#263a4c" : "#203044"; c.fillRect(i*64,30,54,230); }
-    c.fillStyle="#dce9f1"; c.font="bold 30px Arial"; c.fillText("DDD NEWS",24,42);
+    c.fillStyle="#dce9f1"; c.font="bold 30px Arial"; c.fillText("ANOMALOUS NEWS",24,42);
     c.fillStyle="#c34e44"; c.fillRect(664,15,80,30); c.fillStyle="#fff"; c.font="18px Arial"; c.fillText("ON AIR",672,37);
     const incident = Math.floor(t / 7) % 3 === 1;
     if (incident) {
@@ -70,5 +70,5 @@ export function RoomTV() {
 export function TVCaptions() {
   const s = useGame();
   if (!["tv","lounge-tv"].includes(s.room.view) || s.room.survival.phase !== "idle") return null;
-  return <aside className={styles.tvCaption} aria-label="TV subtitles"><b>DDD NEWS</b><p>{broadcastSegment(newsForNight(s.room.night?.number ?? 1),s.room.newsSeconds).subtitle}</p><button autoFocus onClick={()=>s.roomView("explore")}>Back to room</button>{s.room.visitorId && <button onClick={()=>{s.roomView("door");useGame.getState().doorEvent({type:"inspect"});}}>Answer the door</button>}</aside>;
+  return <aside className={styles.tvCaption} aria-label="TV subtitles"><b>ANOMALOUS NEWS</b><p>{broadcastSegment(newsForNight(s.room.night?.number ?? 1),s.room.newsSeconds).subtitle}</p><button autoFocus onClick={()=>s.roomView("explore")}>Back to room</button>{s.room.visitorId && <button onClick={()=>{s.roomView("door");useGame.getState().doorEvent({type:"inspect"});}}>Answer the door</button>}</aside>;
 }

@@ -8,6 +8,10 @@ import { cosmetics, move, LOBBY_OBSTACLES } from "@/lib/deader/game";
 import { roomAudio } from "@/lib/deader/audio/room-audio";
 import { Cone } from "./character";
 
+export const lobbyPlayerPose = {x:0,z:.8,yaw:0,walking:false};
+
+function isSidekick(object:THREE.Object3D):boolean { for(let o:THREE.Object3D|null=object;o;o=o.parent)if(o.userData.sidekick)return true;return false; }
+
 /** Lobby input and follow camera; first-person room controls live separately. */
 export function Controller() {
   const { camera, gl, scene } = useThree();
@@ -19,6 +23,7 @@ export function Controller() {
   const [walking, setWalking] = useState(false);
   const paused = useGame((s) => !!s.panel || (!s.focused || !!s.suspension));
   const stride = useRef(0);
+  const lookPractice = useRef(0);
   const outfit = useGame((s) => s.save.outfit);
   const colour = useGame(
     (s) => cosmetics.find((c) => c.id === s.save.equipped)!.colour,
@@ -26,7 +31,7 @@ export function Controller() {
   useEffect(() => {
     const mouseDown = (e: MouseEvent) => { const s=useGame.getState(); if(e.button===0&&!s.touchActive&&!s.panel&&!s.suspension)dragging.current=true; };
     const mouseUp = () => {dragging.current=false;};
-    const mouseMove = (e: MouseEvent) => {const s=useGame.getState();if(!dragging.current||s.touchActive||s.panel||s.suspension||!s.focused)return;orbit.current.yaw-=e.movementX*.005*s.save.settings.sensitivity;orbit.current.pitch=THREE.MathUtils.clamp(orbit.current.pitch+e.movementY*.005*s.save.settings.sensitivity,.1,.85);};
+    const mouseMove = (e: MouseEvent) => {const s=useGame.getState();if(!dragging.current||s.touchActive||s.panel||s.suspension||!s.focused)return;lookPractice.current+=Math.abs(e.movementX)+Math.abs(e.movementY);if(lookPractice.current>15)s.tutorialAdvance("look");orbit.current.yaw-=e.movementX*.005*s.save.settings.sensitivity;orbit.current.pitch=THREE.MathUtils.clamp(orbit.current.pitch+e.movementY*.005*s.save.settings.sensitivity,.1,.85);};
     gl.domElement.addEventListener('mousedown',mouseDown);window.addEventListener('mouseup',mouseUp);window.addEventListener('mousemove',mouseMove);
     const unsubscribe=useGame.subscribe((s,p)=>{if(s.panel!==p.panel||s.suspension!==p.suspension){dragging.current=false;gameInput.reset();}});
     const down = (e: KeyboardEvent) => {
@@ -35,13 +40,7 @@ export function Controller() {
         e.preventDefault();
       gameInput.keyDown(e.code, e.repeat, !s.panel && !s.suspension && s.focused);
       if (e.code === "KeyE" && !e.repeat && s.prompt && !s.panel && s.focused && !s.suspension)
-        s.open(
-          s.prompt === "Shop"
-            ? "shop"
-            : s.prompt === "Customise"
-              ? "wardrobe"
-              : "start",
-        );
+        s.interactLobby();
       if (e.code === "Escape" && !e.repeat) s.escape();
     };
     const up = (e: KeyboardEvent) => gameInput.keyUp(e.code);
@@ -82,6 +81,9 @@ export function Controller() {
       stride.current = 0;
     }
     const p = pos.current;
+    Object.assign(lobbyPlayerPose,{x:p.x,z:p.z,yaw:player.current?.rotation.y??0,walking:!!(x||z)});
+    if(Math.hypot(p.x-old.x,p.z-old.z)>.005)s.tutorialAdvance("move");
+    if(s.tutorial==="look") { lookPractice.current+=Math.abs(swipe.x)+Math.abs(swipe.y); if(lookPractice.current>15)s.tutorialAdvance("look"); } else lookPractice.current=0;
     if (walking !== !!(x || z)) setWalking(!!(x || z));
     if (player.current) {
       player.current.position.set(p.x, 0, p.z);
@@ -97,7 +99,7 @@ export function Controller() {
     eye.current.z=THREE.MathUtils.clamp(eye.current.z,-4.65,4.65);
     const direction=eye.current.clone().sub(target.current),distance=direction.length();
     ray.current.set(target.current,direction.normalize());ray.current.far=distance;
-    const hit=ray.current.intersectObjects(scene.children,true).find(h=>h.object instanceof THREE.Mesh&&!h.object.material.transparent&&!player.current?.getObjectById(h.object.id));
+    const hit=ray.current.intersectObjects(scene.children,true).find(h=>h.object instanceof THREE.Mesh&&!h.object.material.transparent&&!player.current?.getObjectById(h.object.id)&&!isSidekick(h.object));
     if(hit)eye.current.copy(target.current).addScaledVector(direction,Math.max(.5,hit.distance-.2));
     camera.position.copy(eye.current);
     camera.lookAt(target.current);
@@ -110,6 +112,7 @@ export function Controller() {
       }
     }
     const prompt =
+      Math.hypot(p.x-2.2,p.z+3.4)<1.7 ? "Learn to play" :
       Math.hypot(p.x + 3.9, p.z + 1) < 2
         ? "Shop"
         : Math.hypot(p.x - 3.9, p.z + 1) < 2

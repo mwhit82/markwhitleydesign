@@ -1,3 +1,4 @@
+import { readPets, type PetId } from "./pets";
 import {
   emptyOutfit,
   readAccessories,
@@ -68,6 +69,8 @@ export const difficultyConfig = {
   hard: { visitorInterval: 28, clueSubtlety: 0.8 },
 };
 export type Save = {
+  ownedPets: PetId[];
+  equippedPet: PetId | null;
   completions: Record<Difficulty, number[]>;
   infiniteRecords: Records;
   endingViewed: boolean;
@@ -85,6 +88,7 @@ export type Save = {
   viewedBroadcasts: string[];
 };
 export const newSave = (): Save => ({
+  ownedPets: [], equippedPet: null,
   completions: { easy: [], medium: [], hard: [] },
   infiniteRecords: emptyRecords(),
   endingViewed: false,
@@ -117,6 +121,8 @@ export function readSave(raw: string | null): Save {
       ]),
     ];
     return {
+      ownedPets: readPets(s.ownedPets),
+      equippedPet: readPets(s.ownedPets).includes(s.equippedPet) ? s.equippedPet : null,
       viewedBroadcasts: Array.isArray(s.viewedBroadcasts)
         ? [
             ...new Set<string>(
@@ -193,6 +199,7 @@ export const createSession = (
 ): Session => ({ difficulty, mode, night: 1 });
 export type Obstacle = { x: number; z: number; hx: number; hz: number };
 export const LOBBY_OBSTACLES: Obstacle[] = [
+  { x: 2.2, z: -3.4, hx: .4, hz: .35 },
   { x: -3.9, z: -1, hx: 0.7, hz: 1.4 },
   { x: 3.9, z: -1, hx: 0.7, hz: 1.4 },
 ];

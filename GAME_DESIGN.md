@@ -1,4 +1,4 @@
-# Dead Deadly Deader — game design
+# The Anomalous — game design
 
 Source of truth: Fenn's Full Game Development Roadmap v0.5, supplied 15 October 2026. This extends the completed first slice; preserve the existing Next.js application, art direction, controls, cosmetics and saves.
 
@@ -16,7 +16,7 @@ Donut is a yellow goldfish with a small cartoon gun: increasingly suspicious at 
 
 Initial economy: 5 coins per correct decision, 50 per survived night, 150 bonus for completing the three-night story. Reward events are idempotent. Preserve the existing one-time 150 starter coins and five colour prices (yellow free, green 50, pink 75, blue 100, black 150). Future accessories and achievements extend the existing catalogue.
 
-DDD News starts each night, with captions, timing and replay/skip support for viewed reports. Night 1 warns about impostors approaching up stairs and knocking, genuine humans needing shelter, and surviving to 5:55 AM. Text/simple graphics first; voices optional later.
+Anomalous News starts each night, with captions, timing and replay/skip support for viewed reports. Night 1 warns about impostors approaching up stairs and knocking, genuine humans needing shelter, and surviving to 5:55 AM. Text/simple graphics first; voices optional later.
 
 ## Decisions and constraints
 Phase 2 has no scheduled visitors, active night clock, penalties or rewards. An empty landing is visible through the peephole until Phase 3. Door interaction uses a separate explicit open confirmation. Never imply an empty-room test is a visitor decision. All night/encounter state must have one authority, independent of rendering. Minor implementation choices belong in status/roadmap; flag major game-rule changes for Fenn.
@@ -49,7 +49,7 @@ Playtest decision: there is no forced decision timeout yet. Waiting visitors blo
 ## Phase 6 — full modes
 User approved Phase 6 without supplying the requested full Night 1 playtest feedback. Proceed with implementation; the waiting-visitor balance issue remains explicitly open, with no automatic decision deadline added.
 
-Normal mode offers They're Here, Trust Nobody and Dead Deadly Deader, each ten active minutes. Completing any difficulty unlocks the next story night; completion is also tracked separately for Easy/Medium/Hard. Existing completedNights saves retain their unlocks without inventing a historical difficulty. Night 1 Easy keeps its seven-visitor tutorial. Later schedules contain 7–13 approaches, with added arrivals by night/difficulty. Difficulty never changes the three-life allowance. Easy supplies inspection guidance, Medium increases arrivals, Hard adds subtler but contradictory dialogue and modest CCTV noise. Essential clues stay available. Ash, Nell and Jules extend the catalogue; ordinary-looking Anomalies must still contradict themselves.
+Normal mode offers They're Here, Trust Nobody and The Anomalous, each ten active minutes. Completing any difficulty unlocks the next story night; completion is also tracked separately for Easy/Medium/Hard. Existing completedNights saves retain their unlocks without inventing a historical difficulty. Night 1 Easy keeps its seven-visitor tutorial. Later schedules contain 7–13 approaches, with added arrivals by night/difficulty. Difficulty never changes the three-life allowance. Easy supplies inspection guidance, Medium increases arrivals, Hard adds subtler but contradictory dialogue and modest CCTV noise. Essential clues stay available. Ash, Nell and Jules extend the catalogue; ordinary-looking Anomalies must still contradict themselves.
 
 Infinite continues across dawn without replenishing trust or triggering story completion/ending. Its seeded visitor pool reuses fair profiles. Intervals begin at 75/60/48 story seconds (Easy/Medium/Hard), reduce by three per night for at most ten steps, and never fall below 35 seconds. No visitor overlap. Best streak, highest night reached, most correct decisions and cumulative completed Infinite nights persist. Each survived Infinite-night milestone has an idempotent claim ID; no story completion bonus is granted in Infinite.
 

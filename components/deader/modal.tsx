@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useRef, type ReactNode } from "react";
+import { tutorialCopy } from "@/lib/deader/tutorial";
 import { useGame } from "@/lib/deader/store";
 import styles from "./game.module.css";
 export function Modal({
@@ -7,22 +8,30 @@ export function Modal({
   label,
   onClose,
   className = "",
+  closeLabel,
+  focusDialog = false,
 }: {
   children: ReactNode;
   label: string;
   onClose?: () => void;
   className?: string;
+  closeLabel?: string;
+  focusDialog?: boolean;
 }) {
+  const tutorial = useGame(s => s.tutorial);
+  const tutorialMessage = useGame(s => s.tutorialMessage);
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const old = document.activeElement as HTMLElement | null;
-    ref.current?.querySelector<HTMLElement>("button")?.focus();
+    if(focusDialog)ref.current?.focus();
+    else ref.current?.querySelector<HTMLElement>("button")?.focus();
     return () => old?.focus();
-  }, []);
+  }, [focusDialog]);
   return (
     <div className={styles.scrim}>
       <div
         ref={ref}
+        tabIndex={-1}
         className={`${styles.modal} ${className}`}
         role="dialog"
         aria-modal="true"
@@ -35,7 +44,10 @@ export function Modal({
           if (!items?.length) return;
           const first = items[0],
             last = items[items.length - 1];
-          if (e.shiftKey && document.activeElement === first) {
+          if (document.activeElement === ref.current) {
+            e.preventDefault();
+            (e.shiftKey ? last : first).focus();
+          } else if (e.shiftKey && document.activeElement === first) {
             e.preventDefault();
             last.focus();
           } else if (!e.shiftKey && document.activeElement === last) {
@@ -47,10 +59,11 @@ export function Modal({
         <button
           className={styles.close}
           onClick={onClose ?? (() => useGame.getState().open(null))}
-          aria-label="Close menu"
+          aria-label={closeLabel ?? "Close menu"}
         >
-          ×
+          {closeLabel ?? "×"}
         </button>
+        {tutorial && <div className={styles.practiceNote}><p>{tutorialMessage ?? tutorialCopy[tutorial].body}</p><button onClick={()=>useGame.getState().lobby()}>Exit tutorial</button></div>}
         {children}
       </div>
     </div>

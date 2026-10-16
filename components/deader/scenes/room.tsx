@@ -1,4 +1,5 @@
 "use client";
+import { Sidekick } from "../sidekick";
 import { useGame } from "@/lib/deader/store";
 import { useRef } from "react";
 import { useFrame } from "@react-three/fiber";
@@ -146,6 +147,7 @@ export default function Room() {
       <RoomReflection materials={m} />
       <RoomController />
       <ReflectedPlayer />
+      <Sidekick />
       <Visitors />
       <RoomDoor materials={m} />
       <Surveillance materials={m} />

@@ -1,4 +1,4 @@
-# Dead Deadly Deader — development roadmap
+# The Anomalous — development roadmap
 
 Specification: Full Game Development Roadmap v0.5. Implement sequentially, complete and test each phase, update PROJECT_STATUS.md, report Completed/Tested/Known issues/Performance/Next phase/Decisions needed, then wait for approval. Do not automatically begin the next phase.
 
@@ -11,7 +11,7 @@ Fullscreen route, lazy scenes, lobby movement and collisions, worn cone characte
 - [x] Door states CLOSED, VISITOR_WAITING, INSPECTING, OPENING, OPEN, CLOSING, LOCKED; explicit open confirmation; hinged leaf, knob and chain animation; collision and generated sound cues.
 - [x] Peephole inspection with smooth camera transition, limited FOV, vignette, exit and restoration. Empty landing until Phase 3 visitor integration.
 - [x] CAM 1 Office, CAM 2 Vent, CAM 3 Stairs, CAM 4 Back corridor; shared geometry, only selected feed rendered, capped feed cadence/resolution, labels, desaturation, noise/static and timestamp.
-- [x] Reusable DDD News data with text, subtitles, optional media, timed segments, previously-viewed skip and replay from the room.
+- [x] Reusable Anomalous News data with text, subtitles, optional media, timed segments, previously-viewed skip and replay from the room.
 - [x] Preserve saves; migrate additively if required. Test state guards, pause/resume, camera exit/re-entry, collisions, storage failure and broadcast progression.
 - [x] Browser flow, narrow layout, resource checks, production build and documentation.
 Deliverable: interactive room ready for visitors. Stop for approval.
@@ -33,7 +33,7 @@ Central three-trust lifecycle, exactly one penalty per error; short attack/tensi
 Monotonic active timer, 600 seconds to 5:55 AM; pause/tab suspension/cutscene handling, configurable 60-second development run. Provisional timeline: news 0–45s, exploration 45–90s; visitors at 90,165,240,315,405,480,555s. First human predictable, first Anomaly obvious. Include news within ten-minute session unless playtesting changes this. Completion safely ends pending encounter, stops arrivals, presents completion, awards 50 coins once and saves. Correct decisions award 5 coins. Test full survival, defeat, replay, persistence and duplicate rewards. Deliverable: PLAYABLE NIGHT 1. Full playtest with Fenn remains outstanding; the user explicitly authorised proceeding to Phase 6.
 
 ## Phase 6 — full modes (complete; continuation approved)
-Three ten-minute story nights: They're Here, Trust Nobody, Dead Deadly Deader. New fair clues/behaviours and increasing challenge. Difficulty changes frequency, clues, CCTV and dialogue while retaining three lives. Night unlocks, replay, per-difficulty completion and ending viewed state. Infinite fair capped scaling, longest streak/night/correct visitors/total nights records. Night 3 news victory, quiet room, Donut glance, vent noise, fade and THE END... FOR NOW. Tests: unlocks, completion, scaling caps, scores and ending idempotency. Stop for approval.
+Three ten-minute story nights: They're Here, Trust Nobody, The Anomalous. New fair clues/behaviours and increasing challenge. Difficulty changes frequency, clues, CCTV and dialogue while retaining three lives. Night unlocks, replay, per-difficulty completion and ending viewed state. Infinite fair capped scaling, longest streak/night/correct visitors/total nights records. Night 3 news victory, quiet room, Donut glance, vent noise, fade and THE END... FOR NOW. Tests: unlocks, completion, scaling caps, scores and ending idempotency. Stop for approval.
 
 ## Phase 7 — progression (complete; continuation approved)
 Enhance existing shop, not replace it. Category-based accessories, unequip, previews and immediate player updates. Achievements: First Survivor, Trust Expert, Triple Threat, Night Owl, Fashion Cone; document fair achievable requirements and modest rewards. Versioned migrations preserve coins, owned/equipped cosmetics, completion, achievements, records and settings. Test migrations, purchase guards, exactly-once rewards and reloads. Stop for approval.

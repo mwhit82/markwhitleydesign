@@ -1,4 +1,5 @@
 import { readSave, type Save } from "./game";
+// Keep the original key so The Anomalous retains existing players’ progress.
 export const SAVE_KEY = "dead-deadly-deader:v1";
 export function saveProblem(raw: string | null): string | null {
   if (raw === null) return null;

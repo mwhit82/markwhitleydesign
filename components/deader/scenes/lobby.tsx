@@ -1,4 +1,5 @@
 "use client";
+import { Sidekick } from "../sidekick";
 import { Box, Sign } from "../environment";
 import { Cone } from "../character";
 import { Controller } from "../controllers";
@@ -10,9 +11,16 @@ export default function Lobby() {
     <>
       <LobbyAtmosphere materials={m} />
       <Controller />
+      <Sidekick lobby />
+      <group position={[2.2,0,-3.4]}>
+        <Box position={[0,.06,0]} size={[.8,.12,.65]} material={m.metal}/>
+        <Box position={[0,.64,0]} size={[.09,1.2,.09]} material={m.metal}/>
+        <Box position={[0,1.35,0]} size={[.85,.62,.08]} material={m.dark}/>
+        <Sign text={"LEARN TO PLAY\nGUIDED PRACTICE"} position={[0,1.36,.052]} width={.73} height={.49} background="#152329" colour="#ffe4a0"/>
+      </group>
       <Sign
         aged
-        text={"DEAD DEADLY DEADER\nAFTER HOURS CLUB"}
+        text={"THE ANOMALOUS\nAFTER HOURS CLUB"}
         position={[0, 3.15, -4.85]}
         width={4.7}
         height={1}
@@ -51,7 +59,7 @@ export default function Lobby() {
       />
       <Sign
         aged
-        text={"SUPPLY SHOP\nCOLOURS + ACCESSORIES"}
+        text={"SUPPLY SHOP\nCOLOURS + SIDEKICKS"}
         position={[-3.85, 2.6, -2.5]}
         width={2}
         height={0.75}

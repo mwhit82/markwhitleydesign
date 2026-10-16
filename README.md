@@ -206,9 +206,10 @@ one draw call, matching the previous weather layer's draw-call count. Rain uses
 400 lines instead of the old 180 points; headlights add shader lighting work but
 no shadow passes. These are desktop measurements, not physical iPhone FPS tests.
 
-## Dead Deadly Deader
+## The Anomalous
 
-Fenn's cone-shaped survival horror game is at `/playground/dead-deadly-deader`.
+Fenn's cone-shaped survival horror game is at `/playground/the-anomalous`.
+The original `/playground/dead-deadly-deader` address redirects here; the legacy save key and internal asset paths are retained so existing progress and purchases carry over.
 Explore the 3D lobby, buy/equip colours with the one-time 150-coin starter balance,
 choose difficulty/mode in Fenn's START menu, and enter the explorable room with
 live CCTV, three story nights and Infinite mode. Play with keyboard/mouse or

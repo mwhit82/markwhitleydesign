@@ -22,6 +22,9 @@ import { unlockedNight } from "@/lib/deader/progression";
 import { Modal } from "./modal";
 import { RoomUI } from "./room-ui";
 import { interactRoom } from "./room-controller";
+import { Puppy, PetHints } from "./sidekick";
+import { TutorialUI } from "./tutorial-ui";
+import { pets } from "@/lib/deader/pets";
 import { Cone } from "./character";
 import {
   clockLabel,
@@ -97,7 +100,7 @@ function Diagnostics({
   });
   return null;
 }
-function Preview({ colour, outfit }: { colour: string; outfit: Outfit }) {
+function Preview({ colour, outfit, pet = false }: { colour: string; outfit: Outfit; pet?: boolean }) {
   const scale = useGame((s) => renderScale(s.save.settings));
   return (
     <div className={styles.preview} aria-label="Rotating 3D outfit preview">
@@ -105,7 +108,7 @@ function Preview({ colour, outfit }: { colour: string; outfit: Outfit }) {
         <ambientLight intensity={1.5} />
         <directionalLight position={[3, 5, 4]} intensity={3} />
         <pointLight position={[-3, 2, -2]} intensity={12} color="#b6caba" />
-        <Cone colour={colour} outfit={outfit} />
+        {pet ? <Puppy colour={colour} /> : <Cone colour={colour} outfit={outfit} />}
         <OrbitControls
           target={[0, 0.8, 0]}
           autoRotate
@@ -118,14 +121,14 @@ function Preview({ colour, outfit }: { colour: string; outfit: Outfit }) {
   );
 }
 function Cosmetics({ wardrobe }: { wardrobe: boolean }) {
-  const { save, buy, wear, buyAccessory, wearAccessory, open } = useGame();
-  const [category, setCategory] = useState<"colour" | AccessoryCategory>(
+  const { save, buy, wear, buyAccessory, wearAccessory } = useGame();
+  const [category, setCategory] = useState<"colour" | "pet" | AccessoryCategory>(
     "colour",
   );
   const [selected, select] = useState<string>(save.equipped);
-  const catalogue = [...cosmetics, ...accessories];
+  const catalogue = [...cosmetics, ...accessories, ...pets.map(p=>({...p,category:"pet" as const}))];
   const owns = (id: string) =>
-    [...save.owned, ...save.ownedAccessories].some((v) => v === id);
+    [...save.owned, ...save.ownedAccessories, ...save.ownedPets].some((v) => v === id);
   const items = catalogue.filter(
     (c) => c.category === category && (!wardrobe || owns(c.id)),
   );
@@ -135,16 +138,17 @@ function Cosmetics({ wardrobe }: { wardrobe: boolean }) {
       : (items.find((c) => c.id === selected) ?? items[0]);
   const owned = item ? owns(item.id) : false;
   const equippedId =
-    category === "colour" ? save.equipped : save.outfit[category];
+    category === "colour" ? save.equipped : category === "pet" ? save.equippedPet : save.outfit[category];
   const equipped = !!item && equippedId === item.id;
   const colour =
-    item?.category === "colour"
+    (item?.category === "colour" || item?.category === "pet")
       ? item.colour
       : cosmetics.find((c) => c.id === save.equipped)!.colour;
   const outfit = { ...save.outfit };
-  if (item && item.category !== "colour") outfit[item.category] = item.id;
+  if (item && item.category !== "colour" && item.category !== "pet") outfit[item.category] = item.id;
   return (
-    <Modal label={wardrobe ? "Character customisation" : "Cosmetics shop"}>
+    <Modal label={wardrobe ? "Character customisation" : "Cosmetics shop"} className={styles.shopModal} closeLabel="Back to lobby">
+      <div className={styles.shopScroll}>
       <p className={styles.eyebrow}>
         AFTER HOURS / {wardrobe ? "DRESSING ROOM" : "SUPPLY COUNTER"}
       </p>
@@ -159,6 +163,7 @@ function Cosmetics({ wardrobe }: { wardrobe: boolean }) {
             ["hat", "Hats"],
             ["backpack", "Backpacks"],
             ["glasses", "Glasses"],
+            ["pet", "Sidekicks"],
           ] as const
         ).map(([id, label]) => (
           <button
@@ -174,7 +179,7 @@ function Cosmetics({ wardrobe }: { wardrobe: boolean }) {
         ))}
       </div>
       <div className={styles.shopGrid}>
-        <Preview colour={colour} outfit={outfit} />
+        <Preview colour={colour} outfit={outfit} pet={category === "pet"} />
         <div className={styles.items}>
           {items.map((c) => (
             <button
@@ -204,10 +209,11 @@ function Cosmetics({ wardrobe }: { wardrobe: boolean }) {
           )}
         </div>
       </div>
+      </div>
       <div className={styles.purchase}>
         <div>
           <strong>{item?.name ?? "Your current outfit"}</strong>
-          <p>Preview only · equip to update your character.</p>
+          <p>{category === "pet" ? "Barks at arrivals and points out clues you have seen. All sidekicks help equally." : "Preview only · equip to update your character."}</p>
         </div>
         {item && (
           <button
@@ -217,6 +223,8 @@ function Cosmetics({ wardrobe }: { wardrobe: boolean }) {
               if (item.category === "colour") {
                 if (owned) wear(item.id);
                 else buy(item.id);
+              } else if (item.category === "pet") {
+                if(owned) useGame.getState().wearPet(item.id); else useGame.getState().buyPet(item.id);
               } else {
                 if (owned) wearAccessory(item.category, item.id);
                 else buyAccessory(item.id);
@@ -234,9 +242,9 @@ function Cosmetics({ wardrobe }: { wardrobe: boolean }) {
         )}
         {category !== "colour" && (
           <button
-            disabled={!save.outfit[category]}
+            disabled={category === "pet" ? !save.equippedPet : !save.outfit[category]}
             onClick={() => {
-              wearAccessory(category, null);
+              if(category === "pet")useGame.getState().wearPet(null);else wearAccessory(category, null);
               select("none");
             }}
           >
@@ -244,11 +252,6 @@ function Cosmetics({ wardrobe }: { wardrobe: boolean }) {
           </button>
         )}
       </div>
-      <p className={styles.note}>
-        150 welcome coins, once per save. Earn more by identifying visitors,
-        completing nights and claiming achievements.
-      </p>
-      <button onClick={() => open("progress")}>Achievements & rewards</button>
     </Modal>
   );
 }
@@ -418,9 +421,9 @@ export default function Game() {
         <div>
           <p className={styles.eyebrow}>FENN’S AFTER HOURS CLUB</p>
           <h1>
-            DEAD DEADLY
+            THE
             <br />
-            <em>DEADER.</em>
+            <em>ANOMALOUS</em>
           </h1>
         </div>
         <div className={styles.topRight}>
@@ -432,7 +435,7 @@ export default function Game() {
           </button>
         </div>
       </header>
-      {s.scene === "room" && s.room.view !== "cctv" && (
+      {s.scene === "room" && !["cctv", "arcade", "console"].includes(s.room.view) && !s.tutorial && (
         <div className={styles.night}>
           <b>NIGHT {s.room.night?.number ?? 1}</b>
           <span>
@@ -462,6 +465,7 @@ export default function Game() {
       {s.scene === "room" && (
         <>
           <RoomUI />
+          <PetHints />
           <SurvivalUI />
         </>
       )}
@@ -489,13 +493,7 @@ export default function Game() {
                 onClick={() =>
                   s.scene === "room"
                     ? interactRoom()
-                    : s.open(
-                        s.prompt === "Shop"
-                          ? "shop"
-                          : s.prompt === "Customise"
-                            ? "wardrobe"
-                            : "start",
-                      )
+                    : s.interactLobby()
                 }
               >
                 <kbd>E</kbd> {s.prompt}
@@ -528,6 +526,7 @@ export default function Game() {
           </div>
         </div>
       )}
+      <TutorialUI />
       {s.panel === "shop" && <Cosmetics wardrobe={false} />}
       {s.panel === "wardrobe" && <Cosmetics wardrobe />}
       {s.panel === "start" && <StartMenu />}
