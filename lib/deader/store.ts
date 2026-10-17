@@ -72,6 +72,7 @@ export { SAVE_KEY } from "./persistence";
 export type Panel = "shop" | "wardrobe" | "start" | "pause" | "progress" | "tutorial" | null;
 type State = {
   collectWeapon: () => void;
+  returnWeapon: () => void;
   aimDoor: () => void;
   fireWeapon: (target: string | null) => boolean;
   tutorial: TutorialStep | null;
@@ -129,6 +130,11 @@ export const useGame = create<State>((set, get) => ({
   collectWeapon: () => {
     const s=get(); if(s.tutorial||s.scene!=="room"||s.panel||s.suspension||!s.focused||s.room.judgement||s.room.view!=="explore"||s.prompt!=="Take gun"||s.room.survival.phase!=="idle"||s.room.night?.status!=="running")return;
     set({room:{...s.room,weapon:{...s.room.weapon,collected:true}},prompt:null});
+  },
+  returnWeapon: () => {
+    const s=get();
+    if(s.scene!=="room"||s.panel||s.suspension||!s.focused||s.room.judgement||s.room.view!=="explore"||s.prompt!=="Put gun back"||s.room.survival.phase!=="idle"||s.room.night?.status!=="running")return;
+    set({room:{...s.room,weapon:{...s.room.weapon,collected:false}},prompt:null});
   },
   aimDoor: () => {
     const s=get(); if(s.tutorial||s.panel||s.suspension||!s.focused||s.room.judgement||s.room.night?.status!=="running"||s.room.survival.phase!=="idle"||s.room.view!=="door"||!s.room.weapon.collected||s.room.encounters.active?.phase!=="waiting")return;
@@ -247,6 +253,8 @@ export const useGame = create<State>((set, get) => ({
         return;
       }
     }
+    // An empty landing must never leave the door blocking future arrivals.
+    if(event.type==="opened"&&s.room.door==="OPENING"&&(!active||active.phase==="approaching")){set({room:{...s.room,door:"CLOSING",view:"explore"},prompt:null});return;}
     if(active?.phase==="waiting"&&event.type==="close"&&s.room.door==="OPEN"){set({room:{...s.room,door:"CLOSING",view:"explore"}});return;}
     if(active?.phase==="waiting"&&event.type==="closed"&&s.room.door==="CLOSING"){set({room:{...s.room,door:"VISITOR_WAITING"}});return;}
     if (active && (event.type === "lock" || event.type === "close")) return;

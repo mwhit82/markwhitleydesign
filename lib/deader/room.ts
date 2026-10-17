@@ -152,7 +152,7 @@ export const NIGHT_ONE_NEWS: Broadcast = {
       seconds: 6,
       headline: "BREAKING NEWS",
       subtitle:
-        "Good evening. Strange individuals have appeared across the city. Authorities are calling them Anomalies.",
+        "Each night gets more dangerous. Check every visitor carefully. Strange individuals have appeared across the city. Authorities are calling them Anomalies.",
     },
     {
       seconds: 7,
@@ -224,8 +224,8 @@ export function newsForNight(number: number): Broadcast {
         headline: number === 2 ? "TRUST NOBODY" : "THE LAST SHIFT",
         subtitle:
           number === 2
-            ? "The visitors are learning. Familiar faces can still tell impossible stories."
-            : "Reports suggest this is the final wave. Keep your door secure until morning.",
+            ? "The danger is growing every night. Tonight the visitors are learning. Familiar faces can still tell impossible stories."
+            : "Each night has been more dangerous than the last. Tonight is the most dangerous yet. Keep checking visitors until morning.",
       },
       {
         seconds: 10,

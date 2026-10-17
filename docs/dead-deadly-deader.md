@@ -208,3 +208,7 @@ Validation: 84 game tests, TypeScript/ESLint and production build; browser check
 ### Fenn playtest correction — end-only scares
 
 Mistakes and timeouts now record their outcome without starting the old survival/lunge sequence or playing the gulp cue. Admitted Anomalies walk to the lounge like other visitors. All judgement scares remain at dawn. The gun retains its original side-wall shelf position, finish and sign, as preferred after playtesting. Added a regression test covering both early wrong decisions through three mistakes, continued movement/CCTV and eventual dawn failure. 85 tests pass; production build passes.
+
+### Fenn playtest correction — held gun, shelf return and empty landing
+
+The first-person gun now includes the cone character's black plastic hands and forearms, stays within portrait framing, and updates after the player camera. Its meshes cannot obscure interaction targeting and are drawn above nearby walls. The original side-wall shelf offers **Put gun back** while carrying it; collecting it again preserves ammunition and shot history. TV reports explicitly warn that each night becomes more dangerous. Opening an empty landing automatically closes the door after the opening animation, allowing subsequent visitors to arrive instead of leaving the scheduler blocked. Regression coverage includes Night 3 empty-door recovery and returning/recollecting a partially used gun. Physical phone/iPad appearance still needs playtesting.

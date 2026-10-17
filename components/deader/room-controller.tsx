@@ -32,6 +32,7 @@ export function interactRoom() {
   )
     return;
   if(s.prompt==="Take gun"){s.collectWeapon();return;}
+  if(s.prompt==="Put gun back"){s.returnWeapon();return;}
   const view = targets[s.prompt];
   if (view) {
     roomAudio.unlock();
@@ -347,6 +348,7 @@ export function RoomController() {
       const hits = ray.intersectObjects(scene.children, true);
       const hit = hits.find(
         (h) =>
+          !h.object.userData.firstPersonWeapon &&
           h.object instanceof THREE.Mesh &&
           (h.object.visible || h.object.userData.interactionProxy) &&
           !(
@@ -364,6 +366,6 @@ export function RoomController() {
       }
     }
     if (prompt !== s.prompt) useGame.setState({ prompt });
-  });
+  }, -1);
   return null;
 }

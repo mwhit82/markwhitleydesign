@@ -1964,3 +1964,30 @@ test('all early mistakes remain playable and never start a jumpscare',async()=>{
     assert.equal(useGame.getState().room.judgement.failed,true);
   }
 });
+
+
+test('returning the gun requires the shelf and preserves spent ammunition',async()=>{
+ const {useGame}=await combatStore();
+ useGame.getState().fireWeapon(null);
+ useGame.setState({prompt:null});useGame.getState().returnWeapon();
+ assert.equal(useGame.getState().room.weapon.collected,true);
+ useGame.setState({prompt:'Put gun back'});useGame.getState().returnWeapon();
+ assert.equal(useGame.getState().room.weapon.collected,false);
+ assert.equal(useGame.getState().fireWeapon(null),false);
+ useGame.setState({prompt:'Take gun'});useGame.getState().collectWeapon();
+ assert.equal(useGame.getState().room.weapon.collected,true);
+ assert.equal(useGame.getState().room.weapon.ammo,5);
+});
+test('night three empty-door check closes and permits another arrival',async()=>{
+ const {useGame}=await combatStore();const r=useGame.getState().room;
+ useGame.setState({room:{...r,night:{...r.night,number:3},view:'door',door:'CLOSED',visitorId:null,encounters:{...r.encounters,active:null}}});
+ useGame.getState().doorEvent({type:'open-confirmed'});
+ assert.equal(useGame.getState().room.door,'OPENING');
+ useGame.getState().doorEvent({type:'opened'});
+ assert.equal(useGame.getState().room.door,'CLOSING');
+ useGame.getState().doorEvent({type:'closed'});
+ assert.equal(useGame.getState().room.door,'CLOSED');
+ useGame.getState().doorEvent({type:'arrival',id:'next-visitor'});
+ assert.equal(useGame.getState().room.visitorId,'next-visitor');
+ assert.equal(useGame.getState().room.door,'VISITOR_WAITING');
+});
