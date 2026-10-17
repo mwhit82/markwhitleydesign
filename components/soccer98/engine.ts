@@ -17,12 +17,12 @@ export function newMatch(): Match {
   const players = [{ x: 8, y: 9 }];
   return { players, ball: { x: 14, y: 9 }, direction: "right", score: 0, status: "ready" };
 }
-export function step(match: Match, direction: Direction): Match {
+export function step(match: Match, direction: Direction, ballAvailable = true): Match {
   if (match.status !== "playing") return match;
   const old = vectors[match.direction], next = vectors[direction];
   if (old.x + next.x === 0 && old.y + next.y === 0) direction = match.direction;
   const v = vectors[direction], head = { x: match.players[0].x + v.x, y: match.players[0].y + v.y };
-  const collected = !!match.ball && same(head, match.ball);
+  const collected = ballAvailable && !!match.ball && same(head, match.ball);
   const body = collected ? match.players : match.players.slice(0, -1);
   if (head.x < 0 || head.x >= COLS || head.y < 0 || head.y >= ROWS || body.some(p => same(p, head))) return { ...match, status: "over" };
   const players = [head, ...body];

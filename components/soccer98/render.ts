@@ -1,4 +1,5 @@
 import { COLS, ROWS, type Match } from "./engine";
+import { sampleFlight, type BallFlight } from "./ball-flight";
 export const CELL = 16, PAD = 24, WIDTH = COLS * CELL + PAD * 2, HEIGHT = ROWS * CELL + PAD * 2;
 export function createRenderer(canvas: HTMLCanvasElement) {
   const pitch = document.createElement("canvas");
@@ -63,19 +64,28 @@ export function createRenderer(canvas: HTMLCanvasElement) {
   ink.beginPath(); ink.moveTo(24, 24); ink.lineTo(40, 24); ink.lineTo(46, 37); ink.lineTo(32, 46); ink.lineTo(18, 37); ink.closePath(); ink.stroke();
   ink.restore();
   const target = canvas.getContext("2d");
-  return (match: Match) => {
+  return (match: Match, flight: BallFlight | null = null) => {
     if (!target) return;
     const c = target;
     c.imageSmoothingEnabled = false;
     c.drawImage(pitch, 0, 0);
-  if (match.ball) {
-    const x = PAD + match.ball.x * CELL + 8, y = PAD + match.ball.y * CELL + 8;
-    c.fillStyle = "#244c35"; c.fillRect(x - 6, y + 5, 14, 3);
-    c.drawImage(ball, x - 7, y - 7, 14, 14);
-  }
+    const pose = match.ball ? flight ? sampleFlight(flight) : { ...match.ball, height: 0, arc: 0, rotation: 0 } : null;
+    if (pose) {
+      const x = PAD + pose.x * CELL + 8, y = PAD + pose.y * CELL + 8;
+      // The shadow follows the ground path while the ball rises above it.
+      c.save(); c.globalAlpha = .45 - pose.arc * .23; c.fillStyle = "#102b21";
+      c.beginPath(); c.ellipse(x + 1, y + 6, 6 + pose.arc * 3, 2 + pose.arc, 0, 0, Math.PI * 2); c.fill(); c.restore();
+      if (!flight) c.drawImage(ball, x - 7, y - 7, 14, 14);
+    }
     for (let identity = match.players.length - 1; identity >= 0; identity--) {
       const p = match.players[identity];
       c.drawImage(sprite(identity, (p.x + p.y) % 2 ? 1 : -1), PAD + p.x * CELL, PAD + p.y * CELL - 8);
+    }
+    // Flying balls pass above players, never behind their sprites.
+    if (pose && flight) {
+      c.save(); c.translate(PAD + pose.x * CELL + 8, PAD + pose.y * CELL + 8 - pose.height);
+      c.rotate(pose.rotation); const size = 14 + pose.arc * 2;
+      c.drawImage(ball, -size / 2, -size / 2, size, size); c.restore();
     }
   };
 }

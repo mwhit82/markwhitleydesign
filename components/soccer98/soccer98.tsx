@@ -6,6 +6,7 @@ import { newMatch, step, enqueueTurn, type Direction, type Match } from "./engin
 import styles from "./soccer98.module.css";
 
 import { createRenderer, WIDTH, HEIGHT } from "./render";
+import { kickBall, type BallFlight } from "./ball-flight";
 import { SoccerAudio } from "./audio";
 const keys: Record<string, Direction> = { ArrowUp: "up", w: "up", ArrowDown: "down", s: "down", ArrowLeft: "left", a: "left", ArrowRight: "right", d: "right" };
 
@@ -29,7 +30,9 @@ export function Soccer98() {
   }, []);
   const sound = useRef<SoccerAudio | null>(null);
   const [muted, setMuted] = useState(false);
-  const draw = useRef<((match: Match) => void) | null>(null);
+  const flight = useRef<BallFlight | null>(null);
+  const animationAt = useRef<number | null>(null);
+  const draw = useRef<((match: Match, flight?: BallFlight | null) => void) | null>(null);
   const tickAt = useRef<number | null>(null);
   const canvas = useRef<HTMLCanvasElement>(null);
   const game = useRef<Match>(newMatch());
@@ -39,14 +42,14 @@ export function Soccer98() {
   const publish = useCallback((next: Match) => {
     const previous = game.current;
     game.current = next;
-    draw.current?.(next);
+    draw.current?.(next, flight.current);
     if (previous.score !== next.score || previous.status !== next.status) setMatch(next);
   }, []);
   const turn = useCallback((direction: Direction) => {
     if (game.current.status === "playing") enqueueTurn(queue.current, game.current.direction, direction);
   }, []);
-  const clearInput = useCallback(() => { queue.current = []; swipe.current = null; tickAt.current = null; }, []);
-  const start = useCallback(() => { clearInput(); sound.current?.stop(); sound.current?.unlock(); publish({ ...newMatch(), status: "playing" }); }, [clearInput, publish]);
+  const clearInput = useCallback(() => { queue.current = []; swipe.current = null; tickAt.current = null; animationAt.current = null; }, []);
+  const start = useCallback(() => { flight.current = null; clearInput(); sound.current?.stop(); sound.current?.unlock(); publish({ ...newMatch(), status: "playing" }); }, [clearInput, publish]);
   const pause = useCallback(() => {
     const current = game.current;
     if (current.status !== "playing" && current.status !== "paused") return;
@@ -82,19 +85,27 @@ export function Soccer98() {
     let frame = 0;
     const animate = (now: number) => {
       if (game.current.status === "playing") {
+        const delta = animationAt.current === null ? 0 : now - animationAt.current;
+        animationAt.current = now;
+        if (flight.current) {
+          flight.current.elapsed += delta;
+          if (flight.current.elapsed >= flight.current.duration) flight.current = null;
+          draw.current?.(game.current, flight.current);
+        }
         if (tickAt.current === null) tickAt.current = now;
         const elapsed = now - tickAt.current;
         if (elapsed >= 150) {
           // Preserve cadence under ordinary jitter; never replay a backlog after a stall.
           tickAt.current = elapsed >= 300 ? now : tickAt.current + 150;
           const previous = game.current;
-          const next = step(previous, queue.current.shift() ?? previous.direction);
+          const next = step(previous, queue.current.shift() ?? previous.direction, !flight.current);
+          if (next.score > previous.score && previous.ball && next.ball) flight.current = kickBall(previous.ball, next.ball);
           publish(next);
           if (next.status !== "over" && next.direction !== previous.direction) sound.current?.play("turn");
-          if (next.score > previous.score) sound.current?.play("cheer");
+          if (next.score > previous.score) { sound.current?.play("turn"); sound.current?.play("cheer"); }
           if (next.status === "over") sound.current?.stop();
         }
-      } else tickAt.current = null;
+      } else { tickAt.current = null; animationAt.current = null; }
       frame = requestAnimationFrame(animate);
     };
     frame = requestAnimationFrame(animate);
