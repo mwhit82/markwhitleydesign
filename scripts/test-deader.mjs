@@ -2267,3 +2267,51 @@ test('VR ray activation satisfies weapon guards and retains ammo on return',asyn
   activateVRTarget(useGame.getState(),'Put gun back',p=>useGame.setState(p));assert.equal(useGame.getState().room.weapon.collected,false);assert.equal(useGame.getState().room.weapon.ammo,4);
  }finally{useGame.setState(before);}
 });
+
+const vrFeed = await import(await moduleUrl(resolve("lib/deader/vr-feed.ts")));
+test("VR feed restores renderer and object state on success and failure, and blocks recursive renders", async () => {
+  const THREE = await import("three");
+  const scene = new THREE.Scene(), ui = new THREE.Object3D(), mirror = new THREE.Object3D();
+  ui.userData.vrUI = true; mirror.userData.auxiliarySurface = true;
+  scene.add(ui, mirror);
+  const original = { id: "xr-framebuffer" }, target = { id: "camera" };
+  let active = original, face = 2, mip = 1, calls = 0;
+  const viewport = new THREE.Vector4(1, 2, 3, 4), scissor = new THREE.Vector4(5, 6, 7, 8);
+  let vp = viewport.clone(), sc = scissor.clone(), scTest = true;
+  const gl = {
+    xr: { enabled: true }, autoClear: false, shadowMap: { autoUpdate: true },
+    getRenderTarget: () => active, getActiveCubeFace: () => face, getActiveMipmapLevel: () => mip,
+    getViewport: out => out.copy(vp), getScissor: out => out.copy(sc), getScissorTest: () => scTest,
+    setViewport: v => { vp = v.clone(); }, setScissor: v => { sc = v.clone(); }, setScissorTest: v => { scTest = v; },
+    setRenderTarget: (v, f = 0, m = 0) => { active = v; face = f; mip = m; }, clear: () => {},
+    render: () => {
+      calls++;
+      assert.equal(ui.visible, false); assert.equal(mirror.visible, false);
+      assert.equal(gl.xr.enabled, false);
+      assert.equal(vrFeed.renderVRFeed(gl, scene, {}, target), false);
+    },
+  };
+  const restored = () => {
+    assert.equal(active, original); assert.equal(face, 2); assert.equal(mip, 1);
+    assert.deepEqual(vp, viewport); assert.deepEqual(sc, scissor); assert.equal(scTest, true);
+    assert.equal(gl.xr.enabled, true); assert.equal(gl.autoClear, false); assert.equal(gl.shadowMap.autoUpdate, true);
+    assert.equal(ui.visible, true); assert.equal(mirror.visible, true); assert.equal(vrFeed.feedHealth.rendering, false);
+  };
+  vrFeed.retryVRFeed();
+  assert.equal(vrFeed.renderVRFeed(gl, scene, {}, target), true); restored(); assert.equal(calls, 1);
+  gl.render = () => { calls++; throw new Error("simulated render failure"); };
+  const log = console.error; console.error = () => {};
+  try { assert.equal(vrFeed.renderVRFeed(gl, scene, {}, target), false); } finally { console.error = log; }
+  restored(); assert.equal(vrFeed.feedHealth.failed, true);
+  assert.equal(vrFeed.renderVRFeed(gl, scene, {}, target), false); assert.equal(calls, 2);
+  vrFeed.retryVRFeed(); assert.equal(vrFeed.feedHealth.failed, false);
+});
+test('VR camera failure retains retry and close without a live feed',async()=>{
+ const {vrScreen,newVRMenu}=await import(await moduleUrl(resolve('lib/deader/vr-menu.ts')));
+ const {useGame}=await import(await moduleUrl(resolve('lib/deader/store.ts')));
+ let retried=false,closed=false;
+ const s={...useGame.getState(),panel:null,suspension:null,roomView:v=>{closed=v==='explore';},room:{...useGame.getState().room,view:'cctv'}};
+ const view=vrScreen(s,newVRMenu(),{feedFailed:true,retryFeed:()=>{retried=true;},patch:()=>{},resume:()=>{},recenter:()=>{},exit:()=>{},decide:()=>{}});
+ assert.equal(view.title,'Camera unavailable');assert.equal(view.feed,undefined);
+ view.buttons[0].run();view.close();assert.equal(retried,true);assert.equal(closed,true);
+});

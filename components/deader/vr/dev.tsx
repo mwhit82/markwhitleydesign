@@ -1,4 +1,5 @@
 "use client";
+import { feedHealth } from "@/lib/deader/vr-feed";
 import * as THREE from "three";
 import { useState, useEffect } from "react";
 import { vrTestTargets, vrWorldTargets } from "@/lib/deader/vr-state";
@@ -71,6 +72,26 @@ export default function VRDev() {
       }}
     >
       <span>LOCAL XR EMULATOR</span>
+      <button
+        onClick={() => {
+          const canvas = document.querySelector<HTMLCanvasElement>(
+            "canvas[data-vr-stats]",
+          );
+          if (canvas)
+            canvas.dataset.vrFeedDisabled =
+              canvas.dataset.vrFeedDisabled === "true" ? "false" : "true";
+        }}
+      >
+        Toggle feed rendering
+      </button>
+      <button
+        onClick={() => {
+          feedHealth.failed = true;
+        }}
+      >
+        Fail camera feed
+      </button>
+
       <select
         aria-label="VR fixture"
         value={fixture}

@@ -1,6 +1,14 @@
 "use client";
+import {
+  feedHealth,
+  retryVRFeed,
+  renderVRFeed,
+  VR_FEED_WIDTH,
+  VR_FEED_HEIGHT,
+  VR_FEED_INTERVAL,
+} from "@/lib/deader/vr-feed";
 import { memo, useEffect, useMemo, useRef, useState } from "react";
-import { useFrame } from "@react-three/fiber";
+import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import { useGame } from "@/lib/deader/store";
 import { useVR, vrTestTargets } from "@/lib/deader/vr-state";
@@ -143,6 +151,8 @@ export const VRPanel = memo(function VRPanel() {
     if (v.next > 0) return;
     v.next = 0.08;
     const model = vrScreen(s, v.menu, {
+      feedFailed: feedHealth.failed,
+      retryFeed: retryVRFeed,
       patch: (p) => useGame.setState(p),
       resume: () => useGame.setState({ suspension: null, focused: true }),
       recenter: () => {
@@ -348,19 +358,55 @@ export const VRPanel = memo(function VRPanel() {
   );
 });
 export function VRFeed() {
+  const gl = useThree((s) => s.gl);
+  useEffect(() => {
+    const lost = () => {
+      feedHealth.failed = true;
+      if (process.env.NODE_ENV === "development")
+        gl.domElement.dataset.vrFeedContext = "lost";
+    };
+    const restored = () => {
+      if (process.env.NODE_ENV === "development")
+        gl.domElement.dataset.vrFeedContext = "restored";
+      // Wait for an explicit retry rather than immediately repeating the failing work.
+    };
+    gl.domElement.addEventListener("webglcontextlost", lost);
+    gl.domElement.addEventListener("webglcontextrestored", restored);
+    return () => {
+      gl.domElement.removeEventListener("webglcontextlost", lost);
+      gl.domElement.removeEventListener("webglcontextrestored", restored);
+    };
+  }, [gl]);
+
   const mesh = useRef<THREE.Mesh>(null),
     timer = useRef(0),
     alertAnchor = useRef("");
   const target = useMemo(
-      () => new THREE.WebGLRenderTarget(512, 288, { depthBuffer: true }),
+      () =>
+        new THREE.WebGLRenderTarget(VR_FEED_WIDTH, VR_FEED_HEIGHT, {
+          depthBuffer: true,
+          samples: 0,
+        }),
       [],
     ),
     camera = useMemo(() => {
-      const c = new THREE.PerspectiveCamera(62, 512 / 288, 0.08, 35);
+      const c = new THREE.PerspectiveCamera(
+        62,
+        VR_FEED_WIDTH / VR_FEED_HEIGHT,
+        0.08,
+        35,
+      );
       c.userData.loungeInset = true;
       return c;
     }, []);
   const arcade = useMemo(() => surface(960, 540), []);
+  const diagnostics = useRef({ key: "", renders: 0, lastMs: 0 });
+  useEffect(() => {
+    retryVRFeed();
+    return () => {
+      retryVRFeed();
+    };
+  }, []);
   useEffect(
     () => () => {
       target.dispose();
@@ -376,8 +422,15 @@ export function VRFeed() {
       view = r.view;
     const active =
       !s.panel && !s.suspension && s.focused && !r.judgement && spatial.feed;
-    mesh.current.visible = active;
-    if (!active) return;
+    if (process.env.NODE_ENV === "development") {
+      const key = `${view}:${r.feed}:${active}`;
+      if (diagnostics.current.key !== key) {
+        diagnostics.current.key = key;
+        gl.domElement.dataset.vrFeed = JSON.stringify({ event: "view", key });
+      }
+    }
+    mesh.current.visible = active && !feedHealth.failed;
+    if (!active || feedHealth.failed) return;
     const passive = view === "explore" && !!alert;
     mesh.current.scale.setScalar(passive ? 0.6 : 1);
     if (passive) {
@@ -397,7 +450,7 @@ export function VRFeed() {
       mesh.current.quaternion.copy(spatial.panel.quaternion);
     }
     timer.current += dt;
-    if (timer.current < 1 / (view === "arcade" ? 30 : 10)) return;
+    if (timer.current < (view === "arcade" ? 1 / 30 : VR_FEED_INTERVAL)) return;
     if (performance.now() - spatial.auxiliaryFrame < 6) return;
     spatial.auxiliaryFrame = performance.now();
     timer.current = 0;
@@ -439,35 +492,25 @@ export function VRFeed() {
     }
     camera.updateProjectionMatrix();
     camera.layers.enable(1);
-    const old = {
-      target: gl.getRenderTarget(),
-      xr: gl.xr.enabled,
-      auto: gl.autoClear,
-      shadow: gl.shadowMap.autoUpdate,
-    };
-    const hidden: THREE.Object3D[] = [];
-    scene.traverse((o) => {
-      if (
-        o.visible &&
-        (o.userData.vrUI || o.userData.vrHand || o.userData.firstPersonWeapon)
-      ) {
-        hidden.push(o);
-        o.visible = false;
-      }
-    });
-    try {
-      gl.xr.enabled = false;
-      gl.autoClear = true;
-      gl.shadowMap.autoUpdate = false;
-      gl.setRenderTarget(target);
-      gl.clear();
-      gl.render(scene, camera);
-    } finally {
-      gl.setRenderTarget(old.target);
-      gl.xr.enabled = old.xr;
-      gl.autoClear = old.auto;
-      gl.shadowMap.autoUpdate = old.shadow;
-      hidden.forEach((o) => (o.visible = true));
+    if (
+      process.env.NODE_ENV === "development" &&
+      gl.domElement.dataset.vrFeedDisabled === "true"
+    )
+      return;
+    const began = performance.now();
+    const rendered = renderVRFeed(gl, scene, camera, target);
+    if (process.env.NODE_ENV === "development") {
+      diagnostics.current.renders += Number(rendered);
+      diagnostics.current.lastMs = performance.now() - began;
+      gl.domElement.dataset.vrFeed = JSON.stringify({
+        ...diagnostics.current,
+        failed: feedHealth.failed,
+        contextLost: gl.getContext().isContextLost(),
+      });
+    }
+    if (!rendered) {
+      mesh.current.visible = false;
+      return;
     }
     if (material.map !== target.texture) {
       material.map = target.texture;

@@ -481,7 +481,7 @@
   font: 18px monospace;
   pointer-events: none;
 }
-.surveillance canvas {
+.surveillance:not([data-vr-active="true"]) canvas {
   filter: grayscale(1) contrast(1.15);
   image-rendering: auto;
 }

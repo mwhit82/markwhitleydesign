@@ -33,6 +33,8 @@ export type VRScreen = {
 };
 type State = ReturnType<typeof useGame.getState>;
 export type VRMenuActions = {
+  feedFailed?: boolean;
+  retryFeed?: () => void;
   patch: (patch: Partial<State>) => void;
   recenter: () => void;
   exit: () => void;
@@ -74,6 +76,12 @@ export function vrScreen(s: State, m: VRMenuState, a: VRMenuActions): VRScreen {
       "Game paused",
       "Your controllers are ready. Resume when you are comfortable.",
       [button("Resume", a.resume), button("Return to lobby", s.lobby)],
+    );
+  if (a.feedFailed && ["cctv", "inspect", "door"].includes(r.view) && !s.panel)
+    return screen(
+      "Camera unavailable",
+      "The camera feed stopped. Retry, or close to return to the room.",
+      [button("Retry camera", () => a.retryFeed?.())],
     );
   const settings = m.page.startsWith("settings");
   if (settings) {

@@ -1,4 +1,5 @@
 "use client";
+import { feedHealth } from "@/lib/deader/vr-feed";
 import {spatial} from "./vr/spatial";
 import {useVR} from "@/lib/deader/vr-state";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
@@ -56,10 +57,11 @@ export function PlayerMirror() {
       color: "#b4ada0", clipBias: .003,
     });
     surface.getRenderTarget().texture.type = THREE.UnsignedByteType;
+    surface.userData.auxiliarySurface = true;
     const renderReflection = surface.onBeforeRender;
     let lastFrame = -Infinity;
     surface.onBeforeRender = function (...args) {
-      if(args[2].userData.loungeInset)return;
+      if(feedHealth.rendering || args[2].userData.loungeInset)return;
       const s = useGame.getState();
       const now = performance.now();
       if (s.panel || !s.focused || s.suspension || s.room.view !== "explore" ||
