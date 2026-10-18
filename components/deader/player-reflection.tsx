@@ -1,4 +1,5 @@
 "use client";
+import {useVR} from "@/lib/deader/vr-state";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
@@ -15,6 +16,7 @@ export const roomPlayerPose = { x: 0, z: 3.2, yaw: 0, walking: false };
 const REFLECTION_LAYER = 2;
 
 export function ReflectedPlayer() {
+  const vr=useVR(s=>s.active);
   const armed=useGame(s=>s.room.weapon.collected);
   const group = useRef<THREE.Group>(null);
   const [walking, setWalking] = useState(false);
@@ -34,8 +36,8 @@ export function ReflectedPlayer() {
     group.current.rotation.y = roomPlayerPose.yaw + Math.PI;
     if (walking !== roomPlayerPose.walking) setWalking(roomPlayerPose.walking);
   });
-  return <group ref={group}><pointLight position={[0,1.8,1.2]} intensity={1.5} distance={3} color="#ffe0b5"/><Cone colour={colour} outfit={outfit} walking={walking} paused={paused} armed={armed}/>
-    {armed&&<group position={[.14,.88,.40]} rotation={[0,Math.PI,0]} scale={.65} userData={{ignoreBullet:true}}>
+  return <group ref={group}><pointLight position={[0,1.8,1.2]} intensity={1.5} distance={3} color="#ffe0b5"/><Cone colour={colour} outfit={outfit} walking={walking} paused={paused} armed={armed||vr}/>
+    {armed&&!vr&&<group position={[.14,.88,.40]} rotation={[0,Math.PI,0]} scale={.65} userData={{ignoreBullet:true}}>
       <GunModel/>
       <mesh position={[0,-.17,.12]} scale={[.045,.075,.055]}><sphereGeometry args={[1,12,8]}/><meshStandardMaterial color="#17191c" roughness={.65}/></mesh>
       <mesh position={[-.055,-.09,-.06]} scale={[.055,.042,.075]}><sphereGeometry args={[1,12,8]}/><meshStandardMaterial color="#17191c" roughness={.65}/></mesh>
@@ -60,7 +62,7 @@ export function PlayerMirror() {
       const s = useGame.getState();
       const now = performance.now();
       if (s.panel || !s.focused || s.suspension || s.room.view !== "explore" ||
-          now - lastFrame < 1000 / (quality === "low" ? 12 : 24)) return;
+          now - lastFrame < 1000 / (useVR.getState().active ? 10 : quality === "low" ? 12 : 24)) return;
       lastFrame = now;
       surface.getReflectionCamera(args[2]).layers.enable(REFLECTION_LAYER);
       // The camera-relative weapon must not float above the physical reflected body.

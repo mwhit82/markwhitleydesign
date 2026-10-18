@@ -1,4 +1,5 @@
 "use client";
+import {useVR} from "@/lib/deader/vr-state";
 import { useEffect, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
@@ -11,13 +12,16 @@ import { JUDGEMENT_INTRO_SECONDS, JUDGEMENT_BLACKOUT_AT } from '@/lib/deader/jud
 import styles from './game.module.css';
 export function Judge(){
   const j=useGame(s=>s.room.judgement),group=useRef<THREE.Group>(null);
+  const anchor=useRef<{p:THREE.Vector3;q:THREE.Quaternion}|null>(null);
   const offset=useRef(new THREE.Vector3());
   useFrame(({camera})=>{
     const s=useGame.getState(),j=s.room.judgement;
+    if(!j)anchor.current=null;
     if(!group.current||!j)return;
     const gentle=s.save.settings.gentleScares||s.save.settings.reducedMotion||matchMedia('(prefers-reduced-motion: reduce)').matches;
     group.current.visible=j.elapsed<JUDGEMENT_INTRO_SECONDS;
     group.current.traverse(o=>{if(o instanceof THREE.Mesh){o.castShadow=false;o.renderOrder=100;const materials=Array.isArray(o.material)?o.material:[o.material];for(const material of materials){material.depthTest=false;material.depthWrite=false;}}});
+    if(useVR.getState().active){if(!anchor.current)anchor.current={p:camera.getWorldPosition(new THREE.Vector3()),q:camera.getWorldQuaternion(new THREE.Quaternion())};group.current.position.copy(anchor.current.p);group.current.quaternion.copy(anchor.current.q);group.current.translateY(-1.15);group.current.translateZ(-2.2);return;}
     group.current.position.copy(offset.current.set(0,-1.15,gentle?-2.3:-2.2).applyQuaternion(camera.quaternion).add(camera.position));
     group.current.quaternion.copy(camera.quaternion);
   });

@@ -1,4 +1,5 @@
 "use client";
+import {useVR} from "@/lib/deader/vr-state";
 import { Component, Suspense, useEffect, useMemo, useRef, type ReactNode } from 'react';
 import {useGLTF} from '@react-three/drei';
 import { useFrame, useThree } from '@react-three/fiber';
@@ -49,7 +50,7 @@ export function Weapon() {
   useEffect(()=>{
     const fire=()=>{
       const s=useGame.getState();
-      if(!s.room.weapon.collected)return;
+      if(useVR.getState().active||!s.room.weapon.collected)return;
       scene.updateMatrixWorld(true);
       ray.setFromCamera(centre,camera);ray.far=20;
       const hit=ray.intersectObjects(scene.children,true).find(h=>{
@@ -69,7 +70,7 @@ export function Weapon() {
   useFrame(({camera})=>{
     if(!held.current)return;
     const s=useGame.getState(),r=s.room;
-    held.current.visible=r.weapon.collected&&!s.panel&&!s.suspension&&!r.judgement&&r.view==='explore'&&r.survival.phase==='idle'&&r.night?.status==='running';
+    held.current.visible=!useVR.getState().active&&r.weapon.collected&&!s.panel&&!s.suspension&&!r.judgement&&r.view==='explore'&&r.survival.phase==='idle'&&r.night?.status==='running';
     held.current.position.copy(offset.set(camera instanceof THREE.PerspectiveCamera ? Math.min(.18,.18*camera.aspect) : .18,-.20,-.55+(r.weapon.cooldown>.3?.04:0)).applyQuaternion(camera.quaternion).add(camera.position));
     held.current.quaternion.copy(camera.quaternion);
   });

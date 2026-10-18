@@ -1,4 +1,5 @@
 "use client";
+import {useVR} from "@/lib/deader/vr-state";
 import { Sidekick } from "../sidekick";
 import { Box, Sign } from "../environment";
 import { Cone } from "../character";
@@ -7,10 +8,11 @@ import { useRoomMaterials } from "../room-materials";
 import { LobbyAtmosphere } from "../lobby-atmosphere";
 export default function Lobby() {
   const m = useRoomMaterials();
+  const vr=useVR(s=>s.active);
   return (
     <>
       <LobbyAtmosphere materials={m} />
-      <Controller />
+      {!vr && <Controller />}
       <Sidekick lobby />
       <group position={[2.2,0,-3.4]}>
         <Box position={[0,.06,0]} size={[.8,.12,.65]} material={m.metal}/>

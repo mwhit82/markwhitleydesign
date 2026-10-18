@@ -144,7 +144,7 @@ export default function ArcadeUI() {
     }}>
     <header><div><small>CCTV ARCADE</small><h2>Impossible Shift</h2></div><button onClick={() => useGame.getState().roomView('console')}>Back to CCTV</button></header>
     <div className={styles.arcadeStats}><span>Attempt {run.current.attempt}</span><span>{progress}%</span></div>
-    <canvas ref={canvas} aria-label="Jump over spikes and onto platforms" onPointerDown={e => { e.preventDefault(); if (ready.current) {
+    <canvas data-anomalous-arcade ref={canvas} aria-label="Jump over spikes and onto platforms" onPointerDown={e => { e.preventDefault(); if (ready.current) {
         held.current = true;
         e.currentTarget.setPointerCapture(e.pointerId);
     } }} onPointerUp={() => held.current = false} onPointerCancel={() => held.current = false} onLostPointerCapture={() => held.current = false}/>

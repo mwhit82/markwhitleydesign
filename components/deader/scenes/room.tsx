@@ -1,4 +1,5 @@
 "use client";
+import {useVR} from "@/lib/deader/vr-state";
 import { Weapon } from "../weapon";
 import { Judge } from "../judgement";
 import { Sidekick } from "../sidekick";
@@ -144,11 +145,12 @@ function Donut({ materials: m }: { materials: RoomMaterials }) {
 }
 export default function Room() {
   const m = useRoomMaterials();
+  const vr=useVR(s=>s.active);
   return (
     <>
       <RoomAtmosphere materials={m} />
       <RoomReflection materials={m} />
-      <RoomController />
+      {!vr && <RoomController />}
       <ReflectedPlayer />
       <Sidekick />
       <Weapon />

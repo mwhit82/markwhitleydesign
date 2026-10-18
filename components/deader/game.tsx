@@ -10,6 +10,8 @@ import {
   type ReactNode,
 } from "react";
 import Link from "next/link";
+import {useVR} from "@/lib/deader/vr-state";
+import {VRBoundary,VREntry} from "./vr-entry";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
 import { GameSettings, SurvivalUI } from "./survival-ui";
@@ -105,9 +107,10 @@ function Diagnostics({
 }
 function Preview({ colour, outfit, pet = false }: { colour: string; outfit: Outfit; pet?: boolean }) {
   const scale = useGame((s) => renderScale(s.save.settings));
+  const vr=useVR(s=>s.active);
   return (
-    <div className={styles.preview} aria-label="Rotating 3D outfit preview">
-      <Canvas dpr={[0.75, scale]} camera={{ position: [0, 1.2, 3.2], fov: 38 }}>
+    <div data-vr-preview={JSON.stringify({colour,outfit,pet})} className={styles.preview} aria-label="Rotating 3D outfit preview">
+      {!vr&&<Canvas dpr={[0.75, scale]} camera={{ position: [0, 1.2, 3.2], fov: 38 }}>
         <ambientLight intensity={1.5} />
         <directionalLight position={[3, 5, 4]} intensity={3} />
         <pointLight position={[-3, 2, -2]} intensity={12} color="#b6caba" />
@@ -119,7 +122,7 @@ function Preview({ colour, outfit, pet = false }: { colour: string; outfit: Outf
           enablePan={false}
           enableZoom={false}
         />
-      </Canvas>
+      </Canvas>}
     </div>
   );
 }
@@ -379,6 +382,8 @@ export default function Game() {
   }, [lost]);
   return (
     <div
+      data-vr-active={useVR(s=>s.active)}
+      data-anomalous-ui
       className={`${styles.game} ${s.scene === "room" && s.room.weapon.collected ? styles.armed : ""} ${s.touchActive ? styles.touchGame : ""} ${s.scene === "room" && s.room.view === "cctv" ? styles.surveillance : ""}`}
     >
       <GameAudio />
@@ -388,6 +393,7 @@ export default function Game() {
       {s.scene === "room" && s.save.settings.effects && (
         <div className={styles.filmGrain} aria-hidden="true" />
       )}
+      <VREntry />
       <RenderBoundary>
         {webgl === false ? (
           <div className={styles.fallback}>
@@ -398,7 +404,7 @@ export default function Game() {
             <Link href="/playground">Back to Playground</Link>
           </div>
         ) : s.ready && webgl ? (
-          <Canvas
+          <Canvas data-vr-scene
             shadows={
               s.save.settings.shadows && s.save.settings.quality !== "low"
                 ? "percentage"
@@ -408,6 +414,7 @@ export default function Game() {
             camera={{ position: [0, 2.8, 4.6], fov: 55, near: 0.08, far: 35 }}
             gl={{ antialias: true, powerPreference: "high-performance" }}
           >
+            <VRBoundary>
             <Diagnostics onContextLost={setLost} />
             <Suspense fallback={null}>
               {s.scene === "lobby" ? (
@@ -416,6 +423,7 @@ export default function Game() {
                 <Room key={s.room.encounters.runId} />
               )}
             </Suspense>
+            </VRBoundary>
           </Canvas>
         ) : (
           <div className={styles.fallback}>Opening the night shift…</div>

@@ -1,6 +1,7 @@
 "use client";
+import {useVR} from "@/lib/deader/vr-state";
 import { useEffect, useMemo, useRef } from 'react';
-import { createPortal, useFrame } from '@react-three/fiber';
+import { createPortal, useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { useGame } from '@/lib/deader/store';
 import { closeScarePose } from '@/lib/deader/presentation';
@@ -40,6 +41,7 @@ export function ScareFace(){
 
 /** Dawn-only monster; camera-relative transforms never modify player aim. */
 export function DawnFace(){
+ const vr=useVR(s=>s.active);const {scene:world}=useThree();const anchor=useRef<{p:THREE.Vector3;q:THREE.Quaternion}|null>(null);
  const ref=useRef<THREE.Group>(null);
  const overlay=useMemo(()=>new THREE.Scene(),[]);
  const wear=useMemo(createCharacterWear,[]);
@@ -47,17 +49,20 @@ export function DawnFace(){
  useFrame(({camera})=>{
   if(!ref.current)return;
   const s=useGame.getState(),j=s.room.judgement;
-  if(!j){ref.current.visible=false;return;}
+  if(!j){ref.current.visible=false;anchor.current=null;return;}
   const pose=dawnScarePose(j.elapsed,s.save.settings.gentleScares,s.save.settings.reducedMotion||matchMedia('(prefers-reduced-motion: reduce)').matches);
   ref.current.visible=pose.active;
-  ref.current.position.copy(camera.position);ref.current.quaternion.copy(camera.quaternion);
-  ref.current.translateZ(-pose.distance);ref.current.translateX(pose.x);ref.current.translateY(pose.y+.1);ref.current.rotateZ(pose.roll);
+  if(vr){
+   if(!pose.active)anchor.current=null;
+   if(pose.active&&!anchor.current)anchor.current={p:camera.getWorldPosition(new THREE.Vector3()),q:camera.getWorldQuaternion(new THREE.Quaternion())};
+   if(anchor.current){ref.current.position.copy(anchor.current.p);ref.current.quaternion.copy(anchor.current.q);ref.current.translateZ(-1.15);ref.current.translateX(pose.x*.5);ref.current.translateY(pose.y*.5);ref.current.rotateZ(pose.roll*.5);}
+  }else{ref.current.position.copy(camera.position);ref.current.quaternion.copy(camera.quaternion);ref.current.translateZ(-pose.distance);ref.current.translateX(pose.x);ref.current.translateY(pose.y+.1);ref.current.rotateZ(pose.roll);}
   const aspect=camera instanceof THREE.PerspectiveCamera?camera.aspect:1;
   ref.current.scale.setScalar(Math.min(.58,Math.max(.42,aspect*.62)));
  });
  useFrame(({gl,scene,camera})=>{
   gl.render(scene,camera);
-  if(ref.current?.visible){const auto=gl.autoClear;gl.autoClear=false;gl.clearDepth();try{gl.render(overlay,camera);}finally{gl.autoClear=auto;}}
+  if(!vr&&ref.current?.visible){const auto=gl.autoClear;gl.autoClear=false;gl.clearDepth();try{gl.render(overlay,camera);}finally{gl.autoClear=auto;}}
  },1);
  return createPortal(<group ref={ref} visible={false} userData={{ignoreBullet:true}}>
   <pointLight position={[-1.3,1.5,2.8]} color="#ffe2bb" intensity={12} distance={6}/>
@@ -78,5 +83,5 @@ export function DawnFace(){
    <mesh position={[0,-.12-i*.025,0]} rotation={[0,0,x*.4]}><capsuleGeometry args={[.014,.2+i*.05,4,8]}/><meshStandardMaterial color="#780d19" roughness={.17}/></mesh>
    <mesh position={[.012,-.25-i*.025,0]} scale={[.7,1.8,.6]}><sphereGeometry args={[.025,10,8]}/><meshStandardMaterial color="#8f1520" roughness={.15}/></mesh>
   </group>)}
- </group>,overlay);
+ </group>,vr?world:overlay);
 }

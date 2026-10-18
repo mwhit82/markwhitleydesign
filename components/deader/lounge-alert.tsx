@@ -1,4 +1,5 @@
 "use client";
+import {useVR} from "@/lib/deader/vr-state";
 import { useEffect, useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
@@ -16,7 +17,7 @@ export function LoungeInsetRenderer(){
  useEffect(()=>()=>target.dispose(),[target]);
  useFrame(({gl,scene,clock})=>{
   const s=useGame.getState(),r=s.room,alert=loungeAlert(r.residents);
-  if(!alert||s.panel||!s.focused||s.suspension||r.judgement||r.night?.status!=='running'||(r.view==='cctv'&&r.feed===5)||clock.elapsedTime-last.current<.1)return;
+  if(useVR.getState().active||!alert||s.panel||!s.focused||s.suspension||r.judgement||r.night?.status!=='running'||(r.view==='cctv'&&r.feed===5)||clock.elapsedTime-last.current<.1)return;
   const canvas=document.getElementById('anomalous-lounge-inset') as HTMLCanvasElement|null,ctx=canvas?.getContext('2d');if(!ctx)return;
   last.current=clock.elapsedTime;
   const resident=r.residents.find(x=>x.id===alert.id)!,p=residentPosition(resident);

@@ -1,3 +1,4 @@
+import {defaultVRSettings, readVRSettings, type VRSettings} from "./vr";
 /** Presentation never deducts trust: the encounter decision is the sole authority. */
 export type SurvivalPhase =
   "idle" | "tension" | "lunge" | "recovery" | "donut" | "blackout" | "gameover";
@@ -70,6 +71,7 @@ export const donutMood = (trust: number) =>
         ? "agitated"
         : "furious";
 export type Settings = {
+  vr: VRSettings;
   controls: "auto" | "touch" | "keyboard";
   touchSensitivity: number;
   volume: number;
@@ -85,6 +87,7 @@ export type Settings = {
   quality: "standard" | "low";
 };
 export const defaultSettings = (): Settings => ({
+  vr: defaultVRSettings(),
   controls: "auto",
   touchSensitivity: 1,
   volume: 0.6,
@@ -108,6 +111,7 @@ export function readSettings(value: unknown): Settings {
       ? Math.max(min, Math.min(max, s[key] as number))
       : fallback;
   return {
+    vr: readVRSettings(s.vr),
     controls: s.controls === "touch" || s.controls === "keyboard" ? s.controls : "auto",
     touchSensitivity: range("touchSensitivity", 0.3, 2, 1),
     ambience: range("ambience", 0, 1, d.ambience),

@@ -2138,3 +2138,39 @@ test('lounge alert persists through departure and clears when the Mimic is gone'
  for(let i=0;i<20;i++)residents=l.tickResidents(residents,.25);
  assert.equal(l.loungeAlert(residents),null);
 });
+
+const vr = await import(await moduleUrl(resolve('lib/deader/vr.ts')));
+test('VR defaults preserve smooth walking and smooth turning through old saves',()=>{
+ for(const version of [1,2,3]){const save=g.readSave(JSON.stringify({...g.newSave(),version,settings:{volume:.4}}));assert.deepEqual(save.settings.vr,vr.defaultVRSettings());assert.equal(save.coins,150);assert.equal(save.settings.volume,.4);}
+ const settings=vr.readVRSettings({walkSpeed:100,turnSpeed:-5,leftHanded:true,movement:'teleport',turning:'snap',seated:true});
+ assert.equal(settings.walkSpeed,2);assert.equal(settings.turnSpeed,15);assert.equal(settings.leftHanded,true);assert.equal(settings.movement,'teleport');
+ assert.equal(vr.readVRSettings({walkSpeed:NaN}).walkSpeed,1.5);
+ const save=g.newSave();save.settings.vr=settings;assert.deepEqual(g.readSave(JSON.stringify(save)).settings.vr,settings);
+});
+test('VR thumbsticks have a radial dead zone and bounded diagonal movement',()=>{
+ assert.deepEqual(vr.vrAxes(.1,.1),{x:0,z:0});assert.deepEqual(vr.vrAxes(NaN,1),{x:0,z:0});
+ assert.equal(Math.hypot(...Object.values(vr.vrAxes(1,1))),1);assert.ok(Math.abs(vr.vrAxes(.6,0).x-.5)<1e-9);
+ assert.equal(vr.vrDelta(5),.05);assert.equal(vr.vrDelta(-1),0);assert.equal(vr.vrDelta(NaN),0);
+});
+test('VR turns around the actual head instead of orbiting around the room origin',()=>{
+ const origin={x:2,z:3},head={x:2.4,z:3.2};const result=vr.rotateOrigin(origin,head,Math.PI/2);
+ assert.ok(Math.abs(Math.hypot(result.x-head.x,result.z-head.z)-Math.hypot(origin.x-head.x,origin.z-head.z))<1e-9);
+ assert.deepEqual(vr.rotateOrigin(head,head,Math.PI),head);
+ const round=vr.rotateOrigin(result,head,-Math.PI/2);assert.ok(Math.abs(round.x-origin.x)<1e-9&&Math.abs(round.z-origin.z)<1e-9);
+});
+test('VR teleport checks the whole path, door partition and furniture',()=>{
+ const valid=p=>vr.validVRFloor(p,'room',g.ROOM_CLOSED_OBSTACLES);
+ assert.equal(vr.validVRTeleport({x:0,z:2},{x:0,z:5},valid),true);
+ assert.equal(vr.validVRTeleport({x:2,z:2},{x:2,z:5},valid),false);
+ assert.equal(vr.validVRTeleport({x:0,z:0},{x:2.8,z:-.4},valid),false);
+ assert.equal(vr.validVRTeleport({x:0,z:0},{x:0,z:-4},valid),false);
+ assert.equal(vr.validVRTeleport({x:0,z:0},{x:0,z:7},valid),false);
+ assert.equal(vr.validVRFloor({x:NaN,z:0},'lobby',[]),false);
+});
+
+ test('VR entry is limited to Quest Browser, including its desktop mode',()=>{
+ for(const platform of ['Linux; Android 12; Quest 3','X11; Linux x86_64; Quest Pro'])
+  assert.equal(vr.isQuestBrowser(`Mozilla/5.0 (${platform}) OculusBrowser/39.2.0 Chrome/140.0 VR Safari/537.36`),true);
+ for(const ua of ['', 'Mozilla/5.0 (iPhone) AppleWebKit/605.1 Safari/604.1', 'Mozilla/5.0 (Linux; Android 14) Chrome/140.0 Mobile Safari/537.36', 'Mozilla/5.0 (Macintosh) Chrome/140.0 Safari/537.36', 'Quest 3 Wolvic/1.0'])
+  assert.equal(vr.isQuestBrowser(ua),false);
+ });
