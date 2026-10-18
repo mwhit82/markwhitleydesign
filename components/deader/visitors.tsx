@@ -2,6 +2,8 @@
 import { useEffect, useRef } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
+import { simulationActive } from "@/lib/deader/simulation";
+import { useVR } from "@/lib/deader/vr-state";
 import { useGame } from "@/lib/deader/store";
 import { encounterVisitor, approachProgress } from "@/lib/deader/visitors";
 import { roomAudio } from "@/lib/deader/audio/room-audio";
@@ -37,7 +39,7 @@ export function Visitors() {
     let last = performance.now();
     const timer = window.setInterval(() => {
       const now = performance.now();
-      if (!document.hidden)
+      if (simulationActive("page", useVR.getState().active, !document.hidden))
         useGame.getState().tickVisitors((now - last) / 1000);
       last = now;
     }, 100);

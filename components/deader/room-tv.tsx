@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
+import { nightClockLabel } from "@/lib/deader/night";
 import { useGame } from "@/lib/deader/store";
 import { newsForNight, broadcastSegment } from "@/lib/deader/room";
 import { TV_POSITION, LOUNGE_TV_POSITION } from "@/lib/deader/tv";
@@ -44,7 +45,7 @@ export function RoomTV() {
     c.fillStyle = "#152332"; c.fillRect(0,0,768,432);
     for(let i=0;i<12;i++) { c.fillStyle = i%2 ? "#263a4c" : "#203044"; c.fillRect(i*64,30,54,230); }
     c.fillStyle="#dce9f1"; c.font="bold 30px Arial"; c.fillText("ANOMALOUS NEWS",24,42);
-    c.fillStyle="#c34e44"; c.fillRect(664,15,80,30); c.fillStyle="#fff"; c.font="18px Arial"; c.fillText("ON AIR",672,37);
+    c.fillStyle="#c34e44"; c.fillRect(24,55,80,30); c.fillStyle="#fff"; c.font="18px Arial"; c.fillText("ON AIR",32,77);
     const incident = Math.floor(t / 7) % 3 === 1;
     if (incident) {
       c.fillStyle="#111920"; c.fillRect(24,65,720,200);
@@ -59,6 +60,10 @@ export function RoomTV() {
     c.fillStyle="#e5eaf0";c.fillRect(0,280,768,42);c.fillStyle="#111820";c.font="bold 22px Arial";c.fillText(segment.headline,20,308);
     c.fillStyle="#080c12";c.fillRect(0,322,768,110);c.fillStyle="#f2f4f8";c.font="21px Arial";c.fillText("LOCAL NEWS / AFTER HOURS",20,365);
     if(s.save.settings.effects){c.fillStyle="#00000016";for(let y=0;y<432;y+=4)c.fillRect(0,y,768,1);}
+    // Draw after effects so the clock is never striped or flickering.
+    c.fillStyle="#080b10"; c.fillRect(522,10,234,58);
+    c.fillStyle="#fff"; c.font="bold 38px Arial"; c.textAlign="right";
+    c.fillText(nightClockLabel(s.room.night),742,53); c.textAlign="left";
     screen.texture.needsUpdate=true;
   });
   return <>{[{position:TV_POSITION,rotation:-Math.PI/2,interaction:"Watch TV",ref:light},{position:LOUNGE_TV_POSITION,rotation:Math.PI,interaction:"Watch lounge TV",ref:loungeLight}].map(tv=><group key={tv.interaction} position={[...tv.position]} rotation={[0,tv.rotation,0]} userData={{interaction:tv.interaction}}>

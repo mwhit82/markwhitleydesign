@@ -2,7 +2,7 @@ import { VISITORS } from "./visitors";
 import type { Encounters } from "./visitors";
 import { recordStory } from "./progression";
 import type { Session, Save } from "./game";
-import { reward } from "./game";
+import { clockLabel, reward } from "./game";
 
 export const NIGHT_TITLES = [
   "They’re Here",
@@ -122,4 +122,9 @@ export function completeNightReward(
         night.difficulty,
       )
     : save;
+}
+
+/** Shift-local time: hold dawn until judgement completes, including Infinite. */
+export function nightClockLabel(night: Pick<Night, "elapsed" | "mode" | "number"> | null) {
+  return clockLabel(night ? night.elapsed - (night.mode === "infinite" ? (night.number - 1) * 600 : 0) : 0);
 }

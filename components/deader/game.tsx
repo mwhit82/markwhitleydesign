@@ -10,6 +10,7 @@ import {
   type ReactNode,
 } from "react";
 import Link from "next/link";
+import { nightClockLabel } from "@/lib/deader/night";
 import {useVR} from "@/lib/deader/vr-state";
 import {VRBoundary,VREntry} from "./vr-entry";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
@@ -31,7 +32,6 @@ import { TutorialUI } from "./tutorial-ui";
 import { pets } from "@/lib/deader/pets";
 import { Cone } from "./character";
 import {
-  clockLabel,
   cosmetics,
   type Difficulty,
   type GameMode,
@@ -456,11 +456,7 @@ export default function Game() {
         <div className={styles.night}>
           <b>NIGHT {s.room.night?.number ?? 1}</b>
           <span>
-            {clockLabel(
-              s.room.night?.mode === "infinite"
-                ? s.room.night.elapsed % 600
-                : (s.room.night?.elapsed ?? 0),
-            )}
+            {nightClockLabel(s.room.night)}
           </span>
           <span
             className={styles.mistakeCount}

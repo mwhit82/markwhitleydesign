@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useRef, useState, type CSSProperties, type PointerEvent } from "react";
 import { gameInput, joystick, touchLookScale, shouldResetTouchOnResize, requiresResume, type InterruptionEvent } from "@/lib/deader/input";
+import { useVR } from "@/lib/deader/vr-state";
 import { useGame } from "@/lib/deader/store";
 import { roomAudio } from "@/lib/deader/audio/room-audio";
 import { interactRoom } from "./room-controller";
@@ -35,13 +36,14 @@ export function TouchControls() {
       if (/^(Key[WASDE]|Arrow)/.test(e.code)) choose(false);
     };
     const interrupt = (event: InterruptionEvent) => {
+      if (useVR.getState().active) return; // The XR session owns headset interruption/resume.
       gameInput.reset(); releaseCaptures(); setThumb({ x: 0, z: 0 });
       if (requiresResume(event)) {
         roomAudio.silence();
         useGame.setState({ suspension: "interrupted" });
       }
     };
-    const visibility = () => { if (document.hidden) interrupt("hidden"); else useGame.setState({ focused: true }); };
+    const visibility = () => { if (useVR.getState().active) return; if (document.hidden) interrupt("hidden"); else useGame.setState({ focused: true }); };
     const blur = () => interrupt("blur");
     let viewportWidth = window.innerWidth;
     const orientation = () => {

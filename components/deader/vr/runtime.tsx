@@ -1,4 +1,5 @@
 "use client";
+import { simulationActive } from "@/lib/deader/simulation";
 import { useEffect, useRef, type ReactNode } from "react";
 import { XR, XROrigin, createXRStore } from "@react-three/xr";
 import { useFrame, useThree } from "@react-three/fiber";
@@ -149,6 +150,7 @@ function Rig() {
     supportOffset: new THREE.Vector3(),
     shotOrigin: new THREE.Vector3(),
     frames: [] as number[],
+    simulationSeconds: 0,
   });
   const equipped = useGame((s) => s.room.weapon.collected);
   useEffect(() => {
@@ -169,6 +171,15 @@ function Rig() {
       session = gl.xr.getSession(),
       space = gl.xr.getReferenceSpace();
     if (!session || !space) return;
+    // XR visibility, not the flat browser tab, owns immersive simulation time.
+    if (simulationActive("xr", useVR.getState().active, session.visibilityState === "visible")) {
+      a.simulationSeconds += Math.min(rawDt, 0.1);
+      if (a.simulationSeconds >= 0.1) {
+        useGame.getState().tickVisitors(a.simulationSeconds);
+        a.simulationSeconds = 0;
+      }
+    } else a.simulationSeconds = 0;
+
     const key = s.scene + ":" + r.encounters.runId;
     const camera = gl.xr.getCamera();
     camera.getWorldPosition(a.head);
@@ -521,9 +532,9 @@ function Rig() {
       if (s.scene === "lobby") continue;
       if (hand === dominant && r.weapon.collected && gun.current) {
         gun.current.position.copy(group.position);
-        gun.current.quaternion.copy(group.quaternion);
+        gun.current.quaternion.setFromRotationMatrix(a.m);
 
-        gun.current.rotateX(-0.12 + (r.weapon.cooldown > 0.3 ? 0.08 : 0));
+        gun.current.rotateX(r.weapon.cooldown > 0.3 ? 0.08 : 0);
         const support = dominant === "right" ? left.current : right.current;
         if (
           support &&
@@ -533,10 +544,10 @@ function Rig() {
           support.position.copy(
             a.supportOffset
               .set(prefs.leftHanded ? 0.05 : -0.05, -0.03, -0.08)
-              .applyQuaternion(group.quaternion)
+              .applyQuaternion(gun.current.quaternion)
               .add(group.position),
           );
-          support.quaternion.copy(group.quaternion);
+          support.quaternion.copy(gun.current.quaternion);
         }
         if (
           trigger &&

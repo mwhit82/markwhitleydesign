@@ -7,6 +7,7 @@ import {
   VR_FEED_HEIGHT,
   VR_FEED_INTERVAL,
 } from "@/lib/deader/vr-feed";
+import { nightClockLabel } from "@/lib/deader/night";
 import { memo, useEffect, useMemo, useRef, useState } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
@@ -14,11 +15,7 @@ import { useGame } from "@/lib/deader/store";
 import { useVR, vrTestTargets } from "@/lib/deader/vr-state";
 import { vrPanelVisible } from "@/lib/deader/vr-interactions";
 import { newVRMenu, vrScreen, type VRButton } from "@/lib/deader/vr-menu";
-import {
-  clockLabel,
-  LOBBY_OBSTACLES,
-  ROOM_CLOSED_OBSTACLES,
-} from "@/lib/deader/game";
+import { LOBBY_OBSTACLES, ROOM_CLOSED_OBSTACLES } from "@/lib/deader/game";
 import { FEEDS } from "@/lib/deader/room";
 import { loungeAlert, residentPosition } from "@/lib/deader/lounge";
 import { Cone } from "../character";
@@ -71,6 +68,7 @@ export const VRPanel = memo(function VRPanel() {
     signature: "",
     watch: "",
     open: false,
+    menuLayout: false,
     head: new THREE.Vector3(),
     direction: new THREE.Vector3(),
   });
@@ -106,13 +104,16 @@ export const VRPanel = memo(function VRPanel() {
       r.encounters.active?.id,
       r.survival.phase === "gameover",
     ].join(":");
+    const inspection = r.view === "inspect" || r.view === "door";
+    const layoutChanged = v.menuLayout !== inspection;
+    v.menuLayout = inspection;
     if (v.key !== key) {
       v.menu = newVRMenu();
       v.key = key;
       v.next = 0;
       spatial.dragging = null;
     }
-    if (visible && (spatial.recenter || !v.open)) {
+    if (visible && (spatial.recenter || !v.open || layoutChanged)) {
       const p = placeVRPanel(
         v.head,
         v.direction,
@@ -129,6 +130,14 @@ export const VRPanel = memo(function VRPanel() {
         ),
         0,
       );
+      if (inspection) {
+        const yaw = Math.atan2(-v.direction.x, -v.direction.z);
+        panel.current.rotation.set(0, yaw, 0);
+        panel.current.position.copy(v.head);
+        panel.current.position.x -= Math.sin(yaw) * 1.3;
+        panel.current.position.z -= Math.cos(yaw) * 1.3;
+        panel.current.translateX(s.save.settings.vr.leftHanded ? -1.35 : 1.35);
+      }
     }
     v.open = visible;
     if (wrist.current) {
@@ -260,7 +269,7 @@ export const VRPanel = memo(function VRPanel() {
       });
       display.texture.needsUpdate = true;
     }
-    const wristText = `${s.save.coins} COINS · ${r.encounters.trust} LIVES | ${clockLabel(r.night?.elapsed ?? 0)} · ${r.weapon.ammo}/6${alert ? " · LOUNGE ALERT" : ""}`;
+    const wristText = `${s.save.coins} COINS · ${r.encounters.trust} LIVES | ${nightClockLabel(r.night)} · ${r.weapon.ammo}/6${alert ? " · LOUNGE ALERT" : ""}`;
     if (wristText !== v.watch) {
       v.watch = wristText;
       const c = watch.ctx;
@@ -399,6 +408,30 @@ export function VRFeed() {
       c.userData.loungeInset = true;
       return c;
     }, []);
+  const peepholeTarget = useMemo(
+    () =>
+      new THREE.WebGLRenderTarget(512, 288, { depthBuffer: true, samples: 0 }),
+    [],
+  );
+  const peephole = useMemo(() => ({ value: 0 }), []);
+  const shadePeephole = useMemo(
+    () => (shader: THREE.WebGLProgramParametersWithUniforms) => {
+      shader.uniforms.peephole = peephole;
+      shader.fragmentShader =
+        "uniform float peephole;\n" + shader.fragmentShader;
+      shader.fragmentShader = shader.fragmentShader.replace(
+        "#include <opaque_fragment>",
+        `
+      #ifdef USE_MAP
+      float rim = smoothstep(0.35, 0.5, length((vMapUv - 0.5) * vec2(1.0, 0.5625)));
+      outgoingLight *= mix(1.0, 1.0 - rim * 0.94, peephole);
+      #endif
+      #include <opaque_fragment>
+    `,
+      );
+    },
+    [peephole],
+  );
   const arcade = useMemo(() => surface(960, 540), []);
   const diagnostics = useRef({ key: "", renders: 0, lastMs: 0 });
   useEffect(() => {
@@ -410,9 +443,10 @@ export function VRFeed() {
   useEffect(
     () => () => {
       target.dispose();
+      peepholeTarget.dispose();
       arcade.texture.dispose();
     },
-    [target, arcade],
+    [target, peepholeTarget, arcade],
   );
   useFrame(({ gl, scene, camera: head }, dt) => {
     if (!mesh.current) return;
@@ -431,8 +465,11 @@ export function VRFeed() {
     }
     mesh.current.visible = active && !feedHealth.failed;
     if (!active || feedHealth.failed) return;
+    const inspection = view === "inspect" || view === "door";
+    peephole.value = inspection ? 1 : 0;
+    const activeTarget = inspection ? peepholeTarget : target;
     const passive = view === "explore" && !!alert;
-    mesh.current.scale.setScalar(passive ? 0.6 : 1);
+    mesh.current.scale.setScalar(passive ? 0.6 : inspection ? 1.25 / 1.1 : 1);
     if (passive) {
       if (alertAnchor.current !== alert!.id) {
         alertAnchor.current = alert!.id;
@@ -445,7 +482,11 @@ export function VRFeed() {
     } else if (spatial.panel) {
       alertAnchor.current = "";
       mesh.current.position
-        .set(0, 0.84, 0.002)
+        .set(
+          inspection ? (s.save.settings.vr.leftHanded ? 1.35 : -1.35) : 0,
+          inspection ? 0 : 0.84,
+          0.002,
+        )
         .applyMatrix4(spatial.panel.matrixWorld);
       mesh.current.quaternion.copy(spatial.panel.quaternion);
     }
@@ -498,7 +539,7 @@ export function VRFeed() {
     )
       return;
     const began = performance.now();
-    const rendered = renderVRFeed(gl, scene, camera, target);
+    const rendered = renderVRFeed(gl, scene, camera, activeTarget);
     if (process.env.NODE_ENV === "development") {
       diagnostics.current.renders += Number(rendered);
       diagnostics.current.lastMs = performance.now() - began;
@@ -512,8 +553,8 @@ export function VRFeed() {
       mesh.current.visible = false;
       return;
     }
-    if (material.map !== target.texture) {
-      material.map = target.texture;
+    if (material.map !== activeTarget.texture) {
+      material.map = activeTarget.texture;
       material.needsUpdate = true;
     }
   });
@@ -527,6 +568,7 @@ export function VRFeed() {
       <planeGeometry args={[1.1, 0.619]} />
       <meshBasicMaterial
         map={target.texture}
+        onBeforeCompile={shadePeephole}
         toneMapped={false}
         depthTest={false}
         depthWrite={false}

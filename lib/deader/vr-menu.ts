@@ -61,6 +61,7 @@ export function vrScreen(s: State, m: VRMenuState, a: VRMenuActions): VRScreen {
     m.confirmation = null;
     if (s.suspension) a.resume();
     else if (s.panel) s.open(null);
+    else if (r.night?.status === "completed" || r.night?.status === "failed") s.lobby();
     else s.roomView("explore");
   };
   const screen = (
@@ -354,6 +355,7 @@ export function vrScreen(s: State, m: VRMenuState, a: VRMenuActions): VRScreen {
         s.nextNight,
         r.night.mode !== "normal" || r.night.number >= 3,
       ),
+      button("Replay night", s.start),
       button("Return to lobby", s.lobby),
     ]);
   if (["inspect", "door", "cctv"].includes(r.view)) {

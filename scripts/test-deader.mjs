@@ -2315,3 +2315,33 @@ test('VR camera failure retains retry and close without a live feed',async()=>{
  assert.equal(view.title,'Camera unavailable');assert.equal(view.feed,undefined);
  view.buttons[0].run();view.close();assert.equal(retried,true);assert.equal(closed,true);
 });
+
+test('simulation has one owner and XR ignores flat-tab visibility', async()=>{
+ const {simulationActive}=await import(await moduleUrl(resolve('lib/deader/simulation.ts')));
+ for(const xr of [false,true]){
+  assert.equal(Number(simulationActive('page',xr,true))+Number(simulationActive('xr',xr,true)),1);
+  assert.equal(simulationActive('page',xr,false),false);
+  assert.equal(simulationActive('xr',xr,false),false);
+ }
+ assert.equal(simulationActive('xr',true,true),true);
+});
+test('shared night clock holds dawn and resets only at Infinite rollover',async()=>{
+ const {nightClockLabel}=await import(await moduleUrl(resolve('lib/deader/night.ts')));
+ assert.equal(nightClockLabel(null),'12:00 AM');
+ assert.equal(nightClockLabel({elapsed:600,mode:'normal',number:3}),'5:55 AM');
+ assert.equal(nightClockLabel({elapsed:600,mode:'infinite',number:1}),'5:55 AM');
+ assert.equal(nightClockLabel({elapsed:600,mode:'infinite',number:2}),'12:00 AM');
+ assert.equal(nightClockLabel({elapsed:1200,mode:'infinite',number:2}),'5:55 AM');
+});
+test('every Normal dawn resolves from each room view and exposes VR results once',async()=>{
+ const {vrScreen,newVRMenu}=await import(await moduleUrl(resolve('lib/deader/vr-menu.ts')));
+ const actions={patch:()=>{},resume:()=>{},recenter:()=>{},exit:()=>{},decide:()=>{}};
+ for(const number of [1,2,3])for(const view of ['explore','inspect','cctv','arcade','tv'])for(const mistakes of [0,3]){
+  const {useGame}=await combatStore();const r=useGame.getState().room;
+  useGame.setState({room:{...r,view,night:{...r.night,number,elapsed:599.99},encounters:{...r.encounters,mistakes}}});
+  for(let i=0;i<80;i++)useGame.getState().tickVisitors(.1);
+  const s=useGame.getState();assert.equal(s.room.night.status,mistakes?'failed':'completed');assert.equal(s.room.view,'explore');assert.equal(s.room.judgement,null);
+  const screen=vrScreen(s,newVRMenu(),actions);assert.equal(screen.title,mistakes?'Game Over':'Night complete');assert.ok(screen.buttons.some(b=>b.text===(mistakes?'Retry shift':'Replay night')));
+  const save=s.save;useGame.getState().tickVisitors(.1);assert.equal(useGame.getState().save,save);
+ }
+});
