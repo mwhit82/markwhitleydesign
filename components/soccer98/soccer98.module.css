@@ -38,3 +38,7 @@
 .leaderboard button:disabled{opacity:.5}.leaderboard button:focus-visible,.leaderboard input:focus-visible{outline:3px solid #efd46b;outline-offset:2px}
 .leaderboard p{font-size:12px;line-height:1.6;margin:16px 0}.boardTabs{display:flex;gap:8px;margin-top:22px}.boardTabs button{flex:1}.boardTabs button[aria-pressed=true]{background:#efd46b;color:#133c30}
 .leaderboard form{padding:16px 0;border-block:1px solid #adc5ae55}.leaderboard label{display:block;margin-bottom:10px}.leaderboard form>div{display:flex;gap:8px}.leaderboard input{min-width:0;width:100%;background:#f5f0d9;color:#133c30;padding:10px;font-size:16px;border:0}.leaderboard small{display:block;font-size:11px;line-height:1.5;margin-top:10px}.leaderboard table{width:100%;border-collapse:collapse;text-align:left}.leaderboard th,.leaderboard td{padding:12px 5px;border-bottom:1px solid #adc5ae33}.leaderboard th:last-child,.leaderboard td:last-child{text-align:right}.boardMe{color:#efd46b;font-weight:bold}.rankedHint{margin:0;padding:5px 12px;font:11px monospace;text-align:center}
+
+.matchActions{display:flex;flex-wrap:wrap;justify-content:center;gap:12px}
+.overlay .playAgain{background:transparent;box-shadow:none}
+@media (orientation:portrait) and (max-width:1024px){.matchActions{flex-direction:column;gap:10px}.matchActions button{width:100%}}
