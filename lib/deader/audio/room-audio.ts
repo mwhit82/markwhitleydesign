@@ -1,3 +1,4 @@
+import { DAWN_SCARE_SECONDS } from '../judgement';
 /** Gesture-unlocked synthesis. One context for the game; bounded voices, explicit cleanup. */
 export type Cue =
   | "shot"
@@ -18,6 +19,7 @@ export type Cue =
   | "lean"
   | "stutter";
 export class RoomAudio {
+  private dawnVoice: AudioBufferSourceNode | null = null;
   private context: AudioContext | null = null;
   private music: {source: AudioBufferSourceNode; gain: GainNode} | null = null;
   private musicBuffer: AudioBuffer | null = null;
@@ -193,6 +195,29 @@ export class RoomAudio {
     for (const n of this.bed.nodes) n.disconnect();
     this.bed = null;
   }
+  stopDawnScream() {
+    if(this.dawnVoice){try{this.dawnVoice.stop();}catch{}this.dawnVoice=null;}
+  }
+  dawnScream() {
+    const c=this.context;
+    if(!c||c.state!=='running'||this.muted||!this.volume)return;
+    this.stopDawnScream();
+    if(this.voices.size>=12)return;
+    const buffer=c.createBuffer(1,Math.ceil(c.sampleRate*DAWN_SCARE_SECONDS),c.sampleRate),data=buffer.getChannelData(0);
+    let phase=0;
+    for(let i=0;i<data.length;i++){
+      const t=i/c.sampleRate, pitch=340+170*Math.exp(-t*7)+50*Math.sin(t*28)+22*Math.sin(t*53);
+      phase+=2*Math.PI*pitch/c.sampleRate;
+      const vocal=Math.sin(phase)+.45*Math.sin(phase*2)+.25*Math.sin(phase*3);
+      const breath=(Math.random()*2-1)*.22;
+      const envelope=Math.min(1,t/.008)*Math.min(1,(DAWN_SCARE_SECONDS-t)/.45);
+      data[i]=Math.tanh(vocal*1.4+breath)*envelope*(.65+.15*Math.sin(t*19))*.45;
+    }
+    const source=c.createBufferSource(),gain=c.createGain();source.buffer=buffer;
+    gain.gain.value=this.volume*(this.gentle?.09:.48);
+    source.connect(gain).connect(c.destination);this.voices.add(source);this.dawnVoice=source;
+    source.onended=()=>{this.voices.delete(source);if(this.dawnVoice===source)this.dawnVoice=null;source.disconnect();gain.disconnect();};source.start();
+  }
   private scare(c: AudioContext) {
     const buffer=c.createBuffer(1,Math.floor(c.sampleRate*.65),c.sampleRate),data=buffer.getChannelData(0);
     let phase=0;
@@ -309,6 +334,7 @@ export class RoomAudio {
     }
   }
   silence() {
+    this.stopDawnScream();
     if(this.music){this.music.source.stop();this.music.source.disconnect();this.music.gain.disconnect();this.music=null;}
     this.broadcast(false);
     this.stopBed();

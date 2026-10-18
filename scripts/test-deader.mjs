@@ -617,7 +617,7 @@ test("full five-minute run resolves ten visitors and rewards only after judgemen
     runSeconds: 300,
   });
   useGame.getState().start();
-  for (let i = 0; i < 1224; i++) {
+  for (let i = 0; i < 1232; i++) {
     let s = useGame.getState();
     if (s.room.door === "OPENING") s.doorEvent({ type: "opened" });
     if (s.room.door === "CLOSING") s.doorEvent({ type: "closed" });
@@ -688,7 +688,7 @@ test("dawn safely cancels inspection, waiting and departure; rehearsal never sav
     useGame.getState().tickVisitors(0.25);
     assert.equal(useGame.getState().room.night.status, "judging");
     assert.equal(useGame.getState().save.coins,150);
-    for(let i=0;i<24;i++)useGame.getState().tickVisitors(.25);
+    for(let i=0;i<31;i++)useGame.getState().tickVisitors(.25);
     assert.equal(useGame.getState().room.night.status,"completed");
     assert.equal(useGame.getState().room.encounters.active, null);
     assert.equal(useGame.getState().room.visitorId, null);
@@ -715,7 +715,7 @@ test("dawn safely cancels inspection, waiting and departure; rehearsal never sav
   });
   useGame.getState().tickVisitors(0.25);
   assert.equal(useGame.getState().room.night.status, "judging");
-  for(let i=0;i<24;i++)useGame.getState().tickVisitors(.25);
+  for(let i=0;i<31;i++)useGame.getState().tickVisitors(.25);
   assert.equal(useGame.getState().save.coins, 150);
   assert.equal(useGame.getState().save.completedNights, 0);
 });
@@ -756,7 +756,7 @@ test("clock keeps running through scares and waits until dawn to judge mistakes"
   useGame.getState().tickVisitors(0.25);
   assert.equal(useGame.getState().room.night.status, "judging");
   assert.equal(useGame.getState().room.night.elapsed, 600);
-  for (let i = 0; i < 30; i++) useGame.getState().tickVisitors(0.25);
+  for (let i = 0; i < 31; i++) useGame.getState().tickVisitors(0.25);
   assert.equal(useGame.getState().room.survival.phase, "gameover");
 });
 
@@ -844,7 +844,7 @@ test("story unlocks, continuation, per-difficulty completion and ending are guar
       },
     });
     useGame.getState().tickVisitors(0.25);
-    for(let i=0;i<24;i++)useGame.getState().tickVisitors(.25);
+    for(let i=0;i<31;i++)useGame.getState().tickVisitors(.25);
     assert.equal(useGame.getState().save.completedNights, number);
     assert.ok(useGame.getState().save.completions.hard.includes(number));
     const coins = useGame.getState().save.coins;
@@ -906,7 +906,7 @@ test("Infinite judges at dawn, resets shift rules and counts milestones once", a
   });
   useGame.getState().tickVisitors(0.25);
   assert.equal(useGame.getState().save.infiniteRecords.totalNights,0);
-  for(let i=0;i<24;i++)useGame.getState().tickVisitors(.25);
+  for(let i=0;i<31;i++)useGame.getState().tickVisitors(.25);
   const saved = useGame.getState().save;
   assert.equal(saved.infiniteRecords.totalNights, 1);
   assert.equal(saved.infiniteRecords.night, 2);
@@ -1132,7 +1132,7 @@ test("store completion unlocks Trust Expert only for real, non-idle, mistake-fre
       room: r,
     });
     useGame.getState().tickVisitors(0.25);
-    for(let i=0;i<24;i++)useGame.getState().tickVisitors(.25);
+    for(let i=0;i<31;i++)useGame.getState().tickVisitors(.25);
     assert.equal(
       useGame.getState().save.achievements.includes("trust-expert"),
       expected,
@@ -1255,6 +1255,7 @@ test("audio has gesture gating, bounded voices, reusable ambience and complete t
   const previous = globalThis.AudioContext;
   let contexts = 0,
     closed = 0;
+  const bufferLengths=[];
   class Node {
     gain = {
       value: 0,
@@ -1305,8 +1306,9 @@ test("audio has gesture gating, bounded voices, reusable ambience and complete t
     createStereoPanner() {
       return new Node();
     }
-    createBuffer() {
-      return { getChannelData: () => new Float32Array(200) };
+    createBuffer(_channels,length) {
+      bufferLengths.push(length);
+      return { getChannelData: () => new Float32Array(length) };
     }
   };
   try {
@@ -1336,7 +1338,11 @@ test("audio has gesture gating, bounded voices, reusable ambience and complete t
     assert.equal(a.diagnostics().musicSources, 0);
     assert.equal(a.diagnostics().ambientSources, 0);
     assert.equal(a.diagnostics().broadcastSources, 0);
+    a.dawnScream();assert.equal(bufferLengths.at(-1),300);assert.equal(a.diagnostics().voices,1);
+    a.dawnScream();assert.equal(a.diagnostics().voices,1);
+    a.stopDawnScream();assert.equal(a.diagnostics().voices,0);
     a.muted = true;
+    a.dawnScream();
     a.play("scare");
     a.ambience(1);
     assert.equal(a.diagnostics().voices, 0);
@@ -1915,7 +1921,7 @@ test('dawn judgement freezes controls and rewards, pauses safely and resolves on
     assert.equal(useGame.getState().fireWeapon(null),false);
     const before=useGame.getState().room;useGame.setState({panel:'pause'});useGame.getState().tickVisitors(5);assert.equal(useGame.getState().room,before);
     useGame.setState({panel:null});
-    for(let i=0;i<24;i++)useGame.getState().tickVisitors(.25);
+    for(let i=0;i<31;i++)useGame.getState().tickVisitors(.25);
     assert.equal(useGame.getState().room.night.status,mistakes<3?'completed':'failed');
     assert.equal(useGame.getState().save.coins,mistakes<3?200:150);
     const save=useGame.getState().save;useGame.getState().tickVisitors(.25);assert.equal(useGame.getState().save,save);
@@ -1924,10 +1930,10 @@ test('dawn judgement freezes controls and rewards, pauses safely and resolves on
 test('Infinite resets per-shift mistakes and ammunition, but retains cumulative records',async()=>{
   const {useGame}=await combatStore();const r=useGame.getState().room;
   useGame.setState({room:{...r,night:{...r.night,mode:'infinite',elapsed:599.9},encounters:{...r.encounters,mistakes:2},weapon:{...r.weapon,ammo:1}}});
-  for(let i=0;i<25;i++)useGame.getState().tickVisitors(.25);
+  for(let i=0;i<32;i++)useGame.getState().tickVisitors(.25);
   const next=useGame.getState().room;assert.equal(next.night.number,2);assert.equal(next.mistakeBaseline,2);assert.equal(next.weapon.ammo,6);assert.equal(next.encounters.mistakes,2);
   useGame.setState({room:{...next,night:{...next.night,elapsed:1199.9},encounters:{...next.encounters,mistakes:5}}});
-  for(let i=0;i<25;i++)useGame.getState().tickVisitors(.25);
+  for(let i=0;i<32;i++)useGame.getState().tickVisitors(.25);
   assert.equal(useGame.getState().room.night.status,'failed');assert.equal(useGame.getState().save.infiniteRecords.totalNights,1);
 });
 test('opening to aim preserves the deadline and can be cancelled or answered',async()=>{
@@ -2092,4 +2098,27 @@ test('owning every bundle piece prevents a duplicate bundle charge',async()=>{
  const s={...g.newSave(),ownedAccessories:[...c.bundles[0].items]};
  assert.equal(c.purchaseBundle(s,'rainbow'),s);
  assert.equal(c.equipBundle(s,'rainbow').outfit.finish,'rainbow-finish');
+});
+
+test('dawn close-up lasts three seconds and respects motion settings',()=>{
+ const j=judgementLogic;
+ assert.equal(j.JUDGEMENT_SECONDS,7.6);
+ assert.equal(j.dawnScarePose(3.59,false,false).active,false);
+ assert.equal(j.dawnScarePose(3.6,false,false).active,true);
+ assert.equal(j.dawnScarePose(6.59,false,false).active,true);
+ assert.equal(j.dawnScarePose(6.6,false,false).active,false);
+ for(const gentle of [true,false]){const p=j.dawnScarePose(4.5,gentle,true);assert.equal(p.roll,0);assert.equal(p.x,0);assert.equal(p.y,0);}
+ assert.equal(j.dawnScarePose(4.5,true,false).distance,1.5);
+ assert.ok(Math.abs(j.dawnScarePose(4.5,false,false).roll)>0);
+});
+
+test('Injured cone removes material from both upper bites and keeps outward normals',async()=>{
+ const {createBittenConeGeometry}=await import(await moduleUrl(resolve('components/deader/bitten-cone.ts')));
+ const geometry=createBittenConeGeometry(),p=geometry.attributes.position,n=geometry.attributes.normal;
+ for(const y of [1.19,1.405]){
+  const xs=[];for(let i=0;i<p.count;i++)if(Math.abs(p.getY(i)-y)<.008)xs.push(p.getX(i));
+  assert.ok(xs.length>0);assert.ok(Math.max(...xs)<(y<1.3?.11:.045));
+ }
+ let front=-1;for(let i=0;i<p.count;i++){assert.ok(Number.isFinite(n.getX(i)));if(p.getZ(i)>.4&&p.getY(i)>.4)front=i;}
+ assert.ok(front>=0);assert.ok(n.getZ(front)>0);geometry.dispose();
 });

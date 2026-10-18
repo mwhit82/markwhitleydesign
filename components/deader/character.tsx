@@ -6,6 +6,7 @@ import { characterPose, type AnimationState } from "@/lib/deader/presentation";
 import { useGame } from "@/lib/deader/store";
 import type { Outfit } from "@/lib/deader/cosmetics";
 import { BundleDetails, rainbowTexture } from "./bundle-details";
+import { createBittenConeGeometry } from "./bitten-cone";
 import { createCharacterWear } from "./character-wear";
 export function Cone({
   split = 0, glitch = 0, shove = 0,
@@ -68,6 +69,8 @@ export function Cone({
     },
     [wear, wearTexture],
   );
+  const bitten=useMemo(()=>outfit?.finish==="chipped-finish"?createBittenConeGeometry():null,[outfit?.finish]);
+  useEffect(()=>()=>bitten?.dispose(),[bitten]);
   const rainbow=useMemo(()=>outfit?.finish==="rainbow-finish"?rainbowTexture():null,[outfit?.finish]);
   useEffect(()=>()=>rainbow?.dispose(),[rainbow]);
   const points = useMemo(
@@ -131,9 +134,11 @@ export function Cone({
         <BundleDetails outfit={outfit} paused={paused}/>
         {(appearance === "splitter" ? [-1,1] : [0]).map(half=>(
         <mesh key={half} position={[half*split*.12,0,0]} rotation={[0,0,-half*split*.05]} castShadow={!lowDetail}>
-          <latheGeometry onUpdate={geometry=>{if(!rainbow)return;const uv=geometry.attributes.uv,pos=geometry.attributes.position;for(let i=0;i<uv.count;i++)uv.setY(i,(pos.getY(i)-.23)/1.3);uv.needsUpdate=true;}} args={[points, lowDetail ? 16 : 40, appearance === "splitter" ? (half===-1?Math.PI:0) : 0, appearance === "splitter" ? Math.PI : Math.PI*2]} />
+          {bitten?<primitive object={bitten} attach="geometry"/>:<latheGeometry onUpdate={geometry=>{if(!rainbow)return;const uv=geometry.attributes.uv,pos=geometry.attributes.position;for(let i=0;i<uv.count;i++)uv.setY(i,(pos.getY(i)-.23)/1.3);uv.needsUpdate=true;}} args={[points, lowDetail ? 16 : 40, appearance === "splitter" ? (half===-1?Math.PI:0) : 0, appearance === "splitter" ? Math.PI : Math.PI*2]} />}
           <meshStandardMaterial
-            color={rainbow?"#ffffff":outfit?.finish==="chipped-finish"?"#dfb52b":colour}
+            key={bitten?"bitten":rainbow?"rainbow":"plain"}
+            vertexColors={!!bitten}
+            color={rainbow||bitten?"#ffffff":colour}
             map={rainbow??wear.map}
             bumpMap={wear.relief}
             bumpScale={0.008}

@@ -7,6 +7,8 @@ import { useGame } from '@/lib/deader/store';
 import { roomAudio } from '@/lib/deader/audio/room-audio';
 import { Box, Sign } from './environment';
 import styles from './game.module.css';
+import { createCharacterWear } from './character-wear';
+const plasticResources=new WeakMap<THREE.Object3D,{map:THREE.CanvasTexture;wear:ReturnType<typeof createCharacterWear>}>();
 class GunFallback extends Component<{children:ReactNode},{failed:boolean}>{
  state={failed:false};static getDerivedStateFromError(){return {failed:true};}
  render(){return this.state.failed?<SimpleGun/>:this.props.children;}
@@ -14,8 +16,25 @@ class GunFallback extends Component<{children:ReactNode},{failed:boolean}>{
 function SimpleGun(){return <group><Box position={[0,0,-.08]} size={[.07,.09,.34]} colour="#50545a"/><Box position={[0,-.12,.03]} size={[.06,.19,.09]} colour="#573b29"/></group>;}
 function LoadedGun({firstPerson=false}:{firstPerson?:boolean}){
  const {scene}=useGLTF('/deader/service-pistol.glb');
- const model=useMemo(()=>{const copy=scene.clone(true);copy.traverse(o=>{if(o instanceof THREE.Mesh){o.castShadow=false;o.userData.firstPersonWeapon=firstPerson;if(firstPerson){o.renderOrder=10;o.material=Array.isArray(o.material)?o.material.map(m=>m.clone()):o.material.clone();const ms=Array.isArray(o.material)?o.material:[o.material];ms.forEach(m=>{m.depthTest=false;m.depthWrite=false;});}}});return copy;},[scene,firstPerson]);
- useEffect(()=>()=>{if(firstPerson)model.traverse(o=>{if(o instanceof THREE.Mesh)(Array.isArray(o.material)?o.material:[o.material]).forEach(m=>m.dispose());});},[model,firstPerson]);
+ const model=useMemo(()=>{
+  let resources=plasticResources.get(scene);
+  if(!resources){
+   const canvas=document.createElement('canvas');canvas.width=canvas.height=512;const ctx=canvas.getContext('2d')!;
+   scene.traverse(o=>{if(o instanceof THREE.Mesh){const m=Array.isArray(o.material)?o.material[0]:o.material;if(m.map?.image)ctx.drawImage(m.map.image,0,0,512,512);}});
+   const pixels=ctx.getImageData(0,0,512,512);
+   for(let i=0;i<pixels.data.length;i+=4){const r=pixels.data[i],g=pixels.data[i+1],b=pixels.data[i+2];const wood=r>b*1.18&&r>g*1.04;
+    const shade=.7+Math.round((r+g+b)/765*4)*.075;const colour=wood?[111,75,49]:[68,73,77];
+    for(let j=0;j<3;j++)pixels.data[i+j]=colour[j]*shade;
+   }
+   ctx.putImageData(pixels,0,0);const map=new THREE.CanvasTexture(canvas);map.colorSpace=THREE.SRGBColorSpace;map.flipY=false;
+   resources={map,wear:createCharacterWear()};plasticResources.set(scene,resources);
+  }
+  const copy=scene.clone(true);copy.traverse(o=>{if(o instanceof THREE.Mesh){o.castShadow=false;o.userData.firstPersonWeapon=firstPerson;
+   o.material=new THREE.MeshStandardMaterial({map:resources.map,bumpMap:resources.wear.relief,bumpScale:.0015,roughness:.64,metalness:.04,depthTest:!firstPerson,depthWrite:!firstPerson});
+   if(firstPerson)o.renderOrder=10;
+  }});return copy;
+ },[scene,firstPerson]);
+ useEffect(()=>()=>{model.traverse(o=>{if(o instanceof THREE.Mesh)(Array.isArray(o.material)?o.material:[o.material]).forEach(m=>m.dispose());});},[model]);
  return <primitive object={model} dispose={null}/>;
 }
 export function GunModel({firstPerson=false}:{firstPerson?:boolean}){return <GunFallback><Suspense fallback={<SimpleGun/>}><LoadedGun firstPerson={firstPerson}/></Suspense></GunFallback>;}

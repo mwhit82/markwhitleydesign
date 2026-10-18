@@ -23,7 +23,6 @@ export function BundleDetails({outfit,paused=false}:{outfit?:Outfit;paused?:bool
  </group>}
  {outfit.wrap==='bandages'&&<group>{[0,1,2].map(i=><mesh key={i} position={[.23,.08+i*.045,.01]} rotation={[0,0,.18]}><cylinderGeometry args={[.052,.052,.028,10]}/><meshStandardMaterial color="#ddd8c6" roughness={1}/></mesh>)}<mesh position={[-.25,1.0,.18]} rotation={[0,0,-.4]}><boxGeometry args={[.18,.055,.055]}/><meshStandardMaterial color="#ddd8c6"/></mesh></group>}
  {outfit.face==='dangling-eye'&&<group ref={eye} position={[.13,.99,.27]}><mesh position={[.025,-.10,.025]} rotation={[0,0,.2]}><cylinderGeometry args={[.007,.007,.20,6]}/><meshStandardMaterial color="#5b3a28"/></mesh><mesh position={[.045,-.22,.04]}><sphereGeometry args={[.055,12,8]}/><meshStandardMaterial color="#151310"/></mesh></group>}
- {outfit.finish==='chipped-finish'&&<group>{[0,1,2,3].map(i=><mesh key={i} position={[.12+i*.04,1.31-i*.15,.12+i*.045]} rotation={[0,0,i*.6]}><dodecahedronGeometry args={[.045]}/><meshStandardMaterial color={i%2?'#a3472f':'#5b481e'} roughness={1}/></mesh>)}</group>}
  {outfit.effect&&<group ref={bits}>{Array.from({length:12},(_,i)=><mesh key={i}><boxGeometry args={[.025,.035,.012]}/><meshStandardMaterial color={outfit.effect==='confetti'?rainbow[i%6]:'#bc8c32'}/></mesh>)}</group>}
  </group>;
 }
