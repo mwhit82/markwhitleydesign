@@ -533,6 +533,8 @@ export function VRFeed() {
     }
     camera.updateProjectionMatrix();
     camera.layers.enable(1);
+    camera.layers.disable(4);
+    if(view === "cctv" && r.feed === r.stalker.feed) camera.layers.enable(4);
     if (
       process.env.NODE_ENV === "development" &&
       gl.domElement.dataset.vrFeedDisabled === "true"
@@ -549,6 +551,7 @@ export function VRFeed() {
         contextLost: gl.getContext().isContextLost(),
       });
     }
+    if (rendered && view === "cctv") { spatial.lastFeed=r.feed; spatial.lastFeedAt=performance.now(); }
     if (!rendered) {
       mesh.current.visible = false;
       return;

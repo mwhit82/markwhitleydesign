@@ -1,4 +1,5 @@
 "use client";
+import { stalkerDebug, tickStalker, dismissStalker, freshStalker, emptyStalkerSight } from "./stalker";
 import { beginJudgement, tickJudgement, JUDGEMENT_SECONDS, judgementMistakes, spendShot } from "./judgement";
 import {useVR} from "./vr-state";
 import {validVRDecision} from "./vr";
@@ -155,6 +156,9 @@ export const useGame = create<State>((set, get) => ({
     if(s.scene!=="room"||s.tutorial||s.panel||s.suspension||!s.focused||r.view!=="explore"||r.judgement||r.night?.status!=="running"||r.survival.phase!=="idle")return false;
     const weapon=spendShot(r.weapon); if(weapon===r.weapon)return false;
     let room={...r,weapon}, save=s.save;
+    if(target === "stalker" && r.stalker.phase === "room") {
+      set({room:{...room,stalker:dismissStalker(r.stalker)}}); return true;
+    }
     const active=r.encounters.active;
     if(target && !weapon.removed.includes(target)) {
       if(active?.id===target && active.phase==="waiting" && r.door==="OPEN") {
@@ -315,11 +319,16 @@ export const useGame = create<State>((set, get) => ({
       const night=advanceNight(s.room.night,delta,false,s.room.encounters.trust);
       if(night.status==="judging") {
         gameInput.reset();
-        set({arcade:null,prompt:null,room:{...s.room,night:{...night,cancelledVisitor:!!s.room.encounters.active},judgement:beginJudgement(judgementMistakes(s.room.encounters.mistakes,s.room.mistakeBaseline)),view:"explore",visitorId:null,door:"CLOSED",encounters:{...s.room.encounters,active:null,queued:null,pair:undefined},residents:cancelMimics(s.room.residents),survival:{...s.room.survival,phase:"idle"}}});
+        set({arcade:null,prompt:null,room:{...s.room,night:{...night,cancelledVisitor:!!s.room.encounters.active},judgement:beginJudgement(judgementMistakes(s.room.encounters.mistakes,s.room.mistakeBaseline)),stalker:freshStalker(night.number),stalkerSight:emptyStalkerSight(),view:"explore",visitorId:null,door:"CLOSED",encounters:{...s.room.encounters,active:null,queued:null,pair:undefined},residents:cancelMimics(s.room.residents),survival:{...s.room.survival,phase:"idle"}}});
         if(typeof document!=="undefined"&&document.pointerLockElement)document.exitPointerLock();
         return;
       }
       if(night!==s.room.night){set({room:{...s.room,night}});s=get();}
+    }
+    const n=s.room.night;
+    if(n) {
+      const stalker=process.env.NODE_ENV === "development" && stalkerDebug.hold ? s.room.stalker : tickStalker(s.room.stalker,dt,{seed:s.room.encounters.runId,shift:n.number,seconds:(n.elapsed-(n.mode==="infinite"?(n.number-1)*600:0))*n.duration/600,running:n.status==="running",paused:false,defer:s.room.survival.phase!=="idle"||!!s.room.encounters.active||s.room.residents.some(v=>v.attackSeconds!==undefined)||!["explore","cctv"].includes(s.room.view),exploring:s.room.view==="explore",sight:s.room.stalkerSight});
+      if(stalker!==s.room.stalker){set({room:{...s.room,stalker}});s=get();}
     }
     const report = newsForNight(s.room.night?.number ?? 1);
     const newsSeconds = loopBroadcast(s.room.newsSeconds, delta, broadcastDuration(report));

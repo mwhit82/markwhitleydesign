@@ -1,4 +1,6 @@
 "use client";
+import { xrStore } from "./runtime";
+import { stalkerDebug, STALKER_ROOM } from "@/lib/deader/stalker";
 import { feedHealth } from "@/lib/deader/vr-feed";
 import * as THREE from "three";
 import { useState, useEffect } from "react";
@@ -20,6 +22,13 @@ export function installEmulator() {
 /** Explicit local test controls; absent from production. No saved progress is granted. */
 export default function VRDev() {
   const [fixture, setFixture] = useState<Rehearsal>("standard");
+  const [holdStalker, setHoldStalker] = useState(false);
+  useEffect(
+    () => () => {
+      stalkerDebug.hold = false;
+    },
+    [],
+  );
   const [target, setTarget] = useState("Resume");
   useEffect(() => {
     const key = (e: KeyboardEvent) => {
@@ -74,6 +83,40 @@ export default function VRDev() {
       <span>LOCAL XR EMULATOR</span>
       <button
         onClick={() => {
+          const k = useGame.getState().room.stalker,
+            a = STALKER_ROOM[k.anchor];
+          if (!device || !a) return;
+          const point = new THREE.Vector3(
+            a.p[0] + Math.sin(a.yaw) * 0.24 * 0.82,
+            1.13 * 0.82,
+            a.p[2] + Math.cos(a.yaw) * 0.24 * 0.82,
+          );
+          xrStore.getState().origin?.worldToLocal(point);
+          device.position.set(point.x + 1.5, point.y + 0.7, point.z + 1.5);
+          const from = new THREE.Vector3(
+            device.position.x,
+            device.position.y,
+            device.position.z,
+          );
+          const q = new THREE.Quaternion().setFromRotationMatrix(
+            new THREE.Matrix4().lookAt(from, point, new THREE.Vector3(0, 1, 0)),
+          );
+          device.quaternion.set(q.x, q.y, q.z, q.w);
+        }}
+      >
+        Inspect Stalker
+      </button>
+
+      <button
+        onClick={() => {
+          stalkerDebug.hold = !holdStalker;
+          setHoldStalker(!holdStalker);
+        }}
+      >
+        {holdStalker ? "Release Stalker pose" : "Hold Stalker pose"}
+      </button>
+      <button
+        onClick={() => {
           const canvas = document.querySelector<HTMLCanvasElement>(
             "canvas[data-vr-stats]",
           );
@@ -98,6 +141,14 @@ export default function VRDev() {
         onChange={(e) => setFixture(e.target.value as Rehearsal)}
       >
         {[
+          "stalker-room",
+          "stalker-follow",
+          "stalker-cam-0",
+          "stalker-cam-1",
+          "stalker-cam-2",
+          "stalker-cam-3",
+          "stalker-cam-4",
+          "stalker-cam-5",
           "standard",
           "scare",
           "armed",

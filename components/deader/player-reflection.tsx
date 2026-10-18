@@ -70,6 +70,7 @@ export function PlayerMirror() {
       if(useVR.getState().active)spatial.auxiliaryFrame=now;
       lastFrame = now;
       surface.getReflectionCamera(args[2]).layers.enable(REFLECTION_LAYER);
+      surface.getReflectionCamera(args[2]).layers.disable(4);
       // The camera-relative weapon must not float above the physical reflected body.
       const hidden:THREE.Object3D[]=[];
       args[1].traverse(object=>{if(object.visible&&object.userData.firstPersonWeapon){hidden.push(object);object.visible=false;}});

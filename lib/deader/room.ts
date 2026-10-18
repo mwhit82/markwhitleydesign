@@ -1,3 +1,4 @@
+import { freshStalker, emptyStalkerSight, type StalkerState, type StalkerSight } from "./stalker";
 import { freshWeapon, type Weapon, type Judgement } from "./judgement";
 import type { Resident } from "./lounge";
 import type { Session } from "./game";
@@ -17,6 +18,8 @@ export type RoomView =
   "console" | "arcade" | "tv" | "lounge-tv" | "explore" | "door" | "inspect" | "cctv" | "news" | "donut" | "vent";
 export type Feed = 0 | 1 | 2 | 3 | 4 | 5;
 export type RoomState = {
+  stalker: StalkerState;
+  stalkerSight: StalkerSight;
   previewBundle?: "rainbow"|"injured";
   judgement: Judgement | null;
   mistakeBaseline: number;
@@ -38,6 +41,7 @@ export const freshRoom = (
   duration?: 300 | 60,
   session?: Session,
 ): RoomState => ({
+  stalker: freshStalker(session?.night ?? 1), stalkerSight: emptyStalkerSight(),
   judgement: null, mistakeBaseline: 0, weapon: freshWeapon(), rewardToast: null,
   residents: [],
   night: duration ? freshNight(duration, session) : null,
@@ -159,7 +163,7 @@ export const NIGHT_ONE_NEWS: Broadcast = {
       seconds: 7,
       headline: "LOOKS CAN DECEIVE",
       subtitle:
-        "They pretend to be ordinary people. They slowly walk up stairs, then knock on doors. Polite knocking is not proof of humanity.",
+        "A figure hiding in the room? Look straight at it until it leaves. They pretend to be ordinary people. They slowly walk up stairs, then knock on doors. Polite knocking is not proof of humanity.",
     },
     {
       seconds: 7,

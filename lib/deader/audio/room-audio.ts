@@ -239,6 +239,20 @@ export class RoomAudio {
     source.connect(gain).connect(pan).connect(c.destination);this.voices.add(source);source.onended=()=>{this.voices.delete(source);source.disconnect();gain.disconnect();pan.disconnect();};source.start();source.stop(c.currentTime+3);
   }
 
+  stalkerScrape(x:number,z:number,listener:{x:number;z:number;yaw:number}) {
+    const c=this.context;
+    if(!c||c.state!=="running"||this.muted||!this.volume||this.voices.size>=12)return;
+    const duration=.35,buffer=c.createBuffer(1,Math.ceil(c.sampleRate*duration),c.sampleRate),data=buffer.getChannelData(0);
+    for(let i=0;i<data.length;i++)data[i]=(Math.random()*2-1)*(1-i/data.length);
+    const source=c.createBufferSource(),filter=c.createBiquadFilter(),gain=c.createGain(),pan=c.createStereoPanner();
+    source.buffer=buffer;filter.type="lowpass";filter.frequency.value=650;
+    const dx=x-listener.x,dz=z-listener.z;
+    gain.gain.value=this.volume*.07/(1+Math.hypot(dx,dz)*.25);
+    pan.pan.value=Math.max(-1,Math.min(1,(dx*Math.cos(listener.yaw)-dz*Math.sin(listener.yaw))/5));
+    source.connect(filter).connect(gain).connect(pan).connect(c.destination);this.voices.add(source);
+    source.onended=()=>{this.voices.delete(source);source.disconnect();filter.disconnect();gain.disconnect();pan.disconnect();};
+    source.start();source.stop(c.currentTime+duration);
+  }
   play(kind: Cue, pan = 0) {
     const c = this.context;
     if (

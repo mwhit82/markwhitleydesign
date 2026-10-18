@@ -1,4 +1,5 @@
 "use client";
+import { Stalker } from "../stalker";
 import {useVR} from "@/lib/deader/vr-state";
 import { Weapon } from "../weapon";
 import { Judge } from "../judgement";
@@ -156,6 +157,7 @@ export default function Room() {
       <Weapon />
       <Judge />
       <Visitors />
+      <Stalker />
       <RoomDoor materials={m} />
       <Surveillance materials={m} />
       <group

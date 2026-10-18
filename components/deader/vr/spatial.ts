@@ -15,6 +15,8 @@ export const spatial = {
     pet: boolean;
   },
   auxiliaryFrame: -1,
+  lastFeed: -1,
+  lastFeedAt: -Infinity,
 };
 export function registerUI(
   previous: THREE.Object3D | null,

@@ -2345,3 +2345,57 @@ test('every Normal dawn resolves from each room view and exposes VR results once
   const save=s.save;useGame.getState().tickVisitors(.1);assert.equal(useGame.getState().save,save);
  }
 });
+
+const stalkerLogic=await import(await moduleUrl(resolve('lib/deader/stalker.ts')));
+const stalkerInput=(extra={})=>({seed:'fenn',shift:1,seconds:100,running:true,paused:false,defer:false,exploring:true,sight:stalkerLogic.emptyStalkerSight(),...extra});
+test('Stalker schedules reproducibly, limits sightings and avoids repeated feeds',()=>{
+ const a=stalkerLogic.stalkerSchedule('fenn',1);assert.deepEqual(a,stalkerLogic.stalkerSchedule('fenn',1));assert.ok(a.first>=60&&a.first<=100);assert.ok(a.second>=170&&a.second<=210);
+ let s=stalkerLogic.tickStalker(stalkerLogic.freshStalker(),.1,stalkerInput());assert.equal(s.phase,'camera');
+ const feed=s.feed;
+ for(let i=0;i<101;i++)s=stalkerLogic.tickStalker(s,.25,stalkerInput());
+ assert.equal(s.phase,'idle');assert.equal(s.index,1);
+ s=stalkerLogic.tickStalker(s,.1,stalkerInput({seconds:220}));if(s.phase==='camera')assert.notEqual(s.feed,feed);
+ assert.equal(stalkerLogic.tickStalker({...s,index:2,phase:'idle'},.1,stalkerInput({seconds:299})).phase,'idle');
+});
+test('Stalker camera observation latches, retreats then waits for safe exploration',()=>{
+ let s={...stalkerLogic.freshStalker(),phase:'camera',follow:true};
+ s=stalkerLogic.tickStalker(s,.1,stalkerInput({sight:{camera:true,gaze:false,anchor:-1}}));
+ for(let i=0;i<7;i++)s=stalkerLogic.tickStalker(s,.1,stalkerInput());assert.equal(s.phase,'retreat');
+ for(let i=0;i<8;i++)s=stalkerLogic.tickStalker(s,.1,stalkerInput());assert.equal(s.phase,'pending-room');
+ const before=s;for(let i=0;i<50;i++)s=stalkerLogic.tickStalker(s,.1,stalkerInput({exploring:false}));assert.deepEqual(s,before);
+ for(let i=0;i<32;i++)s=stalkerLogic.tickStalker(s,.1,stalkerInput({sight:{camera:false,gaze:false,anchor:2}}));assert.equal(s.phase,'room');assert.equal(s.anchor,2);
+});
+test('Stalker requires sustained unobstructed gaze and cancels safely at dawn',()=>{
+ let s={...stalkerLogic.freshStalker(),phase:'room',anchor:0};
+ const seeing=stalkerInput({sight:{camera:false,gaze:true,anchor:0}});
+ for(let i=0;i<7;i++)s=stalkerLogic.tickStalker(s,.1,seeing);assert.equal(s.phase,'room');
+ s=stalkerLogic.tickStalker(s,.1,stalkerInput());assert.equal(s.gaze,0);
+ assert.equal(stalkerLogic.tickStalker(s,.1,stalkerInput({paused:true})),s);
+ for(let i=0;i<8;i++)s=stalkerLogic.tickStalker(s,.1,seeing);assert.equal(s.phase,'dismiss');
+ assert.deepEqual(stalkerLogic.tickStalker(s,.1,stalkerInput({running:false})),stalkerLogic.freshStalker());
+ assert.equal(stalkerLogic.stalkerGaze({x:0,y:0,z:-1},{x:0,y:0,z:-3},true),true);
+ assert.equal(stalkerLogic.stalkerGaze({x:0,y:0,z:-1},{x:0,y:0,z:-3},false),false);
+ assert.equal(stalkerLogic.stalkerGaze({x:0,y:0,z:-1},{x:3,y:0,z:-3},true),false);
+});
+test('shooting Stalker consumes a shot without visitor rewards or penalties',async()=>{
+ const {useGame}=await combatStore();const before=useGame.getState(),r=before.room;
+ useGame.setState({room:{...r,stalker:{...stalkerLogic.freshStalker(),phase:'room',anchor:0}}});
+ assert.equal(useGame.getState().fireWeapon('stalker'),true);
+ const after=useGame.getState();assert.equal(after.room.stalker.phase,'dismiss');assert.equal(after.room.weapon.ammo,r.weapon.ammo-1);assert.equal(after.save,before.save);assert.equal(after.room.encounters,r.encounters);
+});
+test('Stalker defers new sightings, persists harmlessly in the room and resets between shifts',()=>{
+ const fresh=stalkerLogic.freshStalker();assert.equal(stalkerLogic.tickStalker(fresh,.1,stalkerInput({defer:true})),fresh);
+ let s={...fresh,phase:'room',anchor:0};for(let i=0;i<2000;i++)s=stalkerLogic.tickStalker(s,.1,stalkerInput());assert.equal(s.phase,'room');assert.equal(s.index,0);
+ const reset=stalkerLogic.tickStalker(s,.1,stalkerInput({shift:2,seconds:0}));assert.equal(reset.phase,'idle');assert.equal(reset.shift,2);
+ assert.equal(stalkerLogic.tickStalker(s,NaN,stalkerInput()),s);
+});
+test('all Stalker fixtures are transient and preserve visitor budget and saves',async()=>{
+ const {rehearse}=await import(await moduleUrl(resolve('lib/deader/rehearsal.ts')));
+ const {freshRoom}=await import(await moduleUrl(resolve('lib/deader/room.ts')));
+ for(let feed=0;feed<6;feed++){
+  const base=freshRoom('stalker-fixture',60),r=rehearse(base,`stalker-cam-${feed}`);
+  assert.equal(r.stalker.feed,feed);assert.equal(r.stalker.phase,'camera');assert.equal(r.feed,feed);assert.equal(r.encounters,base.encounters);assert.equal(r.residents,base.residents);
+ }
+ const normal=freshRoom('normal',300);assert.equal(rehearse(normal,'stalker-room'),normal);
+ assert.equal(Object.hasOwn(g.newSave(),'stalker'),false);
+});

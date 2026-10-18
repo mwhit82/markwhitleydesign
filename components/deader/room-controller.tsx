@@ -205,6 +205,7 @@ export function RoomController() {
       gl.domElement.removeEventListener("mousedown", press);
       if (document.pointerLockElement) document.exitPointerLock();
       camera.layers.disable(1);
+      camera.layers.disable(4);
       roomAudio.silence();
     };
   }, [gl, camera]);
@@ -254,6 +255,8 @@ export function RoomController() {
     if (r.view === "inspect" || (r.view === "cctv" && r.feed > 0))
       camera.layers.enable(1);
     else camera.layers.disable(1);
+    camera.layers.disable(4);
+    if(r.view === "cctv" && r.feed === r.stalker.feed) camera.layers.enable(4);
     let fov = 55;
     if (
       r.survival.phase !== "idle" &&
