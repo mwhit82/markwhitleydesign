@@ -1,4 +1,5 @@
 "use client";
+import {VR_GUN_YAW} from "@/lib/deader/vr";
 import {useVR} from "@/lib/deader/vr-state";
 import { Component, Suspense, useEffect, useMemo, useRef, type ReactNode } from 'react';
 import {useGLTF} from '@react-three/drei';
@@ -38,7 +39,7 @@ function LoadedGun({firstPerson=false}:{firstPerson?:boolean}){
  useEffect(()=>()=>{model.traverse(o=>{if(o instanceof THREE.Mesh)(Array.isArray(o.material)?o.material:[o.material]).forEach(m=>m.dispose());});},[model]);
  return <primitive object={model} dispose={null}/>;
 }
-export function GunModel({firstPerson=false}:{firstPerson?:boolean}){return <GunFallback><Suspense fallback={<SimpleGun/>}><LoadedGun firstPerson={firstPerson}/></Suspense></GunFallback>;}
+export function GunModel({firstPerson=false,vrAligned=false}:{firstPerson?:boolean;vrAligned?:boolean}){return <GunFallback><Suspense fallback={<SimpleGun/>}><group rotation={vrAligned?[0,VR_GUN_YAW,0]:[0,0,0]} position={vrAligned?[0,.14,0]:[0,0,0]}><LoadedGun firstPerson={firstPerson}/></group></Suspense></GunFallback>;}
 export function Weapon() {
   const {scene,camera}=useThree();
   const equipped=useGame(s=>s.room.weapon.collected);

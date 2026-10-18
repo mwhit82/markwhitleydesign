@@ -1,4 +1,5 @@
 "use client";
+import {spatial} from "./vr/spatial";
 import {useVR} from "@/lib/deader/vr-state";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useFrame } from "@react-three/fiber";
@@ -63,6 +64,8 @@ export function PlayerMirror() {
       const now = performance.now();
       if (s.panel || !s.focused || s.suspension || s.room.view !== "explore" ||
           now - lastFrame < 1000 / (useVR.getState().active ? 10 : quality === "low" ? 12 : 24)) return;
+      if(useVR.getState().active && now-spatial.auxiliaryFrame<6)return;
+      if(useVR.getState().active)spatial.auxiliaryFrame=now;
       lastFrame = now;
       surface.getReflectionCamera(args[2]).layers.enable(REFLECTION_LAYER);
       // The camera-relative weapon must not float above the physical reflected body.

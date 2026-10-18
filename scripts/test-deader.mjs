@@ -2174,3 +2174,96 @@ test('VR teleport checks the whole path, door partition and furniture',()=>{
  for(const ua of ['', 'Mozilla/5.0 (iPhone) AppleWebKit/605.1 Safari/604.1', 'Mozilla/5.0 (Linux; Android 14) Chrome/140.0 Mobile Safari/537.36', 'Mozilla/5.0 (Macintosh) Chrome/140.0 Safari/537.36', 'Quest 3 Wolvic/1.0'])
   assert.equal(vr.isQuestBrowser(ua),false);
  });
+
+test('VR screen model has focused pages and independent shop purchase/equip actions',async()=>{
+ const {vrScreen,newVRMenu}=await import(await moduleUrl(resolve('lib/deader/vr-menu.ts')));
+ const {useGame}=await import(await moduleUrl(resolve('lib/deader/store.ts')));
+ const actions={patch:()=>{},resume:()=>{},recenter:()=>{},exit:()=>{},decide:()=>{}};
+ for(const panel of ['shop','wardrobe','start','pause','progress','tutorial']){
+  const m=newVRMenu(),s={...useGame.getState(),panel,save:g.newSave(),suspension:null};
+  const view=vrScreen(s,m,actions);assert.ok(view.buttons.length<=4);assert.ok(view.close);
+ }
+ let bought=0,equipped=0;const s={...useGame.getState(),panel:'shop',save:g.newSave(),suspension:null,buyBundle:()=>bought++,wearBundle:()=>equipped++};
+ const m={...newVRMenu(),page:'shop-bundle'};let view=vrScreen(s,m,actions);
+ assert.equal(view.buttons.find(b=>b.text==='Purchase').disabled,false);
+ assert.equal(view.buttons.find(b=>b.text==='Equip set').disabled,true);
+ view.buttons.find(b=>b.text==='Purchase').run();assert.equal(bought,1);assert.equal(equipped,0);
+ s.save.coins=149;view=vrScreen(s,m,actions);assert.equal(view.buttons.find(b=>b.text==='Purchase').disabled,true);
+});
+test('VR confirmations expire with encounter identity and CCTV keeps decisions visible',async()=>{
+ const {vrScreen,newVRMenu}=await import(await moduleUrl(resolve('lib/deader/vr-menu.ts')));
+ const {useGame}=await import(await moduleUrl(resolve('lib/deader/store.ts')));
+ const s={...useGame.getState(),panel:null,suspension:null,room:{...useGame.getState().room,night:null,view:'cctv',survival:{phase:'idle'},encounters:{active:{id:'a',visitor:'bea',phase:'waiting',elapsed:3,asked:[]}}}};
+ const actions={patch:()=>{},resume:()=>{},recenter:()=>{},exit:()=>{},decide:()=>{}},m=newVRMenu();
+ let view=vrScreen(s,m,actions);assert.equal(view.feed,true);assert.equal(view.buttons.length,4);view.buttons.find(b=>b.text==='Let in').run();assert.equal(m.confirmation.id,'a');
+ view=vrScreen(s,m,actions);assert.ok(view.buttons.some(b=>b.text==='Confirm'));
+ s.room.encounters.active={...s.room.encounters.active,id:'b'};view=vrScreen(s,m,actions);assert.equal(m.confirmation,null);assert.ok(view.buttons.some(b=>b.text==='Let in'));
+});
+test('VR decision bridge requires live headset and preserves desktop CCTV restrictions',async()=>{
+ const {useGame}=await import(await moduleUrl(resolve('lib/deader/store.ts')));
+ const {useVR}=await import(await moduleUrl(resolve('lib/deader/vr-state.ts')));
+ const before=useGame.getState(),previous=useVR.getState().active;
+ try{
+  useGame.setState({panel:null,suspension:null,focused:true,tutorial:null,room:{...before.room,night:null,judgement:null,door:'VISITOR_WAITING',view:'cctv',survival:{phase:'idle'},encounters:{...before.room.encounters,active:{id:'vr-decision',visitor:'bea',phase:'waiting',elapsed:0,asked:[],decision:null}}}});
+  let calls=0;useGame.setState({decideVisitor:()=>{calls++;}});
+  useVR.setState({active:false});useGame.getState().decideVisitorVR('vr-decision','admit');assert.equal(calls,0);
+  useVR.setState({active:true});useGame.getState().decideVisitorVR('wrong','admit');assert.equal(calls,0);
+  useGame.getState().decideVisitorVR('vr-decision','admit');assert.equal(calls,1);assert.equal(useGame.getState().room.view,'door');
+ }finally{useGame.setState(before);useVR.setState({active:previous});}
+});
+test('VR panel placement keeps full screen width in free space when available',()=>{
+ const head={x:0,y:1.6,z:0};const p=vr.placeVRPanel(head,{x:0,z:-1},'lobby',[{x:0,z:-1.2,hx:2,hz:.3}]);
+ assert.ok(Math.hypot(p.x,p.z)>=.59);assert.ok(Math.hypot(p.x,p.z)<=1.21);
+ assert.equal(vr.validVRFloor(p,'lobby',[{x:0,z:-1.2,hx:2,hz:.3}]),true);
+ assert.ok(p.y>=.65);assert.ok(vr.VR_MUZZLE[2]<0);
+});
+test('VR pistol reverses the GLB forward axis to match the firing muzzle',async()=>{
+ const {readFile}=await import('node:fs/promises');const bytes=await readFile('public/deader/service-pistol.glb');
+ const gltf=JSON.parse(bytes.subarray(20,20+bytes.readUInt32LE(12)).toString());
+ const root=gltf.nodes.find(n=>n.name==='Worn service pistol');
+ const THREE=await import('three');const forward=new THREE.Vector3(1,0,0).applyQuaternion(new THREE.Quaternion(...root.rotation)).applyAxisAngle(new THREE.Vector3(0,1,0),vr.VR_GUN_YAW);
+ assert.ok(forward.z<-.99);assert.ok(Math.abs(forward.x)<.001);assert.ok(vr.VR_MUZZLE[2]<0);
+});
+test('VR hover and proximity never open or close menus',async()=>{
+ const {vrPanelVisible}=await import(await moduleUrl(resolve('lib/deader/vr-interactions.ts')));
+ const {useGame}=await import(await moduleUrl(resolve('lib/deader/store.ts')));
+ const s={...useGame.getState(),panel:null,suspension:null,tutorial:null,room:{...useGame.getState().room,view:'explore',judgement:null,night:null,survival:{phase:'idle'},residents:[{id:'alert',mimicStage:3}]}};
+ for(let i=0;i<1000;i++){s.prompt=['Door','Shop','Take gun',null][i%4];assert.equal(vrPanelVisible(s),false);}
+ s.room.view='inspect';for(const prompt of ['Take gun','Door',null]){s.prompt=prompt;assert.equal(vrPanelVisible(s),true);}
+ s.room.view='explore';assert.equal(vrPanelVisible(s),false);
+});
+test('VR object activation is explicit and gun pickup has no intermediate screen',async()=>{
+ const {activateVRTarget}=await import(await moduleUrl(resolve('lib/deader/vr-interactions.ts')));
+ const {useGame}=await import(await moduleUrl(resolve('lib/deader/store.ts')));
+ const calls=[];const s={...useGame.getState(),scene:'room',panel:null,suspension:null,focused:true,room:{...useGame.getState().room,view:'explore',night:null,judgement:null,survival:{phase:'idle'}},collectWeapon:()=>calls.push('collect'),returnWeapon:()=>calls.push('return'),roomView:v=>calls.push(v),doorEvent:e=>calls.push(e.type)};
+ activateVRTarget(s,'Take gun',()=>{});assert.deepEqual(calls,['collect']);
+ activateVRTarget(s,'Put gun back',()=>{});assert.deepEqual(calls,['collect','return']);
+ activateVRTarget(s,'Door',()=>{});assert.deepEqual(calls.slice(-2),['door','inspect']);
+ activateVRTarget(s,'CCTV',()=>{});assert.equal(calls.at(-1),'cctv');assert.equal(calls.includes('console'),false);
+ s.suspension='interrupted';const count=calls.length;assert.equal(activateVRTarget(s,'Door',()=>{}),false);assert.equal(calls.length,count);
+});
+test('VR door activation is restricted to handle descendants',async()=>{
+ const {vrInteractionName}=await import(await moduleUrl(resolve('lib/deader/vr-interactions.ts')));
+ const door={userData:{interaction:'Door',vrIgnoreInteraction:true},parent:null};
+ assert.equal(vrInteractionName({userData:{},parent:door}),null);
+ const handle={userData:{vrInteraction:'Door'},parent:door};
+ assert.equal(vrInteractionName({userData:{},parent:handle}),'Door');
+ assert.equal(vrInteractionName({userData:{},parent:{userData:{vrInteraction:'Shop'},parent:null}}),'Shop');
+});
+test('VR CCTV omits visitor choices when the landing is empty',async()=>{
+ const {vrScreen,newVRMenu}=await import(await moduleUrl(resolve('lib/deader/vr-menu.ts')));
+ const {useGame}=await import(await moduleUrl(resolve('lib/deader/store.ts')));
+ const s={...useGame.getState(),panel:null,suspension:null,tutorial:null,room:{...useGame.getState().room,view:'cctv',judgement:null,night:null,survival:{phase:'idle'},encounters:{active:null}}};
+ const view=vrScreen(s,newVRMenu(),{patch:()=>{},resume:()=>{},recenter:()=>{},exit:()=>{},decide:()=>{}});
+ assert.deepEqual(view.buttons.map(b=>b.text),['Change camera','Play Impossible Shift']);assert.equal(view.feed,true);
+});
+test('VR ray activation satisfies weapon guards and retains ammo on return',async()=>{
+ const {activateVRTarget}=await import(await moduleUrl(resolve('lib/deader/vr-interactions.ts')));
+ const {useGame}=await import(await moduleUrl(resolve('lib/deader/store.ts')));
+ const before=useGame.getState();
+ try{
+  useGame.setState({scene:'room',panel:null,suspension:null,focused:true,tutorial:null,prompt:null,room:{...before.room,judgement:null,view:'explore',survival:{phase:'idle'},night:{...before.room.night,status:'running'},weapon:{...before.room.weapon,collected:false,ammo:4}}});
+  activateVRTarget(useGame.getState(),'Take gun',p=>useGame.setState(p));assert.equal(useGame.getState().room.weapon.collected,true);assert.equal(useGame.getState().room.view,'explore');assert.equal(useGame.getState().prompt,null);
+  activateVRTarget(useGame.getState(),'Put gun back',p=>useGame.setState(p));assert.equal(useGame.getState().room.weapon.collected,false);assert.equal(useGame.getState().room.weapon.ammo,4);
+ }finally{useGame.setState(before);}
+});

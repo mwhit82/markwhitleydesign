@@ -3,8 +3,15 @@ import { useEffect, useRef, type ReactNode } from "react";
 import { XR, XROrigin, createXRStore } from "@react-three/xr";
 import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
+import { spatial, uiTargets, visibleTarget } from "./spatial";
+import {
+  activateVRTarget,
+  isVRTarget,
+  vrInteractionName,
+} from "@/lib/deader/vr-interactions";
+import { VR_MUZZLE } from "@/lib/deader/vr";
 import { useGame } from "@/lib/deader/store";
-import { useVR, vrPose } from "@/lib/deader/vr-state";
+import { useVR, vrPose, vrWorldTargets } from "@/lib/deader/vr-state";
 import {
   vrAxes,
   vrDelta,
@@ -23,7 +30,6 @@ import { gameInput } from "@/lib/deader/input";
 import { roomAudio } from "@/lib/deader/audio/room-audio";
 import { roomPlayerPose } from "../player-reflection";
 import { lobbyPlayerPose } from "../controllers";
-import { interactRoom } from "../room-controller";
 import { GunModel } from "../weapon";
 import { VRPanel, VRFeed } from "./screens";
 export const xrStore = createXRStore({
@@ -85,7 +91,7 @@ export default function VRRuntime({ children }: { children: ReactNode }) {
       session.addEventListener("visibilitychange", interrupted);
       session.addEventListener("inputsourceschange", sources);
       if (document.pointerLockElement) document.exitPointerLock();
-      useGame.setState({ focused: true, suspension: null });
+      useGame.setState({ focused: true, suspension: null, prompt: null });
       clean = () => {
         session.removeEventListener("visibilitychange", interrupted);
         session.removeEventListener("inputsourceschange", sources);
@@ -138,16 +144,17 @@ function Rig() {
     lastPanel: "",
     blockedUntil: 0,
     lookYaw: NaN,
+    worldTargets: [] as THREE.Object3D[],
+    targetsAt: 0,
+    supportOffset: new THREE.Vector3(),
+    shotOrigin: new THREE.Vector3(),
     frames: [] as number[],
   });
   const equipped = useGame((s) => s.room.weapon.collected);
   useEffect(() => {
     const old = gl.shadowMap.enabled;
     gl.shadowMap.enabled = false;
-    const interact = () => interactRoom();
-    window.addEventListener("anomalous-vr-interact", interact);
     return () => {
-      window.removeEventListener("anomalous-vr-interact", interact);
       gl.shadowMap.enabled = old;
       reset();
     };
@@ -167,6 +174,9 @@ function Rig() {
     camera.getWorldPosition(a.head);
     camera.getWorldDirection(a.direction);
     if (a.last !== key) {
+      spatial.recenter = true;
+      spatial.dragging = null;
+      a.targetsAt = 0;
       rig.current.position.set(0, 0, s.scene === "lobby" ? 0.8 : 3.2);
       rig.current.rotation.set(0, 0, 0);
       a.last = key;
@@ -192,6 +202,7 @@ function Rig() {
     if (a.lastPanel !== panelKey) {
       a.lastPanel = panelKey;
       a.blocked = true;
+      spatial.dragging = null;
       reset();
     }
     const paused =
@@ -200,6 +211,7 @@ function Rig() {
       !s.focused ||
       session.visibilityState !== "visible";
     const canMove =
+      !spatial.dragging &&
       !paused &&
       (s.scene === "lobby" ||
         (r.view === "explore" &&
@@ -291,25 +303,56 @@ function Rig() {
     )
       s.tutorialAdvance("look");
     if (s.tutorial !== "look" || !Number.isFinite(a.lookYaw)) a.lookYaw = yaw;
-    if (s.scene === "lobby") {
-      const p = a.head,
-        prompt =
-          Math.hypot(p.x - 2.2, p.z + 3.4) < 1.7
-            ? "Learn to play"
-            : Math.hypot(p.x + 3.9, p.z + 1) < 2
-              ? "Shop"
-              : Math.hypot(p.x - 3.9, p.z + 1) < 2
-                ? "Customise"
-                : Math.hypot(p.x, p.z + 3.7) < 2
-                  ? "Start"
-                  : null;
-      if (prompt !== s.prompt) useGame.setState({ prompt });
+    if (performance.now() > a.targetsAt) {
+      a.targetsAt = performance.now() + 500;
+      a.worldTargets.length = 0;
+      if (process.env.NODE_ENV === "development") vrWorldTargets.length = 0;
+      scene.traverse((o) => {
+        if (
+          o.userData.vrInteraction ||
+          (o.userData.interaction && !o.userData.vrIgnoreInteraction)
+        ) {
+          a.worldTargets.push(o);
+          if (process.env.NODE_ENV === "development" && visibleTarget(o)) {
+            const position = o.userData.vrAim
+              ? o.localToWorld(a.supportOffset.fromArray(o.userData.vrAim))
+              : o.getWorldPosition(a.supportOffset);
+            rig.current!.worldToLocal(position);
+            vrWorldTargets.push({
+              text: o.userData.vrInteraction ?? o.userData.interaction,
+              position: position.toArray() as [number, number, number],
+            });
+          }
+        }
+        // Large thin boxes are wall/door occluders; small decorative meshes never enter this list.
+        if (
+          o instanceof THREE.Mesh &&
+          o.geometry instanceof THREE.BoxGeometry
+        ) {
+          const p = o.geometry.parameters;
+          if (
+            p.height > 1.4 &&
+            (p.width > 1 || p.depth > 1) &&
+            (p.width < 0.5 || p.depth < 0.5)
+          )
+            a.worldTargets.push(o);
+        }
+      });
     }
+    if (
+      s.suspension ||
+      !s.focused ||
+      session.visibilityState !== "visible" ||
+      !sources.some((v) => v.handedness === spatial.dragging)
+    )
+      spatial.dragging = null;
+    spatial.hovered = null;
     const dominant = prefs.leftHanded ? "left" : "right";
     trackedHands.leftVisible = trackedHands.rightVisible = false;
     let interaction: string | null = null;
     if (marker.current) marker.current.visible = false;
     for (const source of sources) {
+      interaction = null;
       const hand = source.handedness as "left" | "right",
         group = hand === "left" ? left.current : right.current;
       const pose = frame.getPose(
@@ -330,20 +373,23 @@ function Rig() {
       a.ray.ray.origin.setFromMatrixPosition(a.m);
       a.ray.ray.direction.set(0, 0, -1).transformDirection(a.m);
       a.ray.far = 6;
-      const hits = a.ray.intersectObjects(scene.children, true).filter((h) => {
-        let o: THREE.Object3D | null = h.object;
-        while (o) {
-          if (
-            (!o.visible && !o.userData.interactionProxy) ||
-            o.userData.vrHand ||
-            o.userData.ignoreBullet
-          )
-            return false;
-          o = o.parent;
-        }
-        return h.object instanceof THREE.Mesh;
-      });
-      const ui = hits.find((h) => h.object.userData.vrAction);
+      const hits = a.ray
+        .intersectObjects(a.worldTargets, true)
+        .filter(
+          (h) =>
+            visibleTarget(h.object) ||
+            (h.object.userData.interactionProxy &&
+              h.object.parent &&
+              visibleTarget(h.object.parent)),
+        );
+      const ui = a.ray
+        .intersectObjects(Array.from(uiTargets), false)
+        .find((h) => visibleTarget(h.object));
+      if (ui && (hand === dominant || !spatial.hovered))
+        spatial.hovered = ui.object;
+      const worldHit = hits.find((h) => !h.object.userData.vrUI);
+      if (worldHit && worldHit.distance <= 2.5)
+        interaction = vrInteractionName(worldHit.object);
       const pointer = hand === "left" ? leftRay.current : rightRay.current;
       if (pointer) {
         a.m.decompose(pointer.position, pointer.quaternion, pointer.scale);
@@ -354,9 +400,9 @@ function Rig() {
         beam.position.z = -distance / 2;
         beam.scale.z = distance;
         dot.position.z = -distance;
-        dot.visible = !!ui;
+        dot.visible = !!ui || !!interaction;
         (dot.material as THREE.MeshBasicMaterial).color.set(
-          ui ? "#ffffff" : "#81929b",
+          ui || interaction ? "#ffffff" : "#81929b",
         );
       }
 
@@ -376,8 +422,69 @@ function Rig() {
         if (s.suspension) useGame.setState({ suspension: null, focused: true });
         else s.escape();
       }
-      if ((trigger || primary) && ui && session.visibilityState === "visible") {
-        (ui.object.userData.vrAction as () => void)();
+      if (process.env.NODE_ENV === "development" && hand === dominant)
+        gl.domElement.dataset.vrPointer = JSON.stringify({
+          ui:
+            ui?.object.userData.vrLabel ??
+            (ui?.object.userData.vrGrab ? "Grab" : null),
+          target: interaction,
+          trigger,
+          held: source.gamepad!.buttons[0]?.pressed,
+          blocked: performance.now() <= a.blockedUntil,
+        });
+      const heldTrigger = source.gamepad!.buttons[0]?.pressed ?? false;
+      if (spatial.dragging === hand) {
+        if (!heldTrigger || session.visibilityState !== "visible")
+          spatial.dragging = null;
+        else if (spatial.panel) {
+          spatial.panel.position
+            .copy(a.ray.ray.origin)
+            .addScaledVector(a.ray.ray.direction, spatial.distance)
+            .add(spatial.offset);
+          const distance = spatial.panel.position.distanceTo(a.head);
+          if (distance < 0.6 || distance > 2)
+            spatial.panel.position
+              .sub(a.head)
+              .setLength(Math.max(0.6, Math.min(2, distance)))
+              .add(a.head);
+          spatial.panel.position.y = Math.max(
+            0.55,
+            Math.min(a.head.y + 0.6, spatial.panel.position.y),
+          );
+          spatial.panel.rotation.set(
+            0,
+            Math.atan2(
+              a.head.x - spatial.panel.position.x,
+              a.head.z - spatial.panel.position.z,
+            ),
+            0,
+          );
+        }
+        a.blockedUntil = performance.now() + 250;
+        continue;
+      }
+      if (
+        (trigger || primary) &&
+        ui &&
+        session.visibilityState === "visible" &&
+        performance.now() > a.blockedUntil
+      ) {
+        if (
+          ui.object.userData.vrGrab &&
+          trigger &&
+          !spatial.dragging &&
+          spatial.panel
+        ) {
+          spatial.dragging = hand;
+          spatial.distance = Math.max(0.6, Math.min(2, ui.distance));
+          spatial.offset.copy(spatial.panel.position).sub(ui.point);
+        } else if (ui.object.userData.vrAction)
+          (ui.object.userData.vrAction as () => void)();
+        if (process.env.NODE_ENV === "development")
+          gl.domElement.dataset.vrLastAction = JSON.stringify({
+            label: ui.object.userData.vrLabel,
+            view: useGame.getState().room.view,
+          });
         a.blockedUntil = performance.now() + 250;
         continue;
       }
@@ -394,40 +501,28 @@ function Rig() {
         );
         continue;
       }
-      if (s.scene === "lobby") {
-        if ((trigger || grip) && s.prompt) s.interactLobby();
-        continue;
-      }
-      const hit = hits.find((h) => !h.object.userData.vrUI);
-      let o: THREE.Object3D | null = hit?.object ?? null;
-      if (hit && hit.distance < 2.5)
-        while (o) {
-          if (o.userData.interaction) {
-            interaction = o.userData.interaction;
-            break;
-          }
-          o = o.parent;
-        }
       if (
         interaction &&
-        hand === dominant &&
-        !s.panel &&
-        r.view === "explore"
+        isVRTarget(interaction) &&
+        (trigger || grip) &&
+        performance.now() > a.blockedUntil
       ) {
-        useGame.setState({ prompt: interaction });
-        if (
-          (interaction === "Take gun" ? grip : trigger || grip) &&
-          (!r.weapon.collected || grip || interaction === "Put gun back")
-        ) {
-          interactRoom();
+        const activated = activateVRTarget(
+          useGame.getState(),
+          interaction,
+          (p) => useGame.setState(p),
+        );
+        if (activated) {
+          roomAudio.unlock();
           a.blockedUntil = performance.now() + 250;
           continue;
         }
       }
+      if (s.scene === "lobby") continue;
       if (hand === dominant && r.weapon.collected && gun.current) {
         gun.current.position.copy(group.position);
         gun.current.quaternion.copy(group.quaternion);
-        gun.current.translateZ(-0.04);
+
         gun.current.rotateX(-0.12 + (r.weapon.cooldown > 0.3 ? 0.08 : 0));
         const support = dominant === "right" ? left.current : right.current;
         if (
@@ -436,7 +531,8 @@ function Rig() {
           support.position.distanceTo(group.position) < 0.25
         ) {
           support.position.copy(
-            new THREE.Vector3(-0.05, -0.03, -0.08)
+            a.supportOffset
+              .set(prefs.leftHanded ? 0.05 : -0.05, -0.03, -0.08)
               .applyQuaternion(group.quaternion)
               .add(group.position),
           );
@@ -450,13 +546,13 @@ function Rig() {
         ) {
           gun.current.updateMatrixWorld(true);
           a.ray.ray.origin
-            .set(0, 0, -0.23)
+            .set(...VR_MUZZLE)
             .applyMatrix4(gun.current.matrixWorld);
           a.ray.ray.direction
             .set(0, 0, -1)
             .applyQuaternion(gun.current.quaternion);
           a.ray.far = 20;
-          const shotOrigin = a.ray.ray.origin.clone();
+          const shotOrigin = a.shotOrigin.copy(a.ray.ray.origin);
           // First test from the hand to the muzzle: a barrel poked through a wall cannot bypass it.
           a.ray.ray.origin.copy(group.position);
           a.ray.ray.direction.copy(shotOrigin).sub(group.position).normalize();
@@ -528,8 +624,7 @@ function Rig() {
         s.scene === "room" &&
         canMove &&
         trackedHands[dominant === "left" ? "leftVisible" : "rightVisible"];
-    if (s.scene === "room" && !interaction && s.prompt)
-      useGame.setState({ prompt: null });
+
     // Teleport uses the left controller ray, but only destinations reachable through collision-free floor steps.
     if (
       prefs.movement === "teleport" &&
@@ -603,14 +698,23 @@ function Rig() {
         </group>
       ))}
       {[leftRay, rightRay].map((ref, i) => (
-        <group key={i} ref={ref} userData={{ ignoreBullet: true, vrUI: true }}>
+        <group
+          key={i}
+          ref={ref}
+          renderOrder={110}
+          userData={{ ignoreBullet: true, vrUI: true }}
+        >
           <mesh>
             <boxGeometry args={[0.002, 0.002, 1]} />
             <meshBasicMaterial color="#c4d3da" transparent opacity={0.5} />
           </mesh>
           <mesh>
             <sphereGeometry args={[0.008, 8, 6]} />
-            <meshBasicMaterial color="white" />
+            <meshBasicMaterial
+              color="white"
+              depthTest={false}
+              depthWrite={false}
+            />
           </mesh>
         </group>
       ))}
@@ -620,7 +724,7 @@ function Rig() {
         scale={0.8}
         userData={{ ignoreBullet: true, vrHand: true }}
       >
-        <GunModel />
+        <GunModel vrAligned />
       </group>
       <mesh
         ref={marker}
@@ -634,7 +738,7 @@ function Rig() {
       <mesh
         ref={fade}
         visible={false}
-        renderOrder={1000}
+        renderOrder={90}
         userData={{ ignoreBullet: true }}
       >
         <planeGeometry args={[5, 5]} />

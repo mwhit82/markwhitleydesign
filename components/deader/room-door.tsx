@@ -20,7 +20,7 @@ export function RoomDoor({ materials: m }: { materials: RoomMaterials }) {
   }, [door]);
   useFrame((_, dt) => {
     const s = useGame.getState();
-    if (s.panel || (!s.focused || !!s.suspension)) return;
+    if (s.panel || !s.focused || !!s.suspension) return;
     const opening = s.room.door === "OPENING" || s.room.door === "OPEN";
     const before = amount.current;
     amount.current = THREE.MathUtils.clamp(
@@ -48,7 +48,7 @@ export function RoomDoor({ materials: m }: { materials: RoomMaterials }) {
       s.doorEvent({ type: "closed" });
   });
   return (
-    <group userData={{ interaction: "Door" }}>
+    <group userData={{ interaction: "Door", vrIgnoreInteraction: true }}>
       <mesh
         position={[0.25, 1.4, -3.25]}
         visible={false}
@@ -100,7 +100,19 @@ export function RoomDoor({ materials: m }: { materials: RoomMaterials }) {
             material={m.metal}
           />
         ))}
-        <group ref={knob} position={[1.48, 1.23, 0.18]}>
+        <group
+          ref={knob}
+          position={[1.48, 1.23, 0.18]}
+          userData={{ vrInteraction: "Door" }}
+        >
+          <mesh
+            position={[0, 0, 0.12]}
+            visible={false}
+            userData={{ interactionProxy: true, vrOnly: true }}
+          >
+            <sphereGeometry args={[0.21, 8, 6]} />
+            <meshBasicMaterial />
+          </mesh>
           <mesh rotation={[Math.PI / 2, 0, 0]} material={m.brass}>
             <cylinderGeometry args={[0.12, 0.12, 0.045, 20]} />
           </mesh>

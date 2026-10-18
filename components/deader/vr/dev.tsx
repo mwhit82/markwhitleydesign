@@ -1,7 +1,7 @@
 "use client";
 import * as THREE from "three";
 import { useState, useEffect } from "react";
-import { vrTestTargets } from "@/lib/deader/vr-state";
+import { vrTestTargets, vrWorldTargets } from "@/lib/deader/vr-state";
 import { XRDevice, metaQuest3 } from "iwer";
 import type { Rehearsal } from "@/lib/deader/rehearsal";
 import { useGame } from "@/lib/deader/store";
@@ -103,6 +103,29 @@ export default function VRDev() {
       />
       <button
         onClick={() => {
+          const row = vrWorldTargets.find(
+              (v) => v.text.toLowerCase() === target.toLowerCase(),
+            ),
+            controller = device?.controllers.right;
+          if (!row || !controller) return;
+          const point = new THREE.Vector3(...row.position),
+            from = new THREE.Vector3(0, 1.4, 0)
+              .sub(point)
+              .normalize()
+              .multiplyScalar(1.2)
+              .add(point);
+          controller.position.set(from.x, from.y, from.z);
+          const q = new THREE.Quaternion().setFromRotationMatrix(
+            new THREE.Matrix4().lookAt(from, point, new THREE.Vector3(0, 1, 0)),
+          );
+          controller.quaternion.set(q.x, q.y, q.z, q.w);
+        }}
+      >
+        Aim at object
+      </button>
+      <button onClick={() => tap("trigger")}>Press trigger</button>
+      <button
+        onClick={() => {
           const row = vrTestTargets.find((v) =>
               v.text.toLowerCase().includes(target.toLowerCase()),
             ),
@@ -121,6 +144,27 @@ export default function VRDev() {
         }}
       >
         Point and trigger
+      </button>
+      <button
+        onClick={() => {
+          const row = vrTestTargets.find((v) => v.text === "Grab bar"),
+            controller = device?.controllers.right;
+          if (!row || !controller) return;
+          controller.position.set(0.25, 1.4, -0.3);
+          const q = new THREE.Quaternion().setFromRotationMatrix(
+            new THREE.Matrix4().lookAt(
+              new THREE.Vector3(0.25, 1.4, -0.3),
+              new THREE.Vector3(...row.position),
+              new THREE.Vector3(0, 1, 0),
+            ),
+          );
+          controller.quaternion.set(q.x, q.y, q.z, q.w);
+          setTimeout(() => controller.updateButtonValue("trigger", 1), 150);
+          setTimeout(() => controller.position.set(0.6, 1.4, -0.3), 400);
+          setTimeout(() => controller.updateButtonValue("trigger", 0), 900);
+        }}
+      >
+        Drag screen
       </button>
       <button
         onClick={() => {

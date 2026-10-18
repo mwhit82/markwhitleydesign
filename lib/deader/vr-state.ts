@@ -20,3 +20,8 @@ export const vrTestTargets: {
   text: string;
   position: [number, number, number];
 }[] = [];
+/** Actual scene targets exposed only to the development controller rehearsal. */
+export const vrWorldTargets: {
+  text: string;
+  position: [number, number, number];
+}[] = [];

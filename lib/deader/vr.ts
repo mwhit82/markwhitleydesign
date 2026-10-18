@@ -106,3 +106,52 @@ export function validVRTeleport(
       return false;
   return true;
 }
+
+/** Conservative full-width panel placement; render overlay is the tight-space fallback. */
+export function placeVRPanel(
+  head: { x: number; y: number; z: number },
+  direction: { x: number; z: number },
+  scene: "lobby" | "room",
+  obstacles: { x: number; z: number; hx: number; hz: number }[] = [],
+) {
+  const yaw = Math.atan2(direction.x, direction.z);
+  for (const distance of [1.2, 1, 0.8, 0.6])
+    for (const offset of [0, 0.35, -0.35, 0.7, -0.7, Math.PI]) {
+      const angle = yaw + offset,
+        x = head.x + Math.sin(angle) * distance,
+        z = head.z + Math.cos(angle) * distance;
+      const right = { x: Math.cos(angle), z: -Math.sin(angle) };
+      if (
+        [-0.7, 0, 0.7].every((t) =>
+          validVRFloor(
+            { x: x + right.x * t, z: z + right.z * t },
+            scene,
+            obstacles,
+          ),
+        )
+      )
+        return { x, y: Math.max(0.65, head.y - 0.18), z };
+    }
+  return {
+    x: head.x + Math.sin(yaw) * 0.6,
+    y: Math.max(0.65, head.y - 0.18),
+    z: head.z + Math.cos(yaw) * 0.6,
+  };
+}
+export const VR_GUN_YAW = Math.PI;
+export const VR_MUZZLE = [0, 0.18, -0.375] as const;
+export function validVRDecision(
+  room: {
+    view: string;
+    door: string;
+    encounters: { active: { id: string; phase: string } | null };
+  },
+  id: string,
+) {
+  return (
+    ["door", "inspect", "cctv"].includes(room.view) &&
+    ["VISITOR_WAITING", "INSPECTING", "OPEN"].includes(room.door) &&
+    room.encounters.active?.id === id &&
+    room.encounters.active.phase === "waiting"
+  );
+}

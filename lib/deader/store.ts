@@ -1,5 +1,7 @@
 "use client";
 import { beginJudgement, tickJudgement, JUDGEMENT_SECONDS, judgementMistakes, spendShot } from "./judgement";
+import {useVR} from "./vr-state";
+import {validVRDecision} from "./vr";
 import { visitorById } from "./visitors";
 import { tutorialRoom, rewardsAllowed, type TutorialStep } from "./tutorial";
 import { purchasePet, equipPet, type PetId } from "./pets";
@@ -99,6 +101,7 @@ type State = {
   finishNews: () => void;
   tickVisitors: (delta: number) => void;
   askVisitor: (id: string, question: Question) => void;
+  decideVisitorVR: (id:string, decision:"admit"|"reject")=>void;
   decideVisitor: (id: string, decision: Decision) => void;
   escape: () => void;
   focused: boolean;
@@ -411,13 +414,20 @@ export const useGame = create<State>((set, get) => ({
       (!s.focused || !!s.suspension) ||
       (s.room.night?.status === "completed" || !!s.room.judgement) ||
       survivalBusy(s.room.survival) ||
-      !["door", "inspect"].includes(s.room.view)
+      (!["door", "inspect"].includes(s.room.view) && !(useVR.getState().active && s.room.view === "cctv"))
     )
       return;
     const encounters = askQuestion(s.room.encounters, id, question);
     if (encounters !== s.room.encounters)
       set({ room: { ...s.room, encounters } });
     if (encounters.active?.asked.length === 3) get().tutorialAdvance("questions");
+  },
+  decideVisitorVR: (id, decision) => {
+    const s=get();
+    if(!useVR.getState().active||!validVRDecision(s.room,id)||s.panel||s.suspension||!s.focused||s.room.judgement||s.room.night?.status==='completed'||survivalBusy(s.room.survival))return;
+    // The shared decision path retains all reward, tutorial and door guards.
+    if(s.room.view==='cctv')set({room:{...s.room,view:'door'}});
+    get().decideVisitor(id,decision);
   },
   decideVisitor: (id, decision) => {
     const s = get();

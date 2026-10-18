@@ -1,5 +1,5 @@
 "use client";
-import {useVR} from "@/lib/deader/vr-state";
+import { useVR } from "@/lib/deader/vr-state";
 import { Sidekick } from "../sidekick";
 import { Box, Sign } from "../environment";
 import { Cone } from "../character";
@@ -8,17 +8,39 @@ import { useRoomMaterials } from "../room-materials";
 import { LobbyAtmosphere } from "../lobby-atmosphere";
 export default function Lobby() {
   const m = useRoomMaterials();
-  const vr=useVR(s=>s.active);
+  const vr = useVR((s) => s.active);
   return (
     <>
       <LobbyAtmosphere materials={m} />
       {!vr && <Controller />}
       <Sidekick lobby />
-      <group position={[2.2,0,-3.4]}>
-        <Box position={[0,.06,0]} size={[.8,.12,.65]} material={m.metal}/>
-        <Box position={[0,.64,0]} size={[.09,1.2,.09]} material={m.metal}/>
-        <Box position={[0,1.35,0]} size={[.85,.62,.08]} material={m.dark}/>
-        <Sign text={"LEARN TO PLAY\nGUIDED PRACTICE"} position={[0,1.36,.052]} width={.73} height={.49} background="#152329" colour="#ffe4a0"/>
+      <group
+        position={[2.2, 0, -3.4]}
+        userData={{ vrInteraction: "Learn to play", vrAim: [0, 1.35, 0] }}
+      >
+        <Box
+          position={[0, 0.06, 0]}
+          size={[0.8, 0.12, 0.65]}
+          material={m.metal}
+        />
+        <Box
+          position={[0, 0.64, 0]}
+          size={[0.09, 1.2, 0.09]}
+          material={m.metal}
+        />
+        <Box
+          position={[0, 1.35, 0]}
+          size={[0.85, 0.62, 0.08]}
+          material={m.dark}
+        />
+        <Sign
+          text={"LEARN TO PLAY\nGUIDED PRACTICE"}
+          position={[0, 1.36, 0.052]}
+          width={0.73}
+          height={0.49}
+          background="#152329"
+          colour="#ffe4a0"
+        />
       </group>
       <Sign
         aged
@@ -27,72 +49,82 @@ export default function Lobby() {
         width={4.7}
         height={1}
       />
-      <Box
-        position={[0, 1.35, -4.78]}
-        size={[1.9, 2.7, 0.16]}
-        material={m.metal}
-      />
-      <Box
-        position={[0, 1.3, -4.65]}
-        size={[1.55, 2.45, 0.1]}
-        material={m.wood}
-      />
-      <Sign
-        aged
-        text="START"
-        position={[0, 1.8, -4.57]}
-        width={1.25}
-        height={0.45}
-        colour="#b4ed55"
-      />
-      <mesh position={[0.55, 1.1, -4.5]}>
-        <sphereGeometry args={[0.09, 12, 8]} />
-        <primitive object={m.brass} attach="material" />
-      </mesh>
-      <Box
-        position={[-3.9, 0.55, -1]}
-        size={[1.4, 1.1, 2.8]}
-        material={m.wood}
-      />
-      <Box
-        position={[-3.9, 1.14, -1]}
-        size={[1.55, 0.12, 2.9]}
-        material={m.wood}
-      />
-      <Sign
-        aged
-        text={"SUPPLY SHOP\nCOLOURS + SIDEKICKS"}
-        position={[-3.85, 2.6, -2.5]}
-        width={2}
-        height={0.75}
-      />
-      {["#ffc928", "#8bdf26", "#f78fb9"].map((colour, i) => (
-        <Cone
-          key={colour}
-          colour={colour}
-          scale={0.45}
-          position={[-3.9, 1.2, -1.9 + i * 0.8]}
-          rotation={[0, 0.8, 0]}
+      <group userData={{ vrInteraction: "Start", vrAim: [0.55, 1.1, -4.5] }}>
+        <Box
+          position={[0, 1.35, -4.78]}
+          size={[1.9, 2.7, 0.16]}
+          material={m.metal}
         />
-      ))}
-      <Box position={[3.9, 0.3, -1]} size={[1.4, 0.6, 2.8]} material={m.wood} />
-      <Box
-        position={[4.75, 1.9, -1]}
-        size={[0.08, 2.7, 2]}
-        material={m.mirror}
-      />
-      <Sign
-        aged
-        text={"DRESSING ROOM\nMAKE IT PERSONAL"}
-        position={[3.7, 2.6, -2.5]}
-        width={2.1}
-        height={0.75}
-      />
-      <Cone
-        colour="#8bdf26"
-        position={[3.9, 0.62, -1]}
-        rotation={[0, -0.6, 0]}
-      />
+        <Box
+          position={[0, 1.3, -4.65]}
+          size={[1.55, 2.45, 0.1]}
+          material={m.wood}
+        />
+        <Sign
+          aged
+          text="START"
+          position={[0, 1.8, -4.57]}
+          width={1.25}
+          height={0.45}
+          colour="#b4ed55"
+        />
+        <mesh position={[0.55, 1.1, -4.5]}>
+          <sphereGeometry args={[0.09, 12, 8]} />
+          <primitive object={m.brass} attach="material" />
+        </mesh>
+      </group>
+      <group userData={{ vrInteraction: "Shop", vrAim: [-3.9, 0.55, -1] }}>
+        <Box
+          position={[-3.9, 0.55, -1]}
+          size={[1.4, 1.1, 2.8]}
+          material={m.wood}
+        />
+        <Box
+          position={[-3.9, 1.14, -1]}
+          size={[1.55, 0.12, 2.9]}
+          material={m.wood}
+        />
+        <Sign
+          aged
+          text={"SUPPLY SHOP\nCOLOURS + SIDEKICKS"}
+          position={[-3.85, 2.6, -2.5]}
+          width={2}
+          height={0.75}
+        />
+        {["#ffc928", "#8bdf26", "#f78fb9"].map((colour, i) => (
+          <Cone
+            key={colour}
+            colour={colour}
+            scale={0.45}
+            position={[-3.9, 1.2, -1.9 + i * 0.8]}
+            rotation={[0, 0.8, 0]}
+          />
+        ))}
+      </group>
+      <group userData={{ vrInteraction: "Customise", vrAim: [3.9, 0.3, -1] }}>
+        <Box
+          position={[3.9, 0.3, -1]}
+          size={[1.4, 0.6, 2.8]}
+          material={m.wood}
+        />
+        <Box
+          position={[4.75, 1.9, -1]}
+          size={[0.08, 2.7, 2]}
+          material={m.mirror}
+        />
+        <Sign
+          aged
+          text={"DRESSING ROOM\nMAKE IT PERSONAL"}
+          position={[3.7, 2.6, -2.5]}
+          width={2.1}
+          height={0.75}
+        />
+        <Cone
+          colour="#8bdf26"
+          position={[3.9, 0.62, -1]}
+          rotation={[0, -0.6, 0]}
+        />
+      </group>
       <Sign
         aged
         text={"WELCOME, NIGHT SHIFT.\nTRY TO STAY YOURSELF."}
