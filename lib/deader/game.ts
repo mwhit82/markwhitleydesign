@@ -1,5 +1,7 @@
 import { readPets, type PetId } from "./pets";
 import {
+  readBundles,
+  type BundleId,
   emptyOutfit,
   readAccessories,
   readOutfit,
@@ -75,7 +77,8 @@ export type Save = {
   infiniteRecords: Records;
   endingViewed: boolean;
   settings: Settings;
-  version: 2;
+  version: 3;
+  ownedBundles: BundleId[];
   ownedAccessories: AccessoryId[];
   outfit: Outfit;
   achievements: AchievementId[];
@@ -93,7 +96,8 @@ export const newSave = (): Save => ({
   infiniteRecords: emptyRecords(),
   endingViewed: false,
   settings: defaultSettings(),
-  version: 2,
+  version: 3,
+  ownedBundles: [],
   ownedAccessories: [],
   outfit: emptyOutfit(),
   achievements: [],
@@ -113,7 +117,7 @@ export function readSave(raw: string | null): Save {
   if (!raw) return newSave();
   try {
     const s = JSON.parse(raw);
-    if (!s || (s.version !== 1 && s.version !== 2)) return newSave();
+    if (!s || (s.version !== 1 && s.version !== 2 && s.version !== 3)) return newSave();
     const owned: ColourId[] = [
       ...new Set<ColourId>([
         "yellow",
@@ -136,7 +140,8 @@ export function readSave(raw: string | null): Save {
       infiniteRecords: readRecords(s.infiniteRecords),
       endingViewed: s.endingViewed === true,
       settings: readSettings(s.settings),
-      version: 2,
+      version: 3,
+      ownedBundles: readBundles(s.ownedBundles),
       ownedAccessories: readAccessories(s.ownedAccessories),
       outfit: readOutfit(s.outfit, readAccessories(s.ownedAccessories)),
       achievements: readAchievements(s.achievements),

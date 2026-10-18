@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { roomAudio } from "@/lib/deader/audio/room-audio";
 import { storyArrivals } from "@/lib/deader/night";
 import { useGame } from "@/lib/deader/store";
-import { DECISION_SECONDS, QUESTIONS, visitorForDifficulty } from "@/lib/deader/visitors";
+import { DECISION_SECONDS, QUESTIONS, encounterVisitor } from "@/lib/deader/visitors";
 import styles from "./game.module.css";
 export function DecisionCountdown() {
   const s = useGame(), e = s.room.encounters.active;
@@ -21,7 +21,7 @@ export function VisitorQuestions({ showCountdown = true }: { showCountdown?: boo
   const [expanded, setExpanded] = useState<string | null>(null);
   useEffect(() => setExpanded(null), [e?.id]);
   if (!e || e.phase !== "waiting") return null;
-  const v = visitorForDifficulty(e.visitor, s.session?.difficulty);
+  const v = encounterVisitor(e, s.session?.difficulty);
   return (
     <section className={styles.questions} aria-label="Visitor questions">
       <p className={styles.eyebrow}>ASK THROUGH THE CLOSED DOOR</p>

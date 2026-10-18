@@ -17,6 +17,7 @@ export type RoomView =
   "console" | "arcade" | "tv" | "lounge-tv" | "explore" | "door" | "inspect" | "cctv" | "news" | "donut" | "vent";
 export type Feed = 0 | 1 | 2 | 3 | 4 | 5;
 export type RoomState = {
+  previewBundle?: "rainbow"|"injured";
   judgement: Judgement | null;
   mistakeBaseline: number;
   weapon: Weapon;

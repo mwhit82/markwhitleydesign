@@ -35,6 +35,7 @@ import {
   type GameMode,
 } from "@/lib/deader/game";
 import {
+  bundles, bundleOutfit,
   accessories,
   type Outfit,
   type AccessoryCategory,
@@ -124,13 +125,13 @@ function Preview({ colour, outfit, pet = false }: { colour: string; outfit: Outf
 }
 function Cosmetics({ wardrobe }: { wardrobe: boolean }) {
   const { save, buy, wear, buyAccessory, wearAccessory } = useGame();
-  const [category, setCategory] = useState<"colour" | "pet" | AccessoryCategory>(
+  const [category, setCategory] = useState<"colour" | "pet" | "bundle" | AccessoryCategory>(
     "colour",
   );
   const [selected, select] = useState<string>(save.equipped);
-  const catalogue = [...cosmetics, ...accessories, ...pets.map(p=>({...p,category:"pet" as const}))];
+  const catalogue = [...cosmetics, ...accessories, ...bundles, ...pets.map(p=>({...p,category:"pet" as const}))];
   const owns = (id: string) =>
-    [...save.owned, ...save.ownedAccessories, ...save.ownedPets].some((v) => v === id);
+    [...save.owned, ...save.ownedAccessories, ...save.ownedPets,...save.ownedBundles].some((v) => v === id) || !!bundles.find(b=>b.id===id&&b.items.every(piece=>save.ownedAccessories.includes(piece)));
   const items = catalogue.filter(
     (c) => c.category === category && (!wardrobe || owns(c.id)),
   );
@@ -140,14 +141,14 @@ function Cosmetics({ wardrobe }: { wardrobe: boolean }) {
       : (items.find((c) => c.id === selected) ?? items[0]);
   const owned = item ? owns(item.id) : false;
   const equippedId =
-    category === "colour" ? save.equipped : category === "pet" ? save.equippedPet : save.outfit[category];
-  const equipped = !!item && equippedId === item.id;
+    category === "bundle" ? null : category === "colour" ? save.equipped : category === "pet" ? save.equippedPet : save.outfit[category];
+  const equipped = !!item && (item.category === "bundle" ? item.items.every(id=>{const piece=accessories.find(a=>a.id===id)!;return save.outfit[piece.category]===id;}) : equippedId === item.id);
   const colour =
     (item?.category === "colour" || item?.category === "pet")
       ? item.colour
       : cosmetics.find((c) => c.id === save.equipped)!.colour;
-  const outfit = { ...save.outfit };
-  if (item && item.category !== "colour" && item.category !== "pet") outfit[item.category] = item.id;
+  const outfit = item?.category === "bundle" ? bundleOutfit(save.outfit,item.id) : { ...save.outfit };
+  if (item && item.category !== "colour" && item.category !== "pet" && item.category !== "bundle") outfit[item.category] = item.id;
   return (
     <Modal label={wardrobe ? "Character customisation" : "Cosmetics shop"} className={styles.shopModal} closeLabel="Back to lobby">
       <div className={styles.shopScroll}>
@@ -161,7 +162,9 @@ function Cosmetics({ wardrobe }: { wardrobe: boolean }) {
       <div className={styles.categories} aria-label="Cosmetic categories">
         {(
           [
+            ["bundle","Bundles"],
             ["colour", "Colours"],
+            ["finish","Finishes"],["hand","Hand props"],["face","Faces"],["wrap","Bandages"],["effect","Effects"],
             ["hat", "Hats"],
             ["backpack", "Backpacks"],
             ["glasses", "Glasses"],
@@ -180,6 +183,7 @@ function Cosmetics({ wardrobe }: { wardrobe: boolean }) {
           </button>
         ))}
       </div>
+      {item?.category === "bundle" && <p className={styles.bundleContents}>{item.description} Mix and match all four pieces.</p>}
       <div className={styles.shopGrid}>
         <Preview colour={colour} outfit={outfit} pet={category === "pet"} />
         <div className={styles.items}>
@@ -215,14 +219,15 @@ function Cosmetics({ wardrobe }: { wardrobe: boolean }) {
       <div className={styles.purchase}>
         <div>
           <strong>{item?.name ?? "Your current outfit"}</strong>
-          <p>{category === "pet" ? "Barks at arrivals and points out clues you have seen. All sidekicks help equally." : "Preview only · equip to update your character."}</p>
+          <p>{item?.category === "bundle" ? item.description+" Pieces can also be equipped separately." : category === "pet" ? "Barks at arrivals and points out clues you have seen. All sidekicks help equally." : "Preview only · equip to update your character."}</p>
         </div>
         {item && (
           <button
             className={styles.primary}
             disabled={equipped || (!owned && save.coins < item.price)}
             onClick={() => {
-              if (item.category === "colour") {
+              if(item.category === "bundle"){if(owned)useGame.getState().wearBundle(item.id);else useGame.getState().buyBundle(item.id);}
+              else if (item.category === "colour") {
                 if (owned) wear(item.id);
                 else buy(item.id);
               } else if (item.category === "pet") {
@@ -236,13 +241,13 @@ function Cosmetics({ wardrobe }: { wardrobe: boolean }) {
             {equipped
               ? "Equipped"
               : owned
-                ? "Equip"
+                ? item.category === "bundle" ? "Equip set" : "Equip"
                 : save.coins < item.price
                   ? "Not enough coins"
                   : `Buy · ${item.price}`}
           </button>
         )}
-        {category !== "colour" && (
+        {category !== "colour" && category !== "bundle" && (
           <button
             disabled={category === "pet" ? !save.equippedPet : !save.outfit[category]}
             onClick={() => {
@@ -349,7 +354,7 @@ function StartMenu() {
             </button>;
           }) : <div className={styles.infiniteCard}><p className={styles.eyebrow}>UNTIL YOUR LUCK RUNS OUT</p><h3>The endless shift.</h3><p>Judgement every five minutes. Survive with fewer than three mistakes, then start a fresh shift.</p><small>Best night: {save.infiniteRecords.night} · Best streak: {save.infiniteRecords.streak}</small></div>}
           {process.env.NODE_ENV === "development" && <label className={styles.devRun}>Local test length<select value={runSeconds} onChange={e => useGame.setState({runSeconds: Number(e.target.value) === 60 ? 60 : 300, selectedNight: Number(e.target.value) === 60 ? selectedNight : Math.min(selectedNight, unlockedNight(save))})}><option value="300">Full night · 5 minutes</option><option value="60">Development rehearsal · 60 seconds · no rewards saved</option></select></label>}
-          {process.env.NODE_ENV === "development" && runSeconds === 60 && <label className={styles.devRun}>Rehearsal scene<select value={rehearsal} onChange={e=>useGame.setState({rehearsal:e.target.value as typeof rehearsal})}><option value="standard">Normal arrivals</option><option value="lounge">Full lounge · 12 residents</option><option value="scare">Anomaly at the door</option><option value="armed">Gun · open doorway</option><option value="judgement-pass">Dawn · pass</option><option value="judgement-fail">Dawn · fail</option></select></label>}
+          {process.env.NODE_ENV === "development" && runSeconds === 60 && <label className={styles.devRun}>Rehearsal scene<select value={rehearsal} onChange={e=>useGame.setState({rehearsal:e.target.value as typeof rehearsal})}><option value="standard">Normal arrivals</option><option value="lounge">Full lounge · 12 residents</option><option value="scare">Anomaly at the door</option><option value="armed">Gun · open doorway</option>{["mimic","splitter","glitched","kids","pair","push","rainbow","injured"].map(id=><option key={id} value={id}>{id} · local fixture</option>)}<option value="judgement-pass">Dawn · pass</option><option value="judgement-fail">Dawn · fail</option></select></label>}
         </section>
       </div>
       <footer className={styles.setupFooter}>

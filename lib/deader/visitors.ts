@@ -10,7 +10,9 @@ export type VisitorDefinition = {
   name: string;
   kind: "human" | "anomaly";
   colour: string;
-  appearance: "ordinary" | "third-eye" | "wide-mouth";
+  appearance: "ordinary" | "third-eye" | "wide-mouth" | "splitter" | "glitched" | "kids";
+  behaviour?: "mimic" | "mean";
+  decisionPolicy?: "either";
   movement: "natural" | "stop-start" | "sway";
   dialogue: Record<Question, string>;
   clues: { source: "visual" | "cctv" | "dialogue"; description: string }[];
@@ -213,10 +215,57 @@ VISITORS.push(
       "Jules claimed ten years in flat six and a first-ever visit to the same building. Those stories cannot both be true.",
   },
 );
+const special = (id: string, appearance: VisitorDefinition["appearance"], behaviour?: VisitorDefinition["behaviour"]): VisitorDefinition => ({
+  id, name: id, kind: id === "kids" ? "human" : "anomaly", colour: "#ffc928", appearance, movement: "natural", behaviour,
+  decisionPolicy: id === "mimic" || id === "kids" ? "either" : undefined,
+  dialogue: {identity:"I live nearby.",purpose:"Could I shelter here until morning?",origin:"The ground floor. I used the stairs."},
+  clues: id === "mimic" || id === "kids" ? [] : [{source: id === "mean" ? "cctv" : "visual",description: id === "splitter" ? "Their body separates into two halves." : id === "glitched" ? "One arm breaks into flickering fragments." : "They pushed another visitor off the stairs."}],
+  explanation: id === "mimic" ? "There was no detectable warning. Either choice was safe to make." : id === "kids" ? "Three children in a disguise. Either choice earns coins." : id === "mean" ? "The staircase attack was the warning." : "The unusual body movement revealed an Anomaly.",
+});
+VISITORS.push(special("mimic","ordinary","mimic"),special("splitter","splitter"),special("glitched","glitched"),special("kids","kids"),special("mean","ordinary","mean"));
+// Visual anomalies have plausible cover stories, not appearance-denial giveaways.
+for (const id of ["three","grin"]) {
+  const v=VISITORS.find(v=>v.id===id)!;
+  v.dialogue={identity:"I work nearby.",purpose:"The street is unsafe. May I wait here?",origin:"The ground floor. I came up the stairs."};
+  v.clues=v.clues.filter(c=>c.source!=="dialogue");
+  v.explanation=id==="three"?"The extra eye and mechanical pauses revealed an Anomaly.":"The oversized mouth and rigid swaying revealed an Anomaly.";
+}
+export const NAMES = ["Sam","Jules","Alex","Bea","Milo","Pippa","Robin","Kit","Ash","Nell","Rowan","Charlie","Toby","Sage","Max","Jamie","Ari","Noah","Eden","Rory","Drew","Morgan","Casey","Finley"];
+export const STORIES = [
+  ["caretaker","boiler room","The heating failed"],["postal worker","post room","The street is closed"],
+  ["cleaner","supply cupboard","My shift has ended"],["porter","reception","I locked the entrance"],
+  ["gardener","courtyard","It is unsafe outside"],["cook","kitchen","The kitchen lights went out"],
+  ["electrician","meter room","The power is unreliable"],["librarian","reading room","The library has closed"],
+  ["delivery driver","loading bay","My van will not start"],["tenant","flat six","My radio said to find shelter"],
+  ["painter","workshop","I finished painting downstairs"],["baker","bakery","The ovens are off for the night"],
+] as const;
+export function shuffled<T>(items: readonly T[], seed: number): T[] {
+  const result=[...items]; for(let i=result.length-1;i>0;i--){seed=(Math.imul(seed,1664525)+1013904223)>>>0;const j=seed%(i+1);[result[i],result[j]]=[result[j],result[i]];}return result;
+}
+export function generatedVisitor(id:string, seed:number, index:number): VisitorDefinition {
+  const base=visitorById(id), name=shuffled(NAMES,seed)[index%NAMES.length];
+  const [job,place,reason]=shuffled(STORIES,seed^0x45af)[index%STORIES.length];
+  const colours=["#ffc928","#8bdf26","#f78fb9","#29488f","#b4d7ca","#c78875"];
+  const dialogue={identity:`I'm ${name}, the ${job}.`,purpose:`${reason}. Could I shelter here until morning?`,origin:`The ${place} downstairs. I came up the stairs.`};
+  const contradiction=["echo","loop","tenant"].includes(id);
+  if(contradiction)dialogue.purpose=`I need shelter. I spent the entire evening on the roof, without going downstairs.`;
+  if(contradiction)dialogue.origin=`The ${place} downstairs. I was there all evening until just now.`;
+  return {...base,name,colour:colours[((seed+index*7)>>>0) % colours.length] ?? colours[index%colours.length],dialogue,
+    clues:contradiction?[...base.clues.filter(c=>c.source!=="dialogue"),{source:"dialogue",description:"Claims to have spent the whole evening both downstairs and on the roof."}]:base.clues,
+    explanation:base.kind==="human"&&id!=="kids"?`${name} had ordinary features and a consistent account of their journey.`:contradiction?`${name}'s accounts of spending the whole evening in two places did not agree.`:base.explanation.replace(/Milo|Kit|Bea|Pippa|Sam|Ash/g,name)};
+}
+export const encounterVisitor = (e: Pick<Encounter,"visitor"|"profile">, difficulty?:Difficulty) => e.profile ?? visitorForDifficulty(e.visitor,difficulty);
+/** One simulation clock drives tells in every camera, independent of render rate. */
+export function anomalyTell(elapsed:number, seed=0, reduced=false) {
+  const interval=4+(seed%5), phase=elapsed%interval;
+  return reduced ? 1 : phase>=1 && phase<2.7 ? Math.sin((phase-1)/1.7*Math.PI) : 0;
+}
 export const visitorById = (id: string) => VISITORS.find((v) => v.id === id)!;
 export type Encounter = {
   id: string;
   visitor: string;
+  profile?: VisitorDefinition;
+  tellSeconds?: number;
   phase: "approaching" | "waiting" | "departing";
   elapsed: number;
   asked: Question[];
@@ -237,6 +286,10 @@ export type Encounters = {
   sequence: number;
   nextIn: number;
   active: Encounter | null;
+  queued?: Encounter | null;
+  pair?: { elapsed:number; push:boolean; fallen:boolean };
+  identitySeed?: number;
+  stairsLost?:number;
   result: Outcome | null;
   trust: number;
   correct: number;
@@ -255,6 +308,8 @@ export const freshEncounters = (
 ): Encounters => ({
   runId,
   seed,
+  identitySeed: seed,
+  queued: null,
   sequence: 0,
   nextIn: 12,
   active: null,
@@ -276,7 +331,7 @@ export function approachDuration(v: VisitorDefinition) {
   return v.movement === "stop-start" ? 22 : 18;
 }
 export function approachProgress(e: Encounter) {
-  const v = visitorById(e.visitor),
+  const v = encounterVisitor(e),
     p = Math.min(1, e.elapsed / approachDuration(v));
   // Each stop-start cycle moves for half its duration, then freezes visibly.
   return v.movement === "stop-start"
@@ -291,7 +346,7 @@ export function tickEncounters(
   difficulty: Difficulty,
   paused: boolean,
   doorReady: boolean,
-  options: { rate?: number; scheduled?: string | null } = {},
+  options: { rate?: number; scheduled?: string | null; companion?: string | null; push?: boolean } = {},
 ): Encounters {
   if (
     paused ||
@@ -299,12 +354,16 @@ export function tickEncounters(
     delta <= 0
   )
     return s;
+  if(s.pair && s.active?.phase==="approaching") {
+    const elapsed=s.pair.elapsed+Math.min(delta,.25), fallen=s.pair.push&&elapsed>=3;
+    s={...s,stairsLost:(s.stairsLost??0)+(fallen&&!s.pair.fallen?1:0),pair:{...s.pair,elapsed,fallen}};
+  }
   const dt = Math.min(delta, 0.25) * (options.rate ?? 1),
     e = s.active;
   if (e) {
     if (e.phase === "waiting") {
       const elapsed = e.elapsed + Math.min(delta, 0.25);
-      const waiting = { ...s, active: { ...e, elapsed } };
+      const waiting = { ...s, active: { ...e, elapsed, tellSeconds:(e.tellSeconds??0)+Math.min(delta,.25) } };
       return elapsed >= DECISION_SECONDS[difficulty] ? expireEncounter(waiting, e.id) : waiting;
     }
     const elapsed = e.elapsed + dt;
@@ -315,7 +374,11 @@ export function tickEncounters(
       return { ...s, active: { ...e, phase: "waiting", elapsed: 0 } };
     if (e.phase === "departing" && elapsed >= 4)
       return { ...s, active: null, nextIn: arrivalInterval[difficulty] };
-    return { ...s, active: { ...e, elapsed } };
+    return { ...s, active: { ...e, elapsed, tellSeconds:(e.tellSeconds??0)+Math.min(delta,.25) } };
+  }
+  if(doorReady && s.queued) {
+    if(s.pair?.fallen)return {...s,queued:null,pair:undefined};
+    return {...s,active:{...s.queued,phase:"approaching",elapsed:approachDuration(encounterVisitor(s.queued))-3},queued:null,pair:undefined,result:null};
   }
   if (!doorReady || ("scheduled" in options && !options.scheduled)) return s;
   const nextIn = options.scheduled ? 0 : Math.max(0, s.nextIn - dt);
@@ -327,14 +390,19 @@ export function tickEncounters(
     options.scheduled ??
     tutorial[s.sequence] ??
     VISITORS[seed % VISITORS.length].id;
+  const companion=options.companion;
   return {
     ...s,
     seed,
-    sequence: s.sequence + 1,
+    sequence: s.sequence + (companion?2:1),
+    queued:companion?{id:`${s.runId}:${s.sequence+2}`,visitor:companion,profile:generatedVisitor(companion,s.identitySeed??s.seed,s.sequence+1),phase:"approaching",elapsed:0,asked:[],decision:null}:null,
+    pair:companion?{elapsed:0,push:!!options.push,fallen:false}:undefined,
     result: null,
     active: {
       id: `${s.runId}:${s.sequence + 1}`,
       visitor: selected,
+      profile:generatedVisitor(selected,s.identitySeed??s.seed,s.sequence),
+      tellSeconds:0,
       phase: "approaching",
       elapsed: 0,
       asked: [],
@@ -372,9 +440,9 @@ export function resolveEncounter(
     !(decision === "admit" || decision === "reject" || decision === "shoot")
   )
     return s;
-  const v = visitorById(e.visitor),
-    correct = (v.kind === "human") === (decision === "admit"),
-    coins = correct ? 5 : 0;
+  const v = encounterVisitor(e),
+    correct = v.decisionPolicy === "either" ? decision !== "shoot" || v.behaviour === "mimic" : (v.kind === "human") === (decision === "admit"),
+    coins = correct && !(decision === "shoot" && v.behaviour === "mimic") ? 5 : 0;
   return {
     ...s,
     active: { ...e, phase: "departing", elapsed: 0, decision },
@@ -388,11 +456,11 @@ export function resolveEncounter(
     result: {
       id,
       name: v.name,
-      kind: v.kind,
+      kind: v.behaviour === "mimic" ? "human" : v.kind,
       decision,
       correct,
       coins,
-      explanation: v.explanation,
+      explanation: v.behaviour === "mimic" ? "Their appearance and answers gave no warning signs. No mistake was recorded." : v.explanation,
     },
   };
 }
@@ -429,7 +497,7 @@ export function visitorForDifficulty(
 export function expireEncounter(s: Encounters, id: string): Encounters {
   const e = s.active;
   if (!e || e.id !== id || e.phase !== "waiting" || s.resolved.includes(id)) return s;
-  const v = visitorById(e.visitor);
+  const v = encounterVisitor(e);
   return {
     ...s, active: { ...e, phase: "departing", elapsed: 0, decision: "timeout" },
     resolved: [...s.resolved, id], streak: 0,

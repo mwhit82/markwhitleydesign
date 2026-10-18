@@ -1382,3 +1382,9 @@
 .mistakeCount {display:flex;flex-direction:column;gap:2px;font-size:15px;letter-spacing:0;color:#f0f2f4;}.mistakeCount strong{font-weight:600;}.mistakeCount small{font-size:10px;text-transform:none;}
 .armed .outcome {top:220px;bottom:auto;left:18px;max-width:min(420px,calc(100% - 36px));max-height:100px;overflow:auto;font-size:12px;}
 @media(orientation:landscape) and (max-height:500px){.armed .outcome{top:170px;max-width:45vw;max-height:75px;}}
+
+/* Expanded catalogue stays thumb-friendly without pushing every item below the fold. */
+.game .shopModal .categories { flex-wrap:nowrap; overflow-x:auto; padding-bottom:6px; scrollbar-width:thin; }
+.game .shopModal .categories button { flex:0 0 auto; min-height:48px; }
+.bundleContents { font-size:13px; line-height:1.5; color:#d3d4d7; margin:4px 0 14px; }
+@media(max-width:600px){ .game .shopModal .shopScroll>h2 {font-size:22px;} .game .shopModal .balance {margin:8px 0;} }

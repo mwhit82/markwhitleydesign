@@ -48,3 +48,26 @@ Touch implementation supersedes the unsupported-touch notice and desktop-only sc
 The owner requested review and publication through GitHub, superseding the earlier local-only restriction. Review fixed a portrait interruption that could downgrade the rotate lock to a resumable pause, and updated stale desktop-only Playground/README wording. Added a regression test (57 passing game checks). Pinned Next's nested PostCSS to 8.5.30 with a scoped npm override, retaining Next 15.5.28; production audit now reports zero vulnerabilities. Five high-severity development-only lint-chain advisories remain; no forced framework change was made.
 
 Physical iPhone/iPad/Android validation, long device soaks, manual pointer-lock and Fenn's full pacing/audio review remain limitations, not claimed completed. Release includes only Deader, its website integration, dependencies and documentation; unrelated Rally assets are excluded. A clean temporary checkout is used because the original checkout contains an invalid duplicate Git reference. Original local work is preserved.
+
+## Fenn’s visitors and bundles — local review, 18 October 2026
+
+This update is local only; publication needs a separate GitHub push request. Five-minute nights, existing touch controls, bloodless effects and dawn judgement remain.
+
+- Encounter profiles now snapshot seeded names, colours and coherent cover stories. The pools contain 24 names and 12 story sets; names do not repeat within a shift and adjacent character types differ. Dialogue anomalies retain authored contradictions without obvious appearance-denial answers.
+- Mimic and three-kids decisions both grant the normal five-coin reward once. The Mimic reports as an ordinary visitor at admission and has no Donut/pet warning. Three later resolved visitors (including timeouts) advance its lounge-only transformation; the attack removes at most one seated resident, then it leaves. Shooting cancels its sequence; dawn cancels unfinished events. Kids retain the human shooting penalty.
+- Splitter uses vertical halves, tilting separation and red connective rubber strands, informed by the decoded supplied video. Glitched uses a displaced arm and bounded fragments. Seeded repeating tells start within eight seconds, with sustained reduced-motion poses.
+- Seeded paired arrivals consume two existing visitor slots. The companion waits for its own door timer. Rare pushes remove the victim without a missed-decision penalty; the aggressor is an Anomaly with CCTV evidence.
+- Rainbow and Injured bundles cost 150 coins each and unlock four independently removable pieces. Purchase and equip are separate. Finish/effect slots are exclusive; particles are bounded. Save v3 migrates v1/v2 without resetting progress, using the original storage key. Active encounters are never persisted.
+- The locally hosted wooden-grip Service Pistol is CC0 by Mateusz Sadek / Poly Haven. Its approximately 2.4 MB GLB uses at most 1K textures and no displacement. Shelf and held instances share geometry/textures; held materials avoid near-wall clipping. Source attribution is in `public/deader/service-pistol.LICENSE.txt`. Rebuild with Blender and `scripts/prepare-anomalous-pistol.py`, supplying the source glTF and output GLB paths. Loading has a procedural fallback.
+
+Development-only 60-second rehearsals expose Mimic, Splitter, Glitched, kids, pair, push, Rainbow and Injured fixtures. They do not save encounter rewards. Pure rules live in `lib/deader/{visitors,night,lounge,cosmetics}.ts`; scene presentation is in the matching components and the new visitor-cone, stair-companion and bundle-details components.
+
+### Validation
+
+- 96 game tests pass, including identity consistency, 500 seeded arrival plans, special decisions, duplicate rewards, every Mimic stage/cancellation, pair deadlines/victims, bundles and save migration. Lint, production build and whitespace checks pass.
+- Browser checks covered desktop 1280×720, portrait 390×844, landscape 844×390 and tablet 820×1180 layouts. Verified shop previews, disabled unaffordable purchases, Rainbow purchase/equip and refresh persistence on an isolated local origin. Existing local player currency was preserved.
+- Verified pistol load/fire/return/recollect with five rounds remaining; Splitter/Glitched peephole rendering, paired CCTV rendering, Mimic admission, repeated lobby/room transitions and rehearsal dawn. No browser errors appeared in the checked flows. Detailed Mimic attack timing and staircase removal are covered by pure/state tests; their full animation/audio sequences still benefit from Fenn’s playtest.
+- Apple M4 Pro (12 CPU / 16 GPU cores), 24 GB RAM, in-app development browser: sampled 115–118 FPS (about 8.5–8.7 ms frame cadence). Armed room samples used 280–288 geometries and 31–33 textures across transitions; scene-dependent calls varied with view/visibility. These are short samples, not a controlled leak soak, GPU timings or physical-phone performance claims.
+- Physical iPhone/iPad Safari checks, extended resource soak, positional-audio listening and real-device pointer-lock behaviour remain manual release checks. The asset-load fallback was inspected in code, not tested by intentionally breaking the asset request.
+
+Unrelated Rally assets were left untouched by this update.

@@ -5,8 +5,10 @@ import * as THREE from "three";
 import { characterPose, type AnimationState } from "@/lib/deader/presentation";
 import { useGame } from "@/lib/deader/store";
 import type { Outfit } from "@/lib/deader/cosmetics";
+import { BundleDetails, rainbowTexture } from "./bundle-details";
 import { createCharacterWear } from "./character-wear";
 export function Cone({
+  split = 0, glitch = 0, shove = 0,
   colour = "#ffc928",
   walking = false,
   seated = false,
@@ -21,6 +23,7 @@ export function Cone({
   paused = false,
   ...props
 }: {
+  split?: number; glitch?: number; shove?: number;
   colour?: string;
   walking?: boolean;
   seated?: boolean;
@@ -31,7 +34,7 @@ export function Cone({
   backpack?: boolean;
   outfit?: Outfit;
   selfie?: boolean;
-  appearance?: "ordinary" | "third-eye" | "wide-mouth";
+  appearance?: "ordinary" | "third-eye" | "wide-mouth" | "splitter" | "glitched" | "kids";
   paused?: boolean;
   position?: [number, number, number];
   rotation?: [number, number, number];
@@ -65,6 +68,8 @@ export function Cone({
     },
     [wear, wearTexture],
   );
+  const rainbow=useMemo(()=>outfit?.finish==="rainbow-finish"?rainbowTexture():null,[outfit?.finish]);
+  useEffect(()=>()=>rainbow?.dispose(),[rainbow]);
   const points = useMemo(
     () => [
       new THREE.Vector2(0, 0.23),
@@ -93,7 +98,8 @@ export function Cone({
       body.current.position.y = pose.bob;
       body.current.rotation.z = pose.tilt;
     }
-    if (arm.current) arm.current.rotation.x = pose.arm;
+    if (arm.current) { arm.current.rotation.x = pose.arm; arm.current.rotation.z=-.23-shove*1.2; arm.current.position.x=-.43-glitch*.12; arm.current.visible=glitch<.8; }
+    if (mouth.current) mouth.current.scale.x=(appearance === "wide-mouth"?3:1.5)*(1-split*.5);
     if (mouth.current)
       mouth.current.scale.y =
         (appearance === "wide-mouth" ? 1.3 : 0.38) * pose.jaw;
@@ -110,7 +116,7 @@ export function Cone({
   return (
     <group {...props}>
       {[left, right].map((ref, i) => (
-        <group key={i} ref={ref} position={[i ? 0.23 : -0.23, 0.3, 0]}>
+        <group key={i} ref={ref} position={[(i ? 1 : -1)*(.23+split*.12), 0.3, 0]}>
           <mesh position={[0, -0.15, 0]}>
             <capsuleGeometry args={[0.045, 0.22, 3, 6]} />
             <meshStandardMaterial color="#11100f" roughness={0.65} />
@@ -122,11 +128,13 @@ export function Cone({
         </group>
       ))}
       <group ref={body}>
-        <mesh castShadow={!lowDetail}>
-          <latheGeometry args={[points, lowDetail ? 16 : 40]} />
+        <BundleDetails outfit={outfit} paused={paused}/>
+        {(appearance === "splitter" ? [-1,1] : [0]).map(half=>(
+        <mesh key={half} position={[half*split*.12,0,0]} rotation={[0,0,-half*split*.05]} castShadow={!lowDetail}>
+          <latheGeometry onUpdate={geometry=>{if(!rainbow)return;const uv=geometry.attributes.uv,pos=geometry.attributes.position;for(let i=0;i<uv.count;i++)uv.setY(i,(pos.getY(i)-.23)/1.3);uv.needsUpdate=true;}} args={[points, lowDetail ? 16 : 40, appearance === "splitter" ? (half===-1?Math.PI:0) : 0, appearance === "splitter" ? Math.PI : Math.PI*2]} />
           <meshStandardMaterial
-            color={colour}
-            map={wear.map}
+            color={rainbow?"#ffffff":outfit?.finish==="chipped-finish"?"#dfb52b":colour}
+            map={rainbow??wear.map}
             bumpMap={wear.relief}
             bumpScale={0.008}
             roughness={0.64}
@@ -134,10 +142,12 @@ export function Cone({
             metalness={0.08}
           />
         </mesh>
-        {[-0.13, 0.13].map((x) => (
+        ))}
+        {appearance === "splitter" && split>0 && <group>{[.55,.75,.95,1.15].map(y=><mesh key={y} position={[0,y,.01]} rotation={[0,0,Math.PI/2]}><cylinderGeometry args={[.009,.009,split*.24,6]}/><meshStandardMaterial color="#bc4239" roughness={.8}/></mesh>)}</group>}
+        {(outfit?.face === "dangling-eye" ? [-.13] : [-0.13, 0.13]).map((x) => (
           <mesh
             key={x}
-            position={[x, 0.99, 0.235]}
+            position={[x+Math.sign(x)*split*.12, 0.99, 0.235]}
             rotation={[-0.33, 0, 0]}
             scale={[0.65, 1, 0.4]}
           >
@@ -157,7 +167,7 @@ export function Cone({
         )}
         <mesh
           ref={mouth}
-          position={[0, 0.77, 0.329]}
+          position={[-split*.18, 0.77, 0.329]}
           rotation={[-0.3, 0, 0]}
           scale={
             appearance === "wide-mouth" ? [3, 1.3, 0.4] : [1.5, 0.38, 0.25]
@@ -166,6 +176,7 @@ export function Cone({
           <sphereGeometry args={[0.08, 12, 8]} />
           <meshStandardMaterial color="#16130e" />
         </mesh>
+        {appearance === "splitter" && split>0 && <mesh position={[split*.18,.77,.329]} rotation={[-.3,0,0]} scale={[.75,.38,.25]}><sphereGeometry args={[.08,12,8]}/><meshStandardMaterial color="#16130e"/></mesh>}
         {[-1, 1].map((side) => (
           <mesh
             key={side}
@@ -177,7 +188,7 @@ export function Cone({
             <meshStandardMaterial color="#11100f" />
           </mesh>
         ))}
-        {outfit?.hat && (
+        {outfit?.hat && outfit.hat!=="rainbow-hat" && (
           <group position={[0, 1.38, 0]}>
             <mesh>
               <cylinderGeometry args={[0.11, 0.22, 0.32, 16]} />
@@ -203,7 +214,7 @@ export function Cone({
         )}
         {outfit?.glasses && (
           <group position={[0, 0.99, 0.27]} rotation={[-0.33, 0, 0]}>
-            {[-0.13, 0.13].map((x) => (
+            {(outfit?.face === "dangling-eye" ? [-.13] : [-0.13, 0.13]).map((x) => (
               <mesh key={x} position={[x, 0, 0]}>
                 <torusGeometry args={[0.085, 0.012, 6, 16]} />
                 <meshStandardMaterial

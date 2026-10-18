@@ -1,0 +1,7 @@
+Service Pistol by Mateusz Sadek / Poly Haven
+Source: https://polyhaven.com/a/service_pistol
+License: CC0 1.0 Universal — https://creativecommons.org/publicdomain/zero/1.0/
+Downloaded 2026-10-17. Wooden-grip A variant retained; spare objects removed,
+orientation/scale adjusted and exported to GLB. Textures capped at 1024 pixels;
+JPEG export quality 80; no displacement. Source geometry and texture assets
+are shared by shelf and first-person instances. No runtime external requests.

@@ -3,12 +3,14 @@ import { useEffect, useRef } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import { useGame } from "@/lib/deader/store";
-import { visitorById, approachProgress } from "@/lib/deader/visitors";
+import { encounterVisitor, approachProgress } from "@/lib/deader/visitors";
 import { roomAudio } from "@/lib/deader/audio/room-audio";
 import { scareVariant, attackAmount } from "@/lib/deader/presentation";
-import { Cone } from "./character";
+import { VisitorCone } from "./visitor-cone";
+import { StairCompanion } from "./stair-companion";
 
 export function Visitors() {
+  const pair = useGame(s=>s.room.encounters.pair);
   const active = useGame((s) => s.room.encounters.active);
   const paused = useGame(
     (s) => !!s.panel || (!s.focused || !!s.suspension),
@@ -55,7 +57,7 @@ export function Visitors() {
     const s = useGame.getState(),
       e = s.room.encounters.active;
     if (!e || !group.current) return;
-    const v = visitorById(e.visitor),
+    const v = encounterVisitor(e),
       p = e.phase === "approaching" ? approachProgress(e) : 1;
     let z = THREE.MathUtils.lerp(-10.5, -5.9, p),
       y = Math.min(0, -0.75 + p * 1.5);
@@ -136,7 +138,7 @@ export function Visitors() {
     }
   });
   if (!active || (active.phase === "departing" && active.decision === "admit" && survival.phase === "idle") || survival.phase === "lunge") return null;
-  const v = visitorById(active.visitor);
+  const v = encounterVisitor(active);
   const walking =
     !paused &&
     (active.phase === "departing" ||
@@ -144,8 +146,12 @@ export function Visitors() {
         (v.movement !== "stop-start" ||
           ((active.elapsed / 22) * 8) % 1 < 0.5)));
   return (
+    <><StairCompanion/>
     <group ref={group} userData={{shotTarget:active.id}}>
-      <Cone
+      <VisitorCone
+        visitor={v}
+        shove={v.behaviour==="mean"&&pair?.push&&pair.elapsed>2.5&&pair.elapsed<3.7?1:0}
+        seconds={active.tellSeconds??active.elapsed}
         animation={
           survival.phase === "recovery"
               ? "react"
@@ -162,11 +168,9 @@ export function Visitors() {
                       : "idle"
         }
         animationKey={`${active.id}:${active.asked.length}`}
-        colour={v.colour}
-        appearance={v.appearance}
         walking={walking}
         paused={paused}
       />
-    </group>
+    </group></>
   );
 }

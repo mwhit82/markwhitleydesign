@@ -1,18 +1,24 @@
 "use client";
-import { useEffect, useMemo, useRef } from 'react';
+import { Component, Suspense, useEffect, useMemo, useRef, type ReactNode } from 'react';
+import {useGLTF} from '@react-three/drei';
 import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { useGame } from '@/lib/deader/store';
 import { roomAudio } from '@/lib/deader/audio/room-audio';
 import { Box, Sign } from './environment';
 import styles from './game.module.css';
-export function GunModel() {
-  return <group>
-    <Box position={[0,0,0]} size={[.12,.14,.4]} colour="#373b40"/>
-    <Box position={[0,-.13,.1]} size={[.11,.23,.14]} colour="#4a3425" rotation={[-.2,0,0]}/>
-    <mesh position={[0,0,-.25]} rotation={[Math.PI/2,0,0]}><cylinderGeometry args={[.045,.045,.22,10]}/><meshStandardMaterial color="#1c2024" metalness={.65} roughness={.35}/></mesh>
-  </group>;
+class GunFallback extends Component<{children:ReactNode},{failed:boolean}>{
+ state={failed:false};static getDerivedStateFromError(){return {failed:true};}
+ render(){return this.state.failed?<SimpleGun/>:this.props.children;}
 }
+function SimpleGun(){return <group><Box position={[0,0,-.08]} size={[.07,.09,.34]} colour="#50545a"/><Box position={[0,-.12,.03]} size={[.06,.19,.09]} colour="#573b29"/></group>;}
+function LoadedGun({firstPerson=false}:{firstPerson?:boolean}){
+ const {scene}=useGLTF('/deader/service-pistol.glb');
+ const model=useMemo(()=>{const copy=scene.clone(true);copy.traverse(o=>{if(o instanceof THREE.Mesh){o.castShadow=false;o.userData.firstPersonWeapon=firstPerson;if(firstPerson){o.renderOrder=10;o.material=Array.isArray(o.material)?o.material.map(m=>m.clone()):o.material.clone();const ms=Array.isArray(o.material)?o.material:[o.material];ms.forEach(m=>{m.depthTest=false;m.depthWrite=false;});}}});return copy;},[scene,firstPerson]);
+ useEffect(()=>()=>{if(firstPerson)model.traverse(o=>{if(o instanceof THREE.Mesh)(Array.isArray(o.material)?o.material:[o.material]).forEach(m=>m.dispose());});},[model,firstPerson]);
+ return <primitive object={model} dispose={null}/>;
+}
+export function GunModel({firstPerson=false}:{firstPerson?:boolean}){return <GunFallback><Suspense fallback={<SimpleGun/>}><LoadedGun firstPerson={firstPerson}/></Suspense></GunFallback>;}
 export function Weapon() {
   const {scene,camera}=useThree();
   const equipped=useGame(s=>s.room.weapon.collected);
@@ -55,12 +61,12 @@ export function Weapon() {
       {equipped&&<mesh position={[0,.15,0]} visible={false} userData={{interactionProxy:true}}><boxGeometry args={[1,.65,.7]}/><meshBasicMaterial/></mesh>}
       <Sign text="SIX SHOTS / CHOOSE WISELY" position={[0,.43,-.14]} width={1} height={.2}/>
     </group>
-    <group ref={held} scale={.65} visible={false} userData={{ignoreBullet:true}}><GunModel/>
+    <group ref={held} scale={.65} visible={false} userData={{ignoreBullet:true}}><GunModel firstPerson/>
       {/* Black plastic hands and forearms match the cone character's limbs. */}
-      <mesh position={[0,-.17,.12]} scale={[.075,.095,.085]}><sphereGeometry args={[1,12,8]}/><meshStandardMaterial color="#17191c" roughness={.65}/></mesh>
-      <mesh position={[-.055,-.09,-.06]} scale={[.09,.055,.11]}><sphereGeometry args={[1,12,8]}/><meshStandardMaterial color="#17191c" roughness={.65}/></mesh>
-      <Box position={[.04,-.30,.28]} size={[.105,.12,.4]} colour="#17191c" rotation={[-.4,-.15,0]}/>
-      <Box position={[-.15,-.22,.17]} size={[.10,.11,.42]} colour="#17191c" rotation={[-.4,-.55,0]}/>
+      <mesh position={[0,-.17,.12]} scale={[.045,.075,.055]}><sphereGeometry args={[1,12,8]}/><meshStandardMaterial color="#17191c" roughness={.65}/></mesh>
+      <mesh position={[-.055,-.09,-.06]} scale={[.055,.042,.075]}><sphereGeometry args={[1,12,8]}/><meshStandardMaterial color="#17191c" roughness={.65}/></mesh>
+      <Box position={[.04,-.30,.28]} size={[.065,.085,.4]} colour="#17191c" rotation={[-.4,-.15,0]}/>
+      <Box position={[-.15,-.22,.17]} size={[.065,.075,.42]} colour="#17191c" rotation={[-.4,-.55,0]}/>
     </group>
   </>;
 }

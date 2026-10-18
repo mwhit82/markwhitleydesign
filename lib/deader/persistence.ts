@@ -7,7 +7,7 @@ export function saveProblem(raw: string | null): string | null {
     const value = JSON.parse(raw);
     if (!value || typeof value !== "object" || Array.isArray(value))
       return "Your existing save could not be read. It has been kept intact.";
-    if (value.version !== 1 && value.version !== 2)
+    if (value.version !== 1 && value.version !== 2 && value.version !== 3)
       return "This save uses a different game version. It has been kept intact.";
     return null;
   } catch {

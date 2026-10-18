@@ -11,6 +11,7 @@ export const NIGHT_TITLES = [
 ] as const;
 export type Night = {
   number: number;
+  arrivalStart?: number;
   mode: "normal" | "infinite";
   difficulty: "easy" | "medium" | "hard";
   nextArrival: number;
@@ -81,12 +82,28 @@ export function shuffledVisitor(runId: string, index: number): string {
   }
   return "bea";
 }
+export function arrivalPlan(night: Night, encounters: Encounters) {
+  const count=storyArrivals(night).length, index=encounters.sequence-(night.arrivalStart??0);
+  const shiftSeed=[...`${encounters.runId}:${night.number}`].reduce((n,c)=>(Math.imul(n,31)+c.charCodeAt(0))>>>0,927);
+  const bag=VISITORS.filter(v=>v.id!=="mean"&&v.id!=="mimic").map(v=>v.id);
+  for(let i=bag.length-1;i>0;i--){const j=((shiftSeed>>>0)+i*17)%(i+1);[bag[i],bag[j]]=[bag[j],bag[i]];}
+  // Reserve an early, unique slot for a Mimic, with three opportunities remaining.
+  const mimicSlot=1+shiftSeed%3;
+  const at=(i:number)=>i===mimicSlot?"mimic":bag[(i-(i>mimicSlot?1:0)+bag.length)%bag.length];
+  const random=(Math.imul(shiftSeed^(index*7919),1664525)+1013904223)>>>0;
+  const pair=index+1<count && random%100<20;
+  const push=pair && (random>>>8)%100<20 && index!==mimicSlot && index+1!==mimicSlot;
+  const late=(night.mode==="infinite"?night.elapsed-(night.number-1)*600:night.elapsed)>300;
+  const safeAt=(i:number)=>late&&at(i)==="mimic"?"bea":at(i);
+  return {visitor:push?"mean":safeAt(index),companion:pair?safeAt(index+1):null,push};
+}
 export function scheduledVisitor(night: Night, encounters: Encounters): string | null {
-  if(night.status!=="running" || encounters.active || night.elapsed < night.nextArrival) return null;
-  // No new approaches in the final fifteen seconds. A delayed decision never creates a burst.
+  if(night.status!=="running" || encounters.active || encounters.queued || night.elapsed < night.nextArrival) return null;
   const shiftTime=night.mode==="infinite"?night.elapsed-(night.number-1)*600:night.elapsed;
-  if(shiftTime>=570)return null;
-  return shuffledVisitor(encounters.runId,encounters.sequence);
+  if(shiftTime>=570 || encounters.sequence-(night.arrivalStart??0)>=storyArrivals(night).length)return null;
+  const result=arrivalPlan(night,encounters);
+  // A late Mimic cannot complete its progression; use a normal human instead.
+  return result.visitor==="mimic"&&shiftTime>300?"bea":result.visitor;
 }
 export function completeNightReward(
   save: Save,

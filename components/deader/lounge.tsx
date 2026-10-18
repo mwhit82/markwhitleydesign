@@ -8,7 +8,7 @@ import { useGame } from '@/lib/deader/store';
 import { SEATS, residentPosition, type Resident } from '@/lib/deader/lounge';
 import { visitorById } from '@/lib/deader/visitors';
 import { Box, Sign } from './environment';
-import { Cone } from './character';
+import { VisitorCone } from './visitor-cone';
 import type { RoomMaterials } from './room-materials';
 export function Lounge({materials:m}:{materials:RoomMaterials}) {
   const wear=useMemo(createCharacterWear,[]);
@@ -34,11 +34,11 @@ export function Lounge({materials:m}:{materials:RoomMaterials}) {
 }
 
 function LoungeResident({resident:r,paused,wear}:{resident:Resident;paused:boolean;wear:ReturnType<typeof createCharacterWear>}){
-  const group=useRef<THREE.Group>(null),v=visitorById(r.visitor);
+  const group=useRef<THREE.Group>(null),v=r.profile??visitorById(r.visitor);
   const initial=useRef(residentPosition(r)).current;
   useFrame((_,dt)=>{if(!group.current||paused)return;const p=residentPosition(r);const dx=p.x-group.current.position.x,dz=p.z-group.current.position.z;
     if(r.phase!=="seated"&&Math.hypot(dx,dz)>.01)group.current.rotation.y=Math.atan2(dx,dz);
     if(r.phase==="seated")group.current.rotation.y=0;
     group.current.position.lerp(new THREE.Vector3(p.x,p.y,p.z),1-Math.exp(-dt*18));});
-  return <group ref={group} userData={{shotTarget:r.id}} visible={r.phase!=="entering"||r.elapsed>0} position={[initial.x,initial.y,initial.z]}><Cone colour={v.colour} appearance={v.appearance} seated={r.phase==='seated'} walking={r.phase!=='seated'} paused={paused} wearTexture={wear} lowDetail/></group>;
+  return <group ref={group} userData={{shotTarget:r.id}} visible={r.phase!=="entering"||r.elapsed>0} position={[initial.x,initial.y,initial.z]}><VisitorCone visitor={v} mimicStage={r.mimicStage} attack={r.attackSeconds!==undefined} seconds={r.elapsed} seated={r.phase==='seated'} walking={r.phase!=='seated'} paused={paused} wearTexture={wear} lowDetail/></group>;
 }

@@ -1,17 +1,20 @@
+import { visitorById, type VisitorDefinition } from './visitors';
 import { move, ROOM_OBSTACLES, ROOM_CLOSED_OBSTACLES } from './game';
 export const SEATS = Array.from({length:12},(_,i)=>({x:[-2.4,-1.2,1.2,2.4][i%4],z:5.5+Math.floor(i/4)*1.5}));
-export type Resident = {id:string; visitor:string; seat:number; phase:'entering'|'seated'|'leaving'; elapsed:number};
-export function admitResident(residents:Resident[], id:string, visitor:string):Resident[] {
+export type Resident = {id:string; visitor:string; seat:number; phase:'entering'|'seated'|'leaving'; elapsed:number; profile?:VisitorDefinition; mimicStage?:number; mimicSeen?:string[]; attackSeconds?:number; victim?:string|null};
+export function admitResident(residents:Resident[], id:string, visitor:string, profile?:VisitorDefinition):Resident[] {
   if(residents.some(r=>r.id===id)) return residents;
   const occupied=new Set(residents.filter(r=>r.phase!=='leaving').map(r=>r.seat));
   const free=SEATS.findIndex((_,i)=>!occupied.has(i));
-  if(free>=0) return [...residents,{id,visitor,seat:free,phase:'entering',elapsed:0}];
+  if(free>=0) return [...residents,{id,visitor,profile,mimicStage:visitor==='mimic'?0:undefined,mimicSeen:[],seat:free,phase:'entering',elapsed:0}];
   const oldest=residents.find(r=>r.phase!=='leaving')!;
-  return [...residents.map(r=>r.id===oldest.id?{...r,phase:'leaving' as const,elapsed:0}:r),{id,visitor,seat:oldest.seat,phase:'entering',elapsed:0}];
+  return [...residents.map(r=>r.id===oldest.id?{...r,phase:'leaving' as const,elapsed:0}:r),{id,visitor,profile,mimicStage:visitor==='mimic'?0:undefined,mimicSeen:[],seat:oldest.seat,phase:'entering',elapsed:0}];
 }
 export function tickResidents(residents:Resident[],dt:number, doorOpen=true):Resident[] {
   if(!Number.isFinite(dt)||dt<=0)return residents;
-  return residents.flatMap(r=>{
+  const removed=new Set(residents.filter(r=>r.attackSeconds!==undefined&&r.attackSeconds>=1.2&&r.victim).map(r=>r.victim));
+  return residents.filter(r=>!removed.has(r.id)).flatMap(r=>{
+    if(r.attackSeconds!==undefined){const attackSeconds=r.attackSeconds+Math.min(.25,dt);return attackSeconds>=3?[{...r,attackSeconds:undefined,phase:'leaving' as const,elapsed:0}]:[{...r,attackSeconds}];}
     if((r.phase==='entering'&&r.elapsed===0&&!doorOpen)||r.phase==='seated'||(r.phase==='entering'&&residents.some(other=>other.seat===r.seat&&other.phase==='leaving')))return [r];
     const elapsed=r.elapsed+Math.min(.25,dt);
     if(r.phase==='leaving'&&elapsed>=3)return [];
@@ -42,3 +45,14 @@ export function moveInRooms(p:{x:number;z:number},x:number,z:number,dt:number,op
   next={x:next.x,z:p.z}; if(valid(next))return next;
   next=move(p,0,z,dt,11,obstacles);return valid(next)?next:p;
 }
+
+/** One advancement per later resolved door visitor; never from UI/render callbacks. */
+export function advanceMimics(residents:Resident[], encounterId:string):Resident[] {
+ return residents.map(r=>{
+  if((r.profile??visitorById(r.visitor)).behaviour!=="mimic"||r.id===encounterId||r.phase==='leaving'||(r.mimicStage??0)>=3||r.mimicSeen?.includes(encounterId))return r;
+  const stage=(r.mimicStage??0)+1;
+  const victim=stage===3?residents.find(other=>other.id!==r.id&&other.phase==='seated'&&other.profile?.behaviour!=="mimic"&&other.visitor!=="mimic")?.id:null;
+  return {...r,mimicStage:stage,mimicSeen:[...(r.mimicSeen??[]),encounterId],...(stage===3?{attackSeconds:0,victim:victim??null}:{})};
+ });
+}
+export const cancelMimics=(residents:Resident[])=>residents.filter(r=>(r.profile??visitorById(r.visitor)).behaviour!=="mimic");

@@ -6,7 +6,7 @@ import { useGame } from '@/lib/deader/store';
 import { move, LOBBY_OBSTACLES } from '@/lib/deader/game';
 import { moveInRooms } from '@/lib/deader/lounge';
 import { pets, petHint } from '@/lib/deader/pets';
-import { visitorForDifficulty } from '@/lib/deader/visitors';
+import { encounterVisitor } from '@/lib/deader/visitors';
 import { roomAudio } from '@/lib/deader/audio/room-audio';
 import { roomPlayerPose } from './player-reflection';
 import { lobbyPlayerPose } from './controllers';
@@ -135,7 +135,7 @@ export function PetHints() {
         if (s.room.view === 'cctv' && [2, 3, 4].includes(s.room.feed) && !v.sources.includes('cctv'))
             v.sources.push('cctv');
         if (!v.hint && v.sources.length) {
-            const hint = petHint(visitorForDifficulty(e.visitor, s.session?.difficulty), v.sources);
+            const hint = petHint(encounterVisitor(e, s.session?.difficulty), v.sources);
             if (hint) {
                 v.hint = hint;
                 setCaption(`${pet.name}: ${hint}`);

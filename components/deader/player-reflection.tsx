@@ -5,6 +5,7 @@ import * as THREE from "three";
 import { Reflector } from "three/examples/jsm/objects/Reflector.js";
 import { useGame } from "@/lib/deader/store";
 import { cosmetics } from "@/lib/deader/game";
+import { bundleOutfit } from "@/lib/deader/cosmetics";
 import { Cone } from "./character";
 
 // Physical player pose, independent of CCTV and inspection camera positions.
@@ -15,7 +16,9 @@ export function ReflectedPlayer() {
   const group = useRef<THREE.Group>(null);
   const [walking, setWalking] = useState(false);
   const colour = useGame(s => cosmetics.find(c => c.id === s.save.equipped)!.colour);
-  const outfit = useGame(s => s.save.outfit);
+  const savedOutfit = useGame(s => s.save.outfit);
+  const previewBundle=useGame(s=>s.room.previewBundle);
+  const outfit=useMemo(()=>previewBundle?bundleOutfit(savedOutfit,previewBundle):savedOutfit,[savedOutfit,previewBundle]);
   const paused = useGame(s => !!s.panel || !s.focused || !!s.suspension);
   useLayoutEffect(() => {
     // Never draw a duplicate body in the first-person view or CCTV.

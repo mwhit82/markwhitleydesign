@@ -206,6 +206,17 @@ export class RoomAudio {
     source.connect(gain).connect(c.destination);this.voices.add(source);
     source.onended=()=>{this.voices.delete(source);source.disconnect();gain.disconnect();};source.start();
   }
+  scream(x:number,z:number,listener:{x:number;z:number;yaw:number}) {
+    const c=this.context;if(!c||this.muted||!this.volume||this.voices.size>8)return;
+    const distance=Math.hypot(x-listener.x,z-listener.z);
+    for(let i=0;i<3;i++){
+      const source=c.createOscillator(),gain=c.createGain(),pan=c.createStereoPanner();
+      source.type="sawtooth";source.frequency.setValueAtTime(430+i*95,c.currentTime);source.frequency.exponentialRampToValueAtTime(180+i*40,c.currentTime+1);
+      gain.gain.setValueAtTime(0,c.currentTime);gain.gain.linearRampToValueAtTime(this.volume*(this.gentle?.015:.045)/(1+distance*.15),c.currentTime+.08);gain.gain.exponentialRampToValueAtTime(.0001,c.currentTime+1.1);
+      pan.pan.value=Math.max(-1,Math.min(1,((x-listener.x)*Math.cos(listener.yaw)-(z-listener.z)*Math.sin(listener.yaw))/5));
+      source.connect(gain).connect(pan).connect(c.destination);this.voices.add(source);source.onended=()=>{this.voices.delete(source);source.disconnect();gain.disconnect();pan.disconnect();};source.start();source.stop(c.currentTime+1.15);
+    }
+  }
   play(kind: Cue, pan = 0) {
     const c = this.context;
     if (

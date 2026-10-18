@@ -314,10 +314,10 @@ test("every Anomaly has discoverable evidence and humans have consistent ordinar
   for (const v of visitors.VISITORS) {
     assert.equal(Object.keys(v.dialogue).length, 3);
     if (v.kind === "human") {
-      assert.equal(v.appearance, "ordinary");
+      assert.ok(v.appearance === "ordinary" || v.appearance === "kids");
       assert.equal(v.movement, "natural");
       assert.equal(v.clues.length, 0);
-    } else assert.ok(v.clues.length > 0);
+    } else if(v.behaviour!=="mimic") assert.ok(v.clues.length > 0);
   }
   const sources = new Set(
     visitors.VISITORS.flatMap((v) => v.clues.map((c) => c.source)),
@@ -588,12 +588,12 @@ test("active night clock is bounded, pauses without catch-up and maps exactly to
 test("shuffled bags cover every visitor and avoid repeats across boundaries", () => {
   const e=visitors.freshEncounters("schedule"),n=nightLogic.freshNight();
   assert.equal(nightLogic.scheduledVisitor({...n,elapsed:11.9},e),null);
-  const ids=Array.from({length:90},(_,i)=>nightLogic.shuffledVisitor(e.runId,i));
-  for(let i=0;i<90;i+=9)assert.equal(new Set(ids.slice(i,i+9)).size,9);
+  const ids=Array.from({length:visitors.VISITORS.length*10},(_,i)=>nightLogic.shuffledVisitor(e.runId,i));
+  for(let i=0;i<ids.length;i+=visitors.VISITORS.length)assert.equal(new Set(ids.slice(i,i+visitors.VISITORS.length)).size,visitors.VISITORS.length);
   for(let i=1;i<ids.length;i++)assert.notEqual(ids[i],ids[i-1]);
-  assert.deepEqual(ids,Array.from({length:90},(_,i)=>nightLogic.shuffledVisitor(e.runId,i)));
-  assert.notDeepEqual(ids,Array.from({length:90},(_,i)=>nightLogic.shuffledVisitor("different-run",i)));
-  assert.equal(nightLogic.scheduledVisitor({...n,elapsed:12},e),ids[0]);
+  assert.deepEqual(ids,Array.from({length:visitors.VISITORS.length*10},(_,i)=>nightLogic.shuffledVisitor(e.runId,i)));
+  assert.notDeepEqual(ids,Array.from({length:visitors.VISITORS.length*10},(_,i)=>nightLogic.shuffledVisitor("different-run",i)));
+  assert.equal(nightLogic.scheduledVisitor({...n,elapsed:12},e),nightLogic.arrivalPlan(n,e).visitor);
   assert.equal(nightLogic.scheduledVisitor({...n,elapsed:100},{...e,active:waiting().active}),null);
   assert.equal(nightLogic.scheduledVisitor({...n,elapsed:570},e),null);
 });
@@ -635,9 +635,9 @@ test("full five-minute run resolves ten visitors and rewards only after judgemen
   }
   const s = useGame.getState();
   assert.equal(s.room.night.status, "completed");
-  assert.equal(s.room.encounters.correct, 10);
+  assert.equal(s.room.encounters.correct+(s.room.encounters.stairsLost??0), 10);
   assert.equal(s.room.encounters.trust, 3);
-  assert.equal(s.save.coins, 250);
+  assert.equal(s.save.coins, 250-5*(s.room.encounters.stairsLost??0));
   assert.equal(s.save.completedNights, 1);
   assert.deepEqual(g.readSave(memory.values().next().value), s.save);
   s.tickVisitors(10);
@@ -656,7 +656,7 @@ test("full five-minute run resolves ten visitors and rewards only after judgemen
   );
   s.start();
   assert.equal(useGame.getState().room.night.elapsed, 0);
-  assert.equal(useGame.getState().save.coins, 250);
+  assert.equal(useGame.getState().save.coins, s.save.coins);
   assert.notEqual(
     useGame.getState().room.encounters.runId,
     s.room.encounters.runId,
@@ -810,7 +810,7 @@ test("all story schedules remain bounded and every later visitor has fair eviden
         const v = visitors.visitorForDifficulty(id, difficulty);
         assert.ok(v);
         assert.equal(Object.keys(v.dialogue).length, 3);
-        if (v.kind === "anomaly") assert.ok(v.clues.length);
+        if (v.kind === "anomaly" && v.behaviour!=="mimic") assert.ok(v.clues.length);
       }
     }
   assert.notDeepEqual(
@@ -976,11 +976,11 @@ test("all nine story/difficulty combinations finish full runs with their schedul
       }
       assert.equal(useGame.getState().room.night.status, "completed");
       assert.equal(
-        useGame.getState().room.encounters.correct,
+        useGame.getState().room.encounters.correct+(useGame.getState().room.encounters.stairsLost??0),
         expected,
         `${number} ${difficulty}`,
       );
-      assert.equal(useGame.getState().save.coins, 200 + 5 * expected);
+      assert.equal(useGame.getState().save.coins, 200 + 5 * (expected-(useGame.getState().room.encounters.stairsLost??0)));
     }
 });
 
@@ -1015,7 +1015,7 @@ test("v1 migration preserves existing progress and v2 validates accessory slots"
   delete legacy.outfit;
   delete legacy.achievements;
   const migrated = g.readSave(JSON.stringify(legacy));
-  assert.equal(migrated.version, 2);
+  assert.equal(migrated.version, 3);
   assert.equal(migrated.coins, 17);
   assert.equal(migrated.equipped, "blue");
   assert.equal(migrated.completedNights, 2);
@@ -1401,7 +1401,7 @@ test("corrupt and future saves are preserved instead of overwritten during play"
     ),
     true,
   );
-  assert.equal(JSON.parse(data).version, 2);
+  assert.equal(JSON.parse(data).version, 3);
   assert.equal(JSON.parse(data).coins, 0);
 });
 test("store preserves unreadable save and clearly marks temporary play unsaved", async () => {
@@ -1827,7 +1827,7 @@ test('arcade keeps night active, yields to knock and blocks relaunch until depar
   for(let i=0;i<70;i++)useGame.getState().tickVisitors(.1);
   useGame.getState().roomView('console');useGame.getState().roomView('arcade');
   assert.equal(useGame.getState().room.view,'arcade');
-  for(let i=0;i<90;i++)useGame.getState().tickVisitors(.1);
+  for(let i=0;i<110;i++)useGame.getState().tickVisitors(.1);
   assert.equal(useGame.getState().room.view,'console');
   assert.equal(useGame.getState().room.encounters.active.phase,'waiting');
   assert.ok(useGame.getState().room.night.elapsed>=29);
@@ -1990,4 +1990,106 @@ test('night three empty-door check closes and permits another arrival',async()=>
  useGame.getState().doorEvent({type:'arrival',id:'next-visitor'});
  assert.equal(useGame.getState().room.visitorId,'next-visitor');
  assert.equal(useGame.getState().room.door,'VISITOR_WAITING');
+});
+
+test('generated identities are stable, varied and coherent without appearance denials',()=>{
+ const profiles=Array.from({length:24},(_,i)=>visitors.generatedVisitor('three',719,i));
+ assert.equal(new Set(profiles.map(v=>v.name)).size,24);
+ assert.equal(visitors.STORIES.length,12);
+ for(const [i,v] of profiles.entries()){
+  assert.deepEqual(v,visitors.generatedVisitor('three',719,i));
+  assert.ok(v.dialogue.identity.includes(v.name));assert.ok(!JSON.stringify(v.dialogue).includes('Two eyes'));
+  assert.equal(v.clues.some(c=>c.source==='dialogue'),false);
+ }
+ const echo=visitors.generatedVisitor('echo',719,0);assert.match(echo.dialogue.origin,/all evening/);assert.match(echo.dialogue.purpose,/roof/);
+});
+test('special decision policies pay once, and kids are not shooting targets',()=>{
+ for(const id of ['mimic','kids'])for(const decision of ['admit','reject']){
+  const s=waiting(id),next=visitors.resolveEncounter(s,s.active.id,decision);
+  assert.equal(next.earned,5);assert.equal(next.mistakes,0);if(id==='mimic')assert.equal(next.result.kind,'human');
+  assert.equal(visitors.resolveEncounter(next,s.active.id,decision),next);
+ }
+ const m=waiting('mimic'),k=waiting('kids');
+ assert.equal(visitors.resolveEncounter(m,m.active.id,'shoot').earned,0);
+ assert.equal(visitors.resolveEncounter(m,m.active.id,'shoot').mistakes,0);
+ assert.equal(visitors.resolveEncounter(k,k.active.id,'shoot').mistakes,1);
+ assert.deepEqual(visitors.visitorById('mimic').clues,[]);
+});
+test('Mimic progresses on three distinct later outcomes, removes one resident and leaves',async()=>{
+ const l=await import(await moduleUrl(resolve('lib/deader/lounge.ts')));
+ let residents=l.admitResident([], 'm','mimic',visitors.generatedVisitor('mimic',4,0));
+ residents=l.admitResident(residents,'h','bea');residents=residents.map(r=>({...r,phase:'seated'}));
+ assert.deepEqual(l.advanceMimics(residents,'m'),residents);
+ residents=l.advanceMimics(residents,'one');assert.equal(residents[0].mimicStage,1);
+ assert.deepEqual(l.advanceMimics(residents,'one'),residents);
+ residents=l.advanceMimics(residents,'two');assert.equal(residents[0].mimicStage,2);
+ residents=l.advanceMimics(residents,'timeout');assert.equal(residents[0].mimicStage,3);assert.equal(residents[0].victim,'h');
+ for(let i=0;i<28;i++)residents=l.tickResidents(residents,.25);
+ assert.deepEqual(residents,[]);
+ let alone=l.admitResident([],'alone','mimic');for(const id of ['1','2','3'])alone=l.advanceMimics(alone,id);
+ assert.equal(alone[0].victim,null);assert.deepEqual(l.cancelMimics(alone),[]);
+});
+test('pair queue waits for the door, and a staircase victim incurs no decision or reward',()=>{
+ for(const push of [false,true]){
+  let e=visitors.tickEncounters(visitors.freshEncounters('pair'),.25,'easy',false,true,{scheduled:push?'mean':'bea',companion:'pippa',push});
+  assert.equal(e.sequence,2);assert.ok(e.queued);assert.equal(e.queued.elapsed,0);
+  for(let i=0;i<80;i++)e=visitors.tickEncounters(e,.25,'easy',false,true);
+  assert.equal(e.active.phase,'waiting');assert.equal(e.queued.elapsed,0);
+  e=visitors.resolveEncounter(e,e.active.id,push?'reject':'admit');
+  for(let i=0;i<16;i++)e=visitors.tickEncounters(e,.25,'easy',false,false);
+  assert.equal(e.active,null);assert.ok(e.queued);
+  e=visitors.tickEncounters(e,.25,'easy',false,true);
+  if(push){assert.equal(e.active,null);assert.equal(e.queued,null);assert.equal(e.stairsLost,1);}
+  else{assert.equal(e.active.visitor,'pippa');assert.equal(e.active.phase,'approaching');}
+  assert.equal(e.mistakes,0);assert.equal(e.earned,5);
+ }
+});
+test('schedule reserves one early Mimic and bounds paired visitor budgets',()=>{
+ let pairs=0,pushes=0;
+ for(let seed=0;seed<500;seed++){
+  const n=nightLogic.freshNight(),e=visitors.freshEncounters('seed-'+seed);let index=0,mimics=0,last='';
+  while(index<10){e.sequence=index;const p=nightLogic.arrivalPlan(n,e);assert.notEqual(p.visitor,last);
+   if(p.visitor==='mimic'){mimics++;assert.ok(index<=6);} if(p.companion==='mimic'){mimics++;assert.ok(index+1<=6);}
+   if(p.companion)pairs++;if(p.push)pushes++;
+   index+=p.companion?2:1;last=p.push?p.visitor:p.companion??p.visitor;
+  }
+  assert.equal(index,10);assert.equal(mimics,1);e.sequence=index;
+  assert.equal(nightLogic.scheduledVisitor({...n,elapsed:550},e),null);
+ }
+ assert.ok(pairs>300);assert.ok(pushes>20&&pushes<pairs/3);
+});
+test('bundle purchases migrate and persist, with independent equipment and no duplicate charge',async()=>{
+ const c=await import(await moduleUrl(resolve('lib/deader/cosmetics.ts')));
+ const old={...g.newSave(),version:2,coins:300};delete old.ownedBundles;
+ let s=g.readSave(JSON.stringify(old));assert.equal(s.version,3);assert.equal(s.coins,300);
+ assert.equal(c.equipBundle(s,'rainbow'),s);
+ s=c.purchaseBundle(s,'rainbow');assert.equal(s.coins,150);assert.equal(s.ownedAccessories.length,4);
+ assert.equal(c.purchaseBundle(s,'rainbow'),s);s=c.equipBundle(s,'rainbow');assert.equal(s.outfit.finish,'rainbow-finish');
+ s=c.purchaseBundle(s,'injured');s=c.equipAccessory(s,'face','dangling-eye');assert.equal(s.outfit.finish,'rainbow-finish');
+ assert.deepEqual(g.readSave(JSON.stringify(s)),s);assert.equal(c.purchaseBundle({...g.newSave(),coins:149},'injured').coins,149);
+});
+test('new anomaly tells recur within every decision window and reduced motion holds the clue',()=>{
+ for(let seed=0;seed<24;seed++){
+  assert.ok(Array.from({length:80},(_,i)=>visitors.anomalyTell(i/10,seed)).some(v=>v>.5));
+  for(let start=8;start<25;start+=8)assert.ok(Array.from({length:80},(_,i)=>visitors.anomalyTell(start+i/10,seed)).some(v=>v>.5));
+  assert.equal(visitors.anomalyTell(0,seed,true),1);
+ }
+});
+test('Mimic store integration advances on timeouts and shooting cancels without penalties',async()=>{
+ const l=await import(await moduleUrl(resolve('lib/deader/lounge.ts')));
+ const {useGame}=await combatStore('bea');let r=useGame.getState().room;
+ const resident={...l.admitResident([],'m','mimic')[0],phase:'seated',mimicStage:0};
+ useGame.setState({room:{...r,residents:[resident],encounters:{...r.encounters,active:{...r.encounters.active,elapsed:59.9}}}});
+ useGame.getState().tickVisitors(.25);
+ assert.equal(useGame.getState().room.residents[0].mimicStage,1);
+ r=useGame.getState().room;const mistakes=r.encounters.mistakes,coins=useGame.getState().save.coins;
+ assert.equal(useGame.getState().fireWeapon('m'),true);
+ assert.equal(useGame.getState().room.residents.length,0);
+ assert.equal(useGame.getState().room.encounters.mistakes,mistakes);assert.equal(useGame.getState().save.coins,coins);
+});
+test('owning every bundle piece prevents a duplicate bundle charge',async()=>{
+ const c=await import(await moduleUrl(resolve('lib/deader/cosmetics.ts')));
+ const s={...g.newSave(),ownedAccessories:[...c.bundles[0].items]};
+ assert.equal(c.purchaseBundle(s,'rainbow'),s);
+ assert.equal(c.equipBundle(s,'rainbow').outfit.finish,'rainbow-finish');
 });
