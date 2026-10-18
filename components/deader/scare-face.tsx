@@ -1,9 +1,10 @@
 "use client";
-import { useEffect, useRef } from 'react';
-import { useFrame } from '@react-three/fiber';
+import { useEffect, useMemo, useRef } from 'react';
+import { createPortal, useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { useGame } from '@/lib/deader/store';
 import { closeScarePose } from '@/lib/deader/presentation';
+import { createCharacterWear } from './character-wear';
 import { dawnScarePose } from '@/lib/deader/judgement';
 import { visitorById } from '@/lib/deader/visitors';
 /** Camera-relative original cone face: no extra renderer, overlays or postprocessing. */
@@ -40,6 +41,9 @@ export function ScareFace(){
 /** Dawn-only monster; camera-relative transforms never modify player aim. */
 export function DawnFace(){
  const ref=useRef<THREE.Group>(null);
+ const overlay=useMemo(()=>new THREE.Scene(),[]);
+ const wear=useMemo(createCharacterWear,[]);
+ useEffect(()=>()=>{wear.map.dispose();wear.relief.dispose();},[wear]);
  useFrame(({camera})=>{
   if(!ref.current)return;
   const s=useGame.getState(),j=s.room.judgement;
@@ -49,17 +53,30 @@ export function DawnFace(){
   ref.current.position.copy(camera.position);ref.current.quaternion.copy(camera.quaternion);
   ref.current.translateZ(-pose.distance);ref.current.translateX(pose.x);ref.current.translateY(pose.y+.1);ref.current.rotateZ(pose.roll);
   const aspect=camera instanceof THREE.PerspectiveCamera?camera.aspect:1;
-  ref.current.scale.setScalar(Math.min(1,Math.max(.52,aspect*.85)));
+  ref.current.scale.setScalar(Math.min(.58,Math.max(.42,aspect*.62)));
  });
- return <group ref={ref} visible={false} userData={{ignoreBullet:true}}>
-  <mesh renderOrder={101}><coneGeometry args={[.78,1.75,28]}/><meshBasicMaterial color="#b8a53b" depthTest={false} depthWrite={false}/></mesh>
+ useFrame(({gl,scene,camera})=>{
+  gl.render(scene,camera);
+  if(ref.current?.visible){const auto=gl.autoClear;gl.autoClear=false;gl.clearDepth();try{gl.render(overlay,camera);}finally{gl.autoClear=auto;}}
+ },1);
+ return createPortal(<group ref={ref} visible={false} userData={{ignoreBullet:true}}>
+  <pointLight position={[-1.3,1.5,2.8]} color="#ffe2bb" intensity={12} distance={6}/>
+  <pointLight position={[1,-.2,1.4]} color="#ad1926" intensity={3} distance={4}/>
+  <ambientLight intensity={.3}/>
+
+  <mesh><coneGeometry args={[.78,1.75,28]}/><meshStandardMaterial color="#b8a53b" map={wear.map} bumpMap={wear.relief} bumpScale={.018} roughness={.6}/></mesh>
   {[-1,1].map(side=><group key={side} position={[side*.27,.13,.48]} rotation={[0,0,side*-.14]}>
-   <mesh renderOrder={102} scale={[1,1.15,.4]}><sphereGeometry args={[.25,20,12]}/><meshBasicMaterial color="#080707" depthTest={false} depthWrite={false}/></mesh>
-   <mesh renderOrder={103} position={[-side*.025,-.015,.11]} scale={[1,1.2,.25]}><sphereGeometry args={[.105,16,10]}/><meshBasicMaterial color="#c20d17" depthTest={false} depthWrite={false}/></mesh>
-   <mesh renderOrder={104} position={[-side*.025,-.015,.14]} scale={[.4,1,.25]}><sphereGeometry args={[.05,12,8]}/><meshBasicMaterial color="#170307" depthTest={false} depthWrite={false}/></mesh>
+   <mesh scale={[1,1.15,.8]}><sphereGeometry args={[.25,20,12]}/><meshStandardMaterial color="#211517" map={wear.map} bumpMap={wear.relief} bumpScale={.018} roughness={.6}/></mesh>
+   <mesh position={[-side*.025,-.015,.225]} scale={[1,1.2,.25]}><sphereGeometry args={[.105,16,10]}/><meshStandardMaterial color="#a1141c" map={wear.map} bumpMap={wear.relief} bumpScale={.018} roughness={.6}/></mesh>
+   <mesh position={[-side*.025,-.015,.26]} scale={[.4,1,.25]}><sphereGeometry args={[.05,12,8]}/><meshStandardMaterial color="#170307" map={wear.map} bumpMap={wear.relief} bumpScale={.018} roughness={.6}/></mesh>
   </group>)}
-  <mesh renderOrder={104} position={[0,-.32,.54]} scale={[1,1.45,.3]}><sphereGeometry args={[.30,20,16]}/><meshBasicMaterial color="#050405" depthTest={false} depthWrite={false}/></mesh>
-  {[-.19,-.065,.075,.2].map((x,i)=><mesh renderOrder={105} key={x} position={[x,-.19,.66]} rotation={[0,0,Math.PI+(i-1.5)*.09]}><coneGeometry args={[.065,.24+(i%2)*.08,5]}/><meshBasicMaterial color="#ded6b8" depthTest={false} depthWrite={false}/></mesh>)}
-  {[-.16,0,.17].map(x=><mesh renderOrder={105} key={x} position={[x,-.61,.65]} rotation={[0,0,-x]}><coneGeometry args={[.05,.17,5]}/><meshBasicMaterial color="#c0b89c" depthTest={false} depthWrite={false}/></mesh>)}
- </group>;
+  <mesh position={[0,-.32,.54]} scale={[1,1.45,.18]}><sphereGeometry args={[.30,20,16]}/><meshStandardMaterial color="#050405" map={wear.map} bumpMap={wear.relief} bumpScale={.018} roughness={.6}/></mesh>
+  {[-.19,-.065,.075,.2].map((x,i)=><mesh key={x} position={[x,-.19,.66]} rotation={[0,0,Math.PI+(i-1.5)*.09]}><coneGeometry args={[.065,.24+(i%2)*.08,5]}/><meshStandardMaterial color="#ded6b8" map={wear.map} bumpMap={wear.relief} bumpScale={.018} roughness={.6}/></mesh>)}
+  {[-.16,0,.17].map(x=><mesh key={x} position={[x,-.61,.65]} rotation={[0,0,-x]}><coneGeometry args={[.05,.17,5]}/><meshStandardMaterial color="#c0b89c" map={wear.map} bumpMap={wear.relief} bumpScale={.018} roughness={.6}/></mesh>)}
+  <mesh position={[0,-.32,.64]} scale={[1,1.45,1]}><torusGeometry args={[.29,.035,10,32]}/><meshStandardMaterial color="#761c26" map={wear.map} bumpMap={wear.relief} bumpScale={.015} roughness={.24}/></mesh>
+  {[-.22,.13,.26].map((x,i)=><group key={x} position={[x,-.52,.65]}>
+   <mesh position={[0,-.12-i*.025,0]} rotation={[0,0,x*.4]}><capsuleGeometry args={[.014,.2+i*.05,4,8]}/><meshStandardMaterial color="#780d19" roughness={.17}/></mesh>
+   <mesh position={[.012,-.25-i*.025,0]} scale={[.7,1.8,.6]}><sphereGeometry args={[.025,10,8]}/><meshStandardMaterial color="#8f1520" roughness={.15}/></mesh>
+  </group>)}
+ </group>,overlay);
 }

@@ -1,5 +1,8 @@
 import { visitorById, type VisitorDefinition } from './visitors';
 import { move, ROOM_OBSTACLES, ROOM_CLOSED_OBSTACLES } from './game';
+export const MIMIC_ATTACK_SECONDS=15;
+export const MIMIC_VICTIM_AT=12;
+export const MIMIC_LEAVE_SECONDS=5;
 export const SEATS = Array.from({length:12},(_,i)=>({x:[-2.4,-1.2,1.2,2.4][i%4],z:5.5+Math.floor(i/4)*1.5}));
 export type Resident = {id:string; visitor:string; seat:number; phase:'entering'|'seated'|'leaving'; elapsed:number; profile?:VisitorDefinition; mimicStage?:number; mimicSeen?:string[]; attackSeconds?:number; victim?:string|null};
 export function admitResident(residents:Resident[], id:string, visitor:string, profile?:VisitorDefinition):Resident[] {
@@ -12,12 +15,12 @@ export function admitResident(residents:Resident[], id:string, visitor:string, p
 }
 export function tickResidents(residents:Resident[],dt:number, doorOpen=true):Resident[] {
   if(!Number.isFinite(dt)||dt<=0)return residents;
-  const removed=new Set(residents.filter(r=>r.attackSeconds!==undefined&&r.attackSeconds>=1.2&&r.victim).map(r=>r.victim));
+  const removed=new Set(residents.filter(r=>r.attackSeconds!==undefined&&r.attackSeconds>=MIMIC_VICTIM_AT&&r.victim).map(r=>r.victim));
   return residents.filter(r=>!removed.has(r.id)).flatMap(r=>{
-    if(r.attackSeconds!==undefined){const attackSeconds=r.attackSeconds+Math.min(.25,dt);return attackSeconds>=3?[{...r,attackSeconds:undefined,phase:'leaving' as const,elapsed:0}]:[{...r,attackSeconds}];}
+    if(r.attackSeconds!==undefined){const attackSeconds=r.attackSeconds+Math.min(.25,dt);return attackSeconds>=MIMIC_ATTACK_SECONDS?[{...r,attackSeconds:undefined,phase:'leaving' as const,elapsed:0}]:[{...r,attackSeconds}];}
     if((r.phase==='entering'&&r.elapsed===0&&!doorOpen)||r.phase==='seated'||(r.phase==='entering'&&residents.some(other=>other.seat===r.seat&&other.phase==='leaving')))return [r];
     const elapsed=r.elapsed+Math.min(.25,dt);
-    if(r.phase==='leaving'&&elapsed>=3)return [];
+    if(r.phase==='leaving'&&elapsed>=(r.mimicStage===3?MIMIC_LEAVE_SECONDS:3))return [];
     return [{...r,elapsed,phase:r.phase==='entering'&&elapsed>=8?'seated' as const:r.phase}];
   });
 }
@@ -33,7 +36,7 @@ function along(points:{x:number;z:number}[], fraction:number) {
 export function residentPosition(r:Resident) {
   const seat=SEATS[r.seat], aisle={x:0,z:seat.z+.75}, front={x:seat.x,z:seat.z+.75};
   if(r.phase==='seated')return {...seat,y:.25};
-  if(r.phase==='leaving')return along([seat,front,aisle,{x:0,z:10},{x:3.3,z:10},{x:3.3,z:10.7}],r.elapsed/3);
+  if(r.phase==='leaving')return along([seat,front,aisle,{x:0,z:10},{x:3.3,z:10},{x:3.3,z:10.7}],r.elapsed/(r.mimicStage===3?MIMIC_LEAVE_SECONDS:3));
   return along([{x:0,z:-3.5},aisle,front,seat],r.elapsed/8);
 }
 const furniture=SEATS.map(p=>({...p,hx:.42,hz:.38}));
@@ -56,3 +59,9 @@ export function advanceMimics(residents:Resident[], encounterId:string):Resident
  });
 }
 export const cancelMimics=(residents:Resident[])=>residents.filter(r=>(r.profile??visitorById(r.visitor)).behaviour!=="mimic");
+
+export function loungeAlert(residents:Resident[]) {
+ const resident=residents.find(r=>r.mimicStage===3&&(r.attackSeconds!==undefined||r.phase==='leaving'));
+ if(!resident)return null;
+ return {id:resident.id,leaving:resident.phase==='leaving',seconds:Math.max(0,Math.ceil(resident.attackSeconds!==undefined?MIMIC_ATTACK_SECONDS-resident.attackSeconds:MIMIC_LEAVE_SECONDS-resident.elapsed))};
+}

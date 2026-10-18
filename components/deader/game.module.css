@@ -1388,3 +1388,8 @@
 .game .shopModal .categories button { flex:0 0 auto; min-height:48px; }
 .bundleContents { font-size:13px; line-height:1.5; color:#d3d4d7; margin:4px 0 14px; }
 @media(max-width:600px){ .game .shopModal .shopScroll>h2 {font-size:22px;} .game .shopModal .balance {margin:8px 0;} }
+
+.loungeAlert{position:absolute;right:18px;top:110px;width:220px;z-index:30;padding:10px;background:#101012ed;border:1px solid #ffffff60;border-radius:9px;box-shadow:0 8px 30px #0008;color:#fff;pointer-events:auto;}
+.loungeAlert strong{display:block;font-size:14px}.loungeAlert span{display:block;font-size:10px;letter-spacing:.08em;margin:5px 0;color:#e6b9ad}.loungeAlert canvas{display:block;width:100%;height:auto;border-radius:4px}.loungeAlert p{font-size:11px;margin:6px 0}.loungeAlert button{width:100%;min-height:44px;border:1px solid #fff6;border-radius:5px;color:#fff;background:#ffffff12;font-size:12px;}
+@media(max-width:600px){.loungeAlert{top:220px;right:12px;width:166px;padding:7px}.loungeAlert strong{font-size:12px}.loungeAlert p{font-size:10px}}
+@media(max-height:500px){.loungeAlert{top:74px;right:12px;width:154px}.loungeAlert canvas{height:78px;object-fit:cover}.loungeAlert p{display:none}.loungeAlert button{min-height:36px}}

@@ -80,7 +80,7 @@ export function Weapon() {
       {equipped&&<mesh position={[0,.15,0]} visible={false} userData={{interactionProxy:true}}><boxGeometry args={[1,.65,.7]}/><meshBasicMaterial/></mesh>}
       <Sign text="SIX SHOTS / CHOOSE WISELY" position={[0,.43,-.14]} width={1} height={.2}/>
     </group>
-    <group ref={held} scale={.65} visible={false} userData={{ignoreBullet:true}}><GunModel firstPerson/>
+    <group ref={held} scale={.65} visible={false} userData={{ignoreBullet:true,firstPersonWeapon:true}}><GunModel firstPerson/>
       {/* Black plastic hands and forearms match the cone character's limbs. */}
       <mesh position={[0,-.17,.12]} scale={[.045,.075,.055]}><sphereGeometry args={[1,12,8]}/><meshStandardMaterial color="#17191c" roughness={.65}/></mesh>
       <mesh position={[-.055,-.09,-.06]} scale={[.055,.042,.075]}><sphereGeometry args={[1,12,8]}/><meshStandardMaterial color="#17191c" roughness={.65}/></mesh>

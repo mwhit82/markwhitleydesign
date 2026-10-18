@@ -8,6 +8,7 @@ import {
   type Feed,
 } from "@/lib/deader/room";
 import { roomAudio } from "@/lib/deader/audio/room-audio";
+import { LoungeAlertUI } from "./lounge-alert";
 import { ConsoleUI } from "./console-ui";
 import { EncounterUI } from "./encounter-ui";
 import { DoorMenu } from "./door-menu";
@@ -37,7 +38,7 @@ export function RoomUI() {
           +
         </div>
       )}
-      <TVCaptions />
+      <TVCaptions /><LoungeAlertUI/>
       {r.view === "door" && <DoorMenu />}
       {r.view === "inspect" && (
         <div className={styles.inspection}>

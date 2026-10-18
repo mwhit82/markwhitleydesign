@@ -47,8 +47,9 @@ export function RoomController() {
   const view = useGame((s) => s.room.view);
   const resolution = useGame((s) => s.save.settings.resolution);
   const quality = useGame((s) => s.save.settings.quality);
-  const pos = useRef({ x: 0, z: 3.2 });
-  const angles = useRef({ yaw: 0, pitch: 0 });
+  const mirrorCheck=process.env.NODE_ENV==='development'&&useGame.getState().room.night?.duration===60&&useGame.getState().rehearsal==='armed-mirror';
+  const pos = useRef(mirrorCheck?{x:-2,z:-.75}:{ x: 0, z: 3.2 });
+  const angles = useRef({ yaw: mirrorCheck?Math.PI/2:0, pitch: mirrorCheck?-.12:0 });
   const dragging = useRef(false);
   const clickStart = useRef<{x:number;y:number}|null>(null);
   const reduced = useRef(false);

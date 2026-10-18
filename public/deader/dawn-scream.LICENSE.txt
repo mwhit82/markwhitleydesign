@@ -1,0 +1,8 @@
+SFX by Dan Knoflicek (Macro) — "Scream 1.wav", from Screaming.
+Source: https://opengameart.org/content/screaming
+Original file: https://opengameart.org/sites/default/files/Scream%201.wav
+License: Creative Commons Attribution 3.0 Unported
+https://creativecommons.org/licenses/by/3.0/
+Changes: selected a continuous three-second excerpt; normalized, faded endpoints,
+converted to mono 22.05 kHz / 16-bit PCM. No synthesized voice added.
+Downloaded 18 October 2026. Credit retained in game settings and this notice.

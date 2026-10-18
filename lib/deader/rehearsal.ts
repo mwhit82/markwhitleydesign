@@ -1,12 +1,13 @@
 import type { RoomState } from './room';
 import { VISITORS, generatedVisitor } from './visitors';
 import { SEATS } from './lounge';
-export type Rehearsal = 'standard'|'lounge'|'scare'|'armed'|'judgement-pass'|'judgement-fail'|'mimic'|'splitter'|'glitched'|'kids'|'pair'|'push'|'rainbow'|'injured';
+export type Rehearsal = 'armed-mirror'|'standard'|'lounge'|'scare'|'armed'|'judgement-pass'|'judgement-fail'|'mimic'|'splitter'|'glitched'|'kids'|'pair'|'push'|'rainbow'|'injured';
 /** Development-only caller; sessions retain the no-reward 60-second duration. */
 export function rehearse(room:RoomState,scenario:Rehearsal):RoomState {
   if(room.night?.duration!==60||scenario==='standard')return room;
   const id=`${room.encounters.runId}:fixture`;
   if(scenario==='judgement-pass'||scenario==='judgement-fail')return {...room,night:{...room.night,elapsed:599},encounters:{...room.encounters,mistakes:scenario==='judgement-fail'?3:2}};
+  if(scenario==='armed-mirror')return {...room,weapon:{...room.weapon,collected:true}};
   if(scenario==='armed')return {...room,weapon:{...room.weapon,collected:true},door:'OPEN',visitorId:id,encounters:{...room.encounters,active:{id,visitor:'three',phase:'waiting',elapsed:0,asked:[],decision:null}}};
   if(scenario==='scare')return {...room,door:'VISITOR_WAITING',visitorId:id,view:'door',encounters:{...room.encounters,active:{id,visitor:'three',phase:'waiting',elapsed:0,asked:[],decision:null}}};
   if(['mimic','splitter','glitched','kids','pair','push'].includes(scenario)){

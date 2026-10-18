@@ -9,6 +9,7 @@ import { BundleDetails, rainbowTexture } from "./bundle-details";
 import { createBittenConeGeometry } from "./bitten-cone";
 import { createCharacterWear } from "./character-wear";
 export function Cone({
+  armed = false,
   split = 0, glitch = 0, shove = 0,
   colour = "#ffc928",
   walking = false,
@@ -24,6 +25,7 @@ export function Cone({
   paused = false,
   ...props
 }: {
+  armed?: boolean;
   split?: number; glitch?: number; shove?: number;
   colour?: string;
   walking?: boolean;
@@ -101,7 +103,7 @@ export function Cone({
       body.current.position.y = pose.bob;
       body.current.rotation.z = pose.tilt;
     }
-    if (arm.current) { arm.current.rotation.x = pose.arm; arm.current.rotation.z=-.23-shove*1.2; arm.current.position.x=-.43-glitch*.12; arm.current.visible=glitch<.8; }
+    if (arm.current) { arm.current.rotation.x = pose.arm; arm.current.rotation.z=-.23-shove*1.2; arm.current.position.x=-.43-glitch*.12; arm.current.visible=!armed&&glitch<.8; }
     if (mouth.current) mouth.current.scale.x=(appearance === "wide-mouth"?3:1.5)*(1-split*.5);
     if (mouth.current)
       mouth.current.scale.y =
@@ -185,6 +187,7 @@ export function Cone({
         {[-1, 1].map((side) => (
           <mesh
             key={side}
+            visible={!armed}
             ref={side === -1 ? arm : undefined}
             position={[side * 0.43, 0.53, 0]}
             rotation={[0, 0, side * 0.23]}

@@ -101,6 +101,7 @@ export function GameSettings() {
         Saved on this device. System reduced-motion preferences are respected
         too.
       </small>
+      <small>Scream SFX by Dan Knoflicek · <a href="https://opengameart.org/content/screaming" target="_blank" rel="noreferrer">Screaming</a> · <a href="https://creativecommons.org/licenses/by/3.0/" target="_blank" rel="noreferrer">CC BY 3.0</a> · trimmed and normalized.</small>
     </fieldset>
   );
 }

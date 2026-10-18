@@ -1252,7 +1252,8 @@ test("audio has gesture gating, bounded voices, reusable ambience and complete t
   const { RoomAudio } = await import(
     await moduleUrl(resolve("lib/deader/audio/room-audio.ts"))
   );
-  const previous = globalThis.AudioContext;
+  const previous = globalThis.AudioContext,previousFetch=globalThis.fetch;
+  globalThis.fetch=async()=>({ok:true,arrayBuffer:async()=>new ArrayBuffer(8)});
   let contexts = 0,
     closed = 0;
   const bufferLengths=[];
@@ -1291,6 +1292,7 @@ test("audio has gesture gating, bounded voices, reusable ambience and complete t
       this.state = "closed";
       return Promise.resolve();
     }
+    async decodeAudioData(){return {duration:3};}
     createOscillator() {
       return new Node();
     }
@@ -1338,7 +1340,7 @@ test("audio has gesture gating, bounded voices, reusable ambience and complete t
     assert.equal(a.diagnostics().musicSources, 0);
     assert.equal(a.diagnostics().ambientSources, 0);
     assert.equal(a.diagnostics().broadcastSources, 0);
-    a.dawnScream();assert.equal(bufferLengths.at(-1),300);assert.equal(a.diagnostics().voices,1);
+    await a.preloadScream();a.dawnScream();assert.equal(a.diagnostics().voices,1);
     a.dawnScream();assert.equal(a.diagnostics().voices,1);
     a.stopDawnScream();assert.equal(a.diagnostics().voices,0);
     a.muted = true;
@@ -1359,11 +1361,13 @@ test("audio has gesture gating, bounded voices, reusable ambience and complete t
       musicSources: 0,
       context: "locked",
     });
-    a.unlock();
+    globalThis.fetch=async()=>{throw new Error("offline");};
+    a.unlock();await a.preloadScream();a.dawnScream();
+    assert.equal(a.diagnostics().voices,0);
     assert.equal(contexts, 2);
     a.dispose();
   } finally {
-    globalThis.AudioContext = previous;
+    globalThis.AudioContext = previous;globalThis.fetch=previousFetch;
   }
 });
 
@@ -2030,10 +2034,13 @@ test('Mimic progresses on three distinct later outcomes, removes one resident an
  assert.deepEqual(l.advanceMimics(residents,'one'),residents);
  residents=l.advanceMimics(residents,'two');assert.equal(residents[0].mimicStage,2);
  residents=l.advanceMimics(residents,'timeout');assert.equal(residents[0].mimicStage,3);assert.equal(residents[0].victim,'h');
- for(let i=0;i<28;i++)residents=l.tickResidents(residents,.25);
+ assert.equal(l.loungeAlert(residents).seconds,15);
+ for(let i=0;i<40;i++)residents=l.tickResidents(residents,.25);
+ assert.equal(residents.length,2);assert.equal(l.loungeAlert(residents).seconds,5);
+ for(let i=0;i<44;i++)residents=l.tickResidents(residents,.25);
  assert.deepEqual(residents,[]);
  let alone=l.admitResident([],'alone','mimic');for(const id of ['1','2','3'])alone=l.advanceMimics(alone,id);
- assert.equal(alone[0].victim,null);assert.deepEqual(l.cancelMimics(alone),[]);
+ assert.equal(alone[0].victim,null);assert.deepEqual(l.cancelMimics(alone),[]);assert.equal(l.loungeAlert(l.cancelMimics(alone)),null);
 });
 test('pair queue waits for the door, and a staircase victim incurs no decision or reward',()=>{
  for(const push of [false,true]){
@@ -2121,4 +2128,13 @@ test('Injured cone removes material from both upper bites and keeps outward norm
  }
  let front=-1;for(let i=0;i<p.count;i++){assert.ok(Number.isFinite(n.getX(i)));if(p.getZ(i)>.4&&p.getY(i)>.4)front=i;}
  assert.ok(front>=0);assert.ok(n.getZ(front)>0);geometry.dispose();
+});
+
+test('lounge alert persists through departure and clears when the Mimic is gone',async()=>{
+ const l=await import(await moduleUrl(resolve('lib/deader/lounge.ts')));
+ let residents=[{id:'m',visitor:'mimic',seat:0,phase:'seated',elapsed:8,mimicStage:3,attackSeconds:14.9,victim:null}];
+ residents=l.tickResidents(residents,.25);
+ assert.equal(l.loungeAlert(residents).leaving,true);assert.equal(l.loungeAlert(residents).seconds,5);
+ for(let i=0;i<20;i++)residents=l.tickResidents(residents,.25);
+ assert.equal(l.loungeAlert(residents),null);
 });

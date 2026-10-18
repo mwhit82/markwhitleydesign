@@ -19,6 +19,8 @@ export type Cue =
   | "lean"
   | "stutter";
 export class RoomAudio {
+  private screamBuffer: AudioBuffer | null = null;
+  private screamLoading: Promise<void> | null = null;
   private dawnVoice: AudioBufferSourceNode | null = null;
   private context: AudioContext | null = null;
   private music: {source: AudioBufferSourceNode; gain: GainNode} | null = null;
@@ -39,6 +41,7 @@ export class RoomAudio {
     try {
       this.context ??= new AudioContext();
       void this.context.resume().catch(() => {});
+      void this.preloadScream();
     } catch {
       /* Silent play remains available. */
     }
@@ -198,25 +201,20 @@ export class RoomAudio {
   stopDawnScream() {
     if(this.dawnVoice){try{this.dawnVoice.stop();}catch{}this.dawnVoice=null;}
   }
+  async preloadScream() {
+    const c=this.context;if(!c||this.screamBuffer)return;
+    if(this.screamLoading)return this.screamLoading;
+    this.screamLoading=fetch('/deader/dawn-scream.wav').then(r=>{if(!r.ok)throw new Error('Scream unavailable');return r.arrayBuffer();}).then(b=>c.decodeAudioData(b)).then(b=>{if(this.context===c)this.screamBuffer=b;}).catch(()=>{/* Silent fallback; never substitute a synthesized scream. */}).finally(()=>{this.screamLoading=null;});
+    return this.screamLoading;
+  }
   dawnScream() {
     const c=this.context;
-    if(!c||c.state!=='running'||this.muted||!this.volume)return;
-    this.stopDawnScream();
-    if(this.voices.size>=12)return;
-    const buffer=c.createBuffer(1,Math.ceil(c.sampleRate*DAWN_SCARE_SECONDS),c.sampleRate),data=buffer.getChannelData(0);
-    let phase=0;
-    for(let i=0;i<data.length;i++){
-      const t=i/c.sampleRate, pitch=340+170*Math.exp(-t*7)+50*Math.sin(t*28)+22*Math.sin(t*53);
-      phase+=2*Math.PI*pitch/c.sampleRate;
-      const vocal=Math.sin(phase)+.45*Math.sin(phase*2)+.25*Math.sin(phase*3);
-      const breath=(Math.random()*2-1)*.22;
-      const envelope=Math.min(1,t/.008)*Math.min(1,(DAWN_SCARE_SECONDS-t)/.45);
-      data[i]=Math.tanh(vocal*1.4+breath)*envelope*(.65+.15*Math.sin(t*19))*.45;
-    }
-    const source=c.createBufferSource(),gain=c.createGain();source.buffer=buffer;
-    gain.gain.value=this.volume*(this.gentle?.09:.48);
+    if(!c||c.state!=='running'||this.muted||!this.volume||!this.screamBuffer)return;
+    this.stopDawnScream();if(this.voices.size>=12)return;
+    const source=c.createBufferSource(),gain=c.createGain();source.buffer=this.screamBuffer;
+    gain.gain.value=this.volume*(this.gentle?.12:.7);
     source.connect(gain).connect(c.destination);this.voices.add(source);this.dawnVoice=source;
-    source.onended=()=>{this.voices.delete(source);if(this.dawnVoice===source)this.dawnVoice=null;source.disconnect();gain.disconnect();};source.start();
+    source.onended=()=>{this.voices.delete(source);if(this.dawnVoice===source)this.dawnVoice=null;source.disconnect();gain.disconnect();};source.start();source.stop(c.currentTime+DAWN_SCARE_SECONDS);
   }
   private scare(c: AudioContext) {
     const buffer=c.createBuffer(1,Math.floor(c.sampleRate*.65),c.sampleRate),data=buffer.getChannelData(0);
@@ -234,14 +232,13 @@ export class RoomAudio {
   scream(x:number,z:number,listener:{x:number;z:number;yaw:number}) {
     const c=this.context;if(!c||this.muted||!this.volume||this.voices.size>8)return;
     const distance=Math.hypot(x-listener.x,z-listener.z);
-    for(let i=0;i<3;i++){
-      const source=c.createOscillator(),gain=c.createGain(),pan=c.createStereoPanner();
-      source.type="sawtooth";source.frequency.setValueAtTime(430+i*95,c.currentTime);source.frequency.exponentialRampToValueAtTime(180+i*40,c.currentTime+1);
-      gain.gain.setValueAtTime(0,c.currentTime);gain.gain.linearRampToValueAtTime(this.volume*(this.gentle?.015:.045)/(1+distance*.15),c.currentTime+.08);gain.gain.exponentialRampToValueAtTime(.0001,c.currentTime+1.1);
-      pan.pan.value=Math.max(-1,Math.min(1,((x-listener.x)*Math.cos(listener.yaw)-(z-listener.z)*Math.sin(listener.yaw))/5));
-      source.connect(gain).connect(pan).connect(c.destination);this.voices.add(source);source.onended=()=>{this.voices.delete(source);source.disconnect();gain.disconnect();pan.disconnect();};source.start();source.stop(c.currentTime+1.15);
-    }
+    if(!this.screamBuffer)return;
+    const source=c.createBufferSource(),gain=c.createGain(),pan=c.createStereoPanner();source.buffer=this.screamBuffer;
+    gain.gain.value=this.volume*(this.gentle?.04:.25)/(1+distance*.15);
+    pan.pan.value=Math.max(-1,Math.min(1,((x-listener.x)*Math.cos(listener.yaw)-(z-listener.z)*Math.sin(listener.yaw))/5));
+    source.connect(gain).connect(pan).connect(c.destination);this.voices.add(source);source.onended=()=>{this.voices.delete(source);source.disconnect();gain.disconnect();pan.disconnect();};source.start();source.stop(c.currentTime+3);
   }
+
   play(kind: Cue, pan = 0) {
     const c = this.context;
     if (
@@ -348,6 +345,7 @@ export class RoomAudio {
     this.silence();
     void this.context?.close().catch(() => {});
     this.context = null;
+    this.screamBuffer = null;
     this.radioBuffer = null;
     this.musicBuffer = null;
     this.bangBuffer = null;
