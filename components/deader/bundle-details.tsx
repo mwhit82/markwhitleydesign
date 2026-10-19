@@ -23,7 +23,7 @@ export function BundleDetails({outfit,paused=false}:{outfit?:Outfit;paused?:bool
  </group>}
  {outfit.wrap==='bandages'&&<group>{[0,1,2].map(i=><mesh key={i} position={[.23,.08+i*.045,.01]} rotation={[0,0,.18]}><cylinderGeometry args={[.052,.052,.028,10]}/><meshStandardMaterial color="#ddd8c6" roughness={1}/></mesh>)}<mesh position={[-.25,1.0,.18]} rotation={[0,0,-.4]}><boxGeometry args={[.18,.055,.055]}/><meshStandardMaterial color="#ddd8c6"/></mesh></group>}
  {outfit.face==='dangling-eye'&&<group ref={eye} position={[.13,.99,.27]}><mesh position={[.025,-.10,.025]} rotation={[0,0,.2]}><cylinderGeometry args={[.007,.007,.20,6]}/><meshStandardMaterial color="#5b3a28"/></mesh><mesh position={[.045,-.22,.04]}><sphereGeometry args={[.055,12,8]}/><meshStandardMaterial color="#151310"/></mesh></group>}
- {outfit.effect&&<group ref={bits}>{Array.from({length:12},(_,i)=><mesh key={i}><boxGeometry args={[.025,.035,.012]}/><meshStandardMaterial color={outfit.effect==='confetti'?rainbow[i%6]:'#bc8c32'}/></mesh>)}</group>}
+ {outfit.effect&&outfit.effect!=="glitch-particles"&&<group ref={bits}>{Array.from({length:12},(_,i)=><mesh key={i}><boxGeometry args={[.025,.035,.012]}/><meshStandardMaterial color={outfit.effect==='confetti'?rainbow[i%6]:'#bc8c32'}/></mesh>)}</group>}
  </group>;
 }
 export function rainbowTexture(){const canvas=document.createElement('canvas');canvas.width=64;canvas.height=128;const c=canvas.getContext('2d')!;for(let i=0;i<12;i++){c.fillStyle=rainbow[i%6];c.fillRect(0,i*128/12,64,128/12+1);}const texture=new THREE.CanvasTexture(canvas);texture.colorSpace=THREE.SRGBColorSpace;return texture;}

@@ -2,6 +2,7 @@ import type { useGame } from "./store";
 /** Hover never opens a surface. Only explicit activation changes game state. */
 export const VR_TARGETS = [
   "Shop",
+  "Hourly special",
   "Customise",
   "Start",
   "Learn to play",
@@ -46,7 +47,7 @@ export function activateVRTarget(
       return true;
     }
     const panel =
-      target === "Shop"
+      target === "Hourly special" ? "special" : target === "Shop"
         ? "shop"
         : target === "Customise"
           ? "wardrobe"

@@ -1,4 +1,6 @@
 "use client";
+import { purchaseSpecial } from "./hourly-shop";
+import type { SpecialId } from "./special-ids";
 import { stalkerDebug, tickStalker, dismissStalker, freshStalker, emptyStalkerSight } from "./stalker";
 import { beginJudgement, tickJudgement, JUDGEMENT_SECONDS, judgementMistakes, spendShot } from "./judgement";
 import {useVR} from "./vr-state";
@@ -74,8 +76,10 @@ import {
 } from "./progression";
 import { loadLocalSave, writeLocalSave } from "./persistence";
 export { SAVE_KEY } from "./persistence";
-export type Panel = "shop" | "wardrobe" | "start" | "pause" | "progress" | "tutorial" | null;
+export type Panel = "special" | "shop" | "wardrobe" | "start" | "pause" | "progress" | "tutorial" | null;
 type State = {
+  specialFixture: SpecialId | null;
+  buySpecial: (id:SpecialId, hour:number)=>void;
   buyBundle:(id:BundleId)=>void;
   wearBundle:(id:BundleId)=>void;
   collectWeapon: () => void;
@@ -135,6 +139,8 @@ function persist(save: Save) {
   }
 }
 export const useGame = create<State>((set, get) => ({
+  specialFixture:null,
+  buySpecial:(id,hour)=>{if(process.env.NODE_ENV==="development"&&get().specialFixture)return;const old=get().save, save=purchaseSpecial(old,id,hour,Date.now()); if(save!==old)set({save,storageFailed:persist(save)});},
   buyBundle:id=>{const save=purchaseBundle(get().save,id);set({save,storageFailed:persist(save)});},
   wearBundle:id=>{const save=equipBundle(get().save,id);set({save,storageFailed:persist(save)});},
   collectWeapon: () => {
@@ -190,7 +196,8 @@ export const useGame = create<State>((set, get) => ({
     if(s.prompt==="Learn to play") {
       if(s.tutorial==="tablet") { gameInput.reset(); set({scene:"room",panel:null,tutorial:"inspect",room:tutorialRoom(freshRoom(crypto.randomUUID())),session:createSession("easy","normal"),prompt:null}); }
       else s.open("tutorial");
-    } else if(s.prompt==="Shop")s.open("shop");
+    } else if(s.prompt==="Hourly special")s.open("special");
+    else if(s.prompt==="Shop")s.open("shop");
     else if(s.prompt==="Customise")s.open("wardrobe");
     else if(s.prompt==="Start"&&!s.tutorial)s.open("start");
   },

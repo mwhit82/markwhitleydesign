@@ -37,9 +37,11 @@ export function Sign({
   background = "#201d17",
   rotation,
   aged = false,
+  fontSize = 55,
 }: {
   text: string;
   aged?: boolean;
+  fontSize?: number;
   position: [number, number, number];
   width?: number;
   height?: number;
@@ -58,7 +60,7 @@ export function Sign({
     ctx.lineWidth = 5;
     ctx.strokeRect(12, 12, 744, 232);
     ctx.fillStyle = colour;
-    ctx.font = "bold 55px monospace";
+    ctx.font = `bold ${fontSize}px monospace`;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     const lines = text.split("\n");
@@ -83,7 +85,7 @@ export function Sign({
     const t = new THREE.CanvasTexture(c);
     t.colorSpace = THREE.SRGBColorSpace;
     return t;
-  }, [text, colour, background, aged]);
+  }, [text, colour, background, aged, fontSize]);
   useEffect(() => () => texture.dispose(), [texture]);
   return (
     <mesh position={position} rotation={rotation}>

@@ -19,7 +19,7 @@ import { LOBBY_OBSTACLES, ROOM_CLOSED_OBSTACLES } from "@/lib/deader/game";
 import { FEEDS } from "@/lib/deader/room";
 import { loungeAlert, residentPosition } from "@/lib/deader/lounge";
 import { Cone } from "../character";
-import { Puppy } from "../sidekick";
+import { PetModel } from "../sidekick";
 import { xrStore, trackedHands } from "./runtime";
 import { spatial, registerUI } from "./spatial";
 import { placeVRPanel } from "@/lib/deader/vr";
@@ -183,7 +183,7 @@ export const VRPanel = memo(function VRPanel() {
           {
             text: model.back
               ? "Back"
-              : s.panel === "shop" || s.panel === "wardrobe"
+              : s.panel === "shop" || s.panel === "wardrobe" || s.panel === "special"
                 ? "Leave shop"
                 : "Close",
             run: model.back ?? model.close ?? (() => s.escape()),
@@ -637,7 +637,7 @@ function VRPreview() {
     >
       {preview &&
         (preview.pet ? (
-          <Puppy colour={preview.colour} />
+          <PetModel id={preview.petId} colour={preview.colour} />
         ) : (
           <Cone colour={preview.colour} outfit={preview.outfit} />
         ))}

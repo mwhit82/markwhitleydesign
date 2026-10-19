@@ -19,6 +19,8 @@ export type Cue =
   | "lean"
   | "stutter";
 export class RoomAudio {
+  private cymbalBuffer: AudioBuffer | null = null;
+  private cymbalLoading: Promise<void> | null = null;
   private screamBuffer: AudioBuffer | null = null;
   private screamLoading: Promise<void> | null = null;
   private dawnVoice: AudioBufferSourceNode | null = null;
@@ -42,6 +44,7 @@ export class RoomAudio {
       this.context ??= new AudioContext();
       void this.context.resume().catch(() => {});
       void this.preloadScream();
+      void this.preloadCymbal();
     } catch {
       /* Silent play remains available. */
     }
@@ -239,6 +242,28 @@ export class RoomAudio {
     source.connect(gain).connect(pan).connect(c.destination);this.voices.add(source);source.onended=()=>{this.voices.delete(source);source.disconnect();gain.disconnect();pan.disconnect();};source.start();source.stop(c.currentTime+3);
   }
 
+  async preloadCymbal() {
+    const c=this.context;if(!c||this.cymbalBuffer)return;
+    if(this.cymbalLoading)return this.cymbalLoading;
+    this.cymbalLoading=fetch('/deader/stalker-cymbal.mp3').then(r=>{if(!r.ok)throw new Error('Cymbal unavailable');return r.arrayBuffer();}).then(b=>c.decodeAudioData(b)).then(b=>{
+      if(this.context!==c)return;
+      const length=Math.min(b.length,Math.floor(b.sampleRate*2.2)),buffer=c.createBuffer(1,length,b.sampleRate),out=buffer.getChannelData(0);let peak=.001;
+      for(let i=0;i<length;i++){for(let channel=0;channel<b.numberOfChannels;channel++)out[i]+=b.getChannelData(channel)[length-1-i]/b.numberOfChannels;peak=Math.max(peak,Math.abs(out[i]));}
+      for(let i=0;i<length;i++)out[i]=out[i]/Math.max(.2,peak)*Math.min(1,i/(b.sampleRate*.15),(length-1-i)/(b.sampleRate*.25));
+      this.cymbalBuffer=buffer;
+    }).catch(()=>{/* A missing recording leaves silent play available. */}).finally(()=>{this.cymbalLoading=null;});
+    return this.cymbalLoading;
+  }
+  stalkerAppear(position?:{x:number;z:number;listener:{x:number;z:number;yaw:number}}) {
+    const c=this.context;if(!c||c.state!=="running"||!this.cymbalBuffer||this.muted||!this.volume||this.voices.size>=12)return;
+    const source=c.createBufferSource(),gain=c.createGain(),filter=c.createBiquadFilter(),pan=c.createStereoPanner();
+    source.buffer=this.cymbalBuffer;source.playbackRate.value=.8;filter.type="lowpass";filter.frequency.value=2400;
+    let distance=0;if(position){const dx=position.x-position.listener.x,dz=position.z-position.listener.z;distance=Math.hypot(dx,dz);pan.pan.value=Math.max(-1,Math.min(1,(dx*Math.cos(position.listener.yaw)-dz*Math.sin(position.listener.yaw))/5));}
+    gain.gain.value=this.volume*(this.gentle?.09:.16)/(1+distance*.12);
+    source.connect(filter).connect(gain).connect(pan).connect(c.destination);this.voices.add(source);
+    source.onended=()=>{this.voices.delete(source);source.disconnect();filter.disconnect();gain.disconnect();pan.disconnect();};source.start();
+  }
+
   stalkerScrape(x:number,z:number,listener:{x:number;z:number;yaw:number}) {
     const c=this.context;
     if(!c||c.state!=="running"||this.muted||!this.volume||this.voices.size>=12)return;
@@ -360,6 +385,7 @@ export class RoomAudio {
     void this.context?.close().catch(() => {});
     this.context = null;
     this.screamBuffer = null;
+    this.cymbalBuffer = null;
     this.radioBuffer = null;
     this.musicBuffer = null;
     this.bangBuffer = null;
@@ -367,6 +393,7 @@ export class RoomAudio {
   }
   diagnostics() {
     return {
+      cymbalReady: !!this.cymbalBuffer,
       musicSources: this.music ? 1 : 0,
       voices: this.voices.size,
       ambientSources: this.bed?.sources.length ?? 0,

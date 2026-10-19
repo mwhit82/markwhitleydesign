@@ -129,3 +129,13 @@ Development rehearsals include all six camera positions, room and follow sightin
 Validation: 125 tests pass, including seeded timing, feed repeat avoidance, deferral, gaze interruption/occlusion, pause/reset, room persistence and shooting without rewards. IWER visual checks covered all six feeds and direct headset-gaze dismissal; no browser errors were observed in the final run. On the Apple M4 Pro/24 GiB development host, a held room sighting measured 8.66 ms mean/12.6 ms p95 over 300 frames, 313 geometries and 35 textures. After dismissal, a differently positioned view measured 8.52/11.5 ms, 303 geometries and 33 textures. These are emulator observations, not a controlled benchmark, leak soak or Quest frame-rate claim.
 
 Remaining physical checks: noticeability and gaze comfort on Quest, all camera angles in-headset, audio distance, and a full-night follow encounter. Phone/tablet hardware has not been retested for this addition. Delivery is local; push remains separate.
+
+## Hourly specials and hiding poses — 19 October 2026
+
+The lobby's hourly stand is an explicit ray target. Its screen has Purchase and Equip plus Back/Recenter/Close; previews use the existing spatial model, not another render target. Regular shop navigation keeps four choices per page. Development Special item fixture options show all four new models with purchases disabled, while Test hourly shop restores the actual live offer.
+
+IWER verified hourly screen opening, previews, trigger-driven Close, inverted vent/lounge sightings, sideways rear-door/room poses and front-facing head-gaze dismissal. The earlier backside-eye-contact issue found during review is fixed and covered by a regression test. The room-facing Inspect Stalker fixture now computes its pose from the same rotated face geometry. The main/camera layer separation and existing five-Hz secondary feed remain unchanged.
+
+Apple M4 Pro/24 GiB development/IWER samples: vent encounter 300 frames, mean 8.89 ms/p95 20.9 ms, 308 geometries/34 textures; later lounge encounter after repeated rehearsal transitions, 8.72/11.4 ms, 293 geometries/32 textures. Different visitor counts/views make these observations, not a controlled performance improvement or leak-soak result. No browser errors appeared in the final pose run. Physical Quest still needs cue-volume, hiding-pose readability, direct target interaction and full-night comfort acceptance. Local delivery only; no push in this revision.
+
+Final lobby preview sample after the room rehearsals: 300 frames, mean 8.33 ms/p95 10.3 ms, 114 geometries/21 textures/194 draw calls with the glitch preview and display active. Production build also passes. These counts are scene-specific and should not be compared as a like-for-like room benchmark.

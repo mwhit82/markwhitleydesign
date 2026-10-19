@@ -1,5 +1,6 @@
 "use client";
 import { xrStore } from "./runtime";
+import { SPECIAL_IDS, type SpecialId } from "@/lib/deader/special-ids";
 import { stalkerDebug, STALKER_ROOM } from "@/lib/deader/stalker";
 import { feedHealth } from "@/lib/deader/vr-feed";
 import * as THREE from "three";
@@ -81,18 +82,18 @@ export default function VRDev() {
       }}
     >
       <span>LOCAL XR EMULATOR</span>
+      <select aria-label="Special item fixture" onChange={e=>{useGame.setState({specialFixture:(e.target.value||null) as SpecialId|null});useGame.getState().open("special");}}><option value="">Live hourly offer</option>{SPECIAL_IDS.map(id=><option key={id} value={id}>{id}</option>)}</select>
+      <button onClick={()=>{useGame.setState({specialFixture:null});useGame.getState().open("special");}}>Test hourly shop</button>
       <button
         onClick={() => {
           const k = useGame.getState().room.stalker,
             a = STALKER_ROOM[k.anchor];
           if (!device || !a) return;
-          const point = new THREE.Vector3(
-            a.p[0] + Math.sin(a.yaw) * 0.24 * 0.82,
-            1.13 * 0.82,
-            a.p[2] + Math.cos(a.yaw) * 0.24 * 0.82,
-          );
+          const point = new THREE.Vector3(0,1.02,.255).applyAxisAngle(new THREE.Vector3(0,0,1),a.roll).multiplyScalar(.82).applyAxisAngle(new THREE.Vector3(0,1,0),a.yaw).add(new THREE.Vector3(...a.p));
+          const eye=point.clone().add(new THREE.Vector3(Math.sin(a.yaw)*2,.4,Math.cos(a.yaw)*2));
           xrStore.getState().origin?.worldToLocal(point);
-          device.position.set(point.x + 1.5, point.y + 0.7, point.z + 1.5);
+          xrStore.getState().origin?.worldToLocal(eye);
+          device.position.set(eye.x,eye.y,eye.z);
           const from = new THREE.Vector3(
             device.position.x,
             device.position.y,

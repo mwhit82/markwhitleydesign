@@ -5,7 +5,9 @@ import * as THREE from 'three';
 import { useGame } from '@/lib/deader/store';
 import { move, LOBBY_OBSTACLES } from '@/lib/deader/game';
 import { moveInRooms } from '@/lib/deader/lounge';
-import { pets, petHint } from '@/lib/deader/pets';
+import { Cone } from "./character";
+import { GlitchBits } from "./special-details";
+import { pets, petHint, type PetId } from '@/lib/deader/pets';
 import { encounterVisitor } from '@/lib/deader/visitors';
 import { roomAudio } from '@/lib/deader/audio/room-audio';
 import { roomPlayerPose } from './player-reflection';
@@ -50,6 +52,9 @@ export function Puppy({ colour = '#ffc928', walking = false, warning = false, pa
     <mesh position={[0, .335, .402]} rotation={[0, 0, Math.PI]}><torusGeometry args={[.055, .012, 6, 12, Math.PI]}/><meshStandardMaterial color="#101011"/></mesh>
     <mesh position={[0, .45, -.6]} rotation={[-.7, 0, 0]}><capsuleGeometry args={[.04, .22, 3, 6]}/><meshStandardMaterial color={colour}/></mesh>
   </group>;
+}
+export function PetModel({id,colour,walking=false,paused=false,warning=false,resting=false}:{id?:PetId;colour:string;walking?:boolean;paused?:boolean;warning?:boolean;resting?:boolean}) {
+ return id === "mini-anomaly" ? <group scale={.62}><Cone colour={colour} walking={walking} paused={paused} lowDetail/><GlitchBits paused={paused} muted/></group> : <Puppy colour={colour} walking={walking} paused={paused} warning={warning} resting={resting}/>;
 }
 export function Sidekick({ lobby = false }: {
     lobby?: boolean;
@@ -102,7 +107,7 @@ export function Sidekick({ lobby = false }: {
             setWalking(moving);
     });
     const pet = pets.find(p => p.id === id);
-    return pet ? <group ref={group} scale={.65} userData={{ sidekick: true }}><Puppy colour={pet.colour} walking={walking} warning={warning} paused={paused} resting={resting}/></group> : null;
+    return pet ? <group ref={group} scale={.65} userData={{ sidekick: true }}><PetModel id={pet.id} colour={pet.colour} walking={walking} warning={warning} paused={paused} resting={resting}/></group> : null;
 }
 export function PetHints() {
     const s = useGame(), e = s.room.encounters.active;

@@ -1,0 +1,9 @@
+DR Cymbal 10 — deadrobotmusic
+Source: https://freesound.org/people/deadrobotmusic/sounds/591637/
+Preview: https://cdn.freesound.org/previews/591/591637_11532701-hq.mp3
+License: Creative Commons Zero 1.0 Universal (CC0)
+https://creativecommons.org/publicdomain/zero/1.0/
+Retrieved 19 October 2026. Source page explicitly identifies CC0.
+Original recording: stereo cymbal, 12.384 seconds.
+Game adaptation: first 2.2 seconds reversed, mono, bounded normalisation and fades,
+played at 0.8 rate through a low-pass filter. Quiet appearance cue; not a scream.

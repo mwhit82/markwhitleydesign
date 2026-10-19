@@ -204,6 +204,7 @@ export const createSession = (
 ): Session => ({ difficulty, mode, night: 1 });
 export type Obstacle = { x: number; z: number; hx: number; hz: number };
 export const LOBBY_OBSTACLES: Obstacle[] = [
+  { x: -3.1, z: 1.25, hx: .65, hz: .4 },
   { x: 2.2, z: -3.4, hx: .4, hz: .35 },
   { x: -3.9, z: -1, hx: 0.7, hz: 1.4 },
   { x: 3.9, z: -1, hx: 0.7, hz: 1.4 },

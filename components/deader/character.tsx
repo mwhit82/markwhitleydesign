@@ -5,6 +5,7 @@ import * as THREE from "three";
 import { characterPose, type AnimationState } from "@/lib/deader/presentation";
 import { useGame } from "@/lib/deader/store";
 import type { Outfit } from "@/lib/deader/cosmetics";
+import { SpecialDetails } from "./special-details";
 import { BundleDetails, rainbowTexture } from "./bundle-details";
 import { createBittenConeGeometry } from "./bitten-cone";
 import { createCharacterWear } from "./character-wear";
@@ -133,7 +134,8 @@ export function Cone({
         </group>
       ))}
       <group ref={body}>
-        <BundleDetails outfit={outfit} paused={paused}/>
+        <BundleDetails outfit={armed&&outfit?{...outfit,hand:null}:outfit} paused={paused}/>
+        <SpecialDetails wear={wear} outfit={outfit} armed={armed} paused={paused}/>
         {(appearance === "splitter" ? [-1,1] : [0]).map(half=>(
         <mesh key={half} position={[half*split*.12,0,0]} rotation={[0,0,-half*split*.05]} castShadow={!lowDetail}>
           {bitten?<primitive object={bitten} attach="geometry"/>:<latheGeometry onUpdate={geometry=>{if(!rainbow)return;const uv=geometry.attributes.uv,pos=geometry.attributes.position;for(let i=0;i<uv.count;i++)uv.setY(i,(pos.getY(i)-.23)/1.3);uv.needsUpdate=true;}} args={[points, lowDetail ? 16 : 40, appearance === "splitter" ? (half===-1?Math.PI:0) : 0, appearance === "splitter" ? Math.PI : Math.PI*2]} />}
@@ -196,7 +198,7 @@ export function Cone({
             <meshStandardMaterial color="#11100f" />
           </mesh>
         ))}
-        {outfit?.hat && outfit.hat!=="rainbow-hat" && (
+        {outfit?.hat && outfit.hat!=="rainbow-hat" && outfit.hat!=="headphones" && (
           <group position={[0, 1.38, 0]}>
             <mesh>
               <cylinderGeometry args={[0.11, 0.22, 0.32, 16]} />

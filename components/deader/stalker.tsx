@@ -6,6 +6,7 @@ import { useGame } from "@/lib/deader/store";
 import { useVR } from "@/lib/deader/vr-state";
 import {
   stalkerGaze,
+  stalkerCueKey,
   STALKER_CAMERA,
   STALKER_ROOM,
 } from "@/lib/deader/stalker";
@@ -19,12 +20,15 @@ import { roomPlayerPose } from "./player-reflection";
 export function Stalker() {
   const root = useRef<THREE.Group>(null),
     body = useRef<THREE.Group>(null),
-    last = useRef("");
+    last = useRef(""),
+    appeared = useRef(new Set<string>()),
+    run = useRef<unknown>(null);
   const wear = useMemo(createCharacterWear, []);
   const scratch = useMemo(
     () => ({
       eye: new THREE.Vector3(),
       direction: new THREE.Vector3(),
+      normal: new THREE.Vector3(),
       face: new THREE.Vector3(),
       offset: new THREE.Vector3(),
       ray: new THREE.Raycaster(),
@@ -64,7 +68,7 @@ export function Stalker() {
       ? STALKER_CAMERA[k.feed]
       : STALKER_ROOM[Math.max(0, k.anchor)];
     root.current.position.fromArray(anchor.p);
-    root.current.rotation.y = anchor.yaw;
+    root.current.rotation.set(0, anchor.yaw, 0);
     // A compact silhouette fits the vent; room sightings remain full-size.
     root.current.scale.setScalar(onCamera && k.feed === 1 ? 0.42 : 0.82);
     const layer = onCamera ? 4 : 0;
@@ -73,14 +77,13 @@ export function Stalker() {
       k.phase === "retreat" || k.phase === "dismiss"
         ? Math.min(1, k.elapsed / 0.7)
         : 0;
-    body.current.rotation.z = -anchor.side * 0.18;
-    body.current.position.x = reducedMotion
-      ? 0
-      : anchor.side * retreat * 0.75 * Math.cos(anchor.yaw);
-    body.current.position.z = reducedMotion
-      ? 0
-      : anchor.side * retreat * 0.75 * Math.sin(anchor.yaw);
-    body.current.position.y = reducedMotion
+    body.current.rotation.z = anchor.roll;
+    body.current.position.set(
+      reducedMotion ? 0 : anchor.retreat[0] * retreat,
+      reducedMotion ? 0 : anchor.retreat[1] * retreat,
+      reducedMotion ? 0 : anchor.retreat[2] * retreat,
+    );
+    body.current.position.y += reducedMotion
       ? 0
       : Math.sin(k.elapsed * 1.5) * 0.012;
     body.current.scale.setScalar(reducedMotion ? 1 : 1 - retreat * 0.15);
@@ -124,9 +127,10 @@ export function Stalker() {
         head.getWorldPosition(scratch.eye);
         head.getWorldDirection(scratch.direction);
         chosen = STALKER_ROOM.findIndex((a) => {
-          scratch.offset.set(a.p[0], 1, a.p[2]).sub(scratch.eye);
+          scratch.offset.set(a.p[0], a.p[1] + 0.5, a.p[2]).sub(scratch.eye);
           return (
             scratch.offset.length() >= 2 &&
+            (Math.sin(a.yaw)*(scratch.eye.x-a.p[0])+Math.cos(a.yaw)*(scratch.eye.z-a.p[2])) > .2 &&
             scratch.offset.clone().normalize().dot(scratch.direction) <
               Math.cos(Math.PI / 4)
           );
@@ -134,8 +138,8 @@ export function Stalker() {
         if (k.phase === "room") {
           root.current.updateMatrixWorld(true);
           scratch.face
-            .set(0, 1.13, 0.24)
-            .applyMatrix4(root.current.matrixWorld);
+            .set(0, 1.02, 0.255)
+            .applyMatrix4(body.current.matrixWorld);
           scratch.offset.copy(scratch.face).sub(scratch.eye);
           scratch.ray.set(scratch.eye, scratch.offset.clone().normalize());
           scratch.ray.far = scratch.offset.length();
@@ -159,9 +163,23 @@ export function Stalker() {
               const m = hit.object.material;
               return !(m instanceof THREE.Material && m.transparent);
             });
-          gaze = stalkerGaze(scratch.direction, scratch.offset, !blocked);
+          scratch.normal.set(0,0,1).transformDirection(body.current.matrixWorld);
+          gaze = stalkerGaze(scratch.direction, scratch.offset, !blocked, scratch.normal);
         }
       }
+    }
+    if (run.current !== s.session) {
+      appeared.current.clear();
+      run.current = s.session;
+    }
+    const appearance = stalkerCueKey(k, seen);
+    if (active && appearance && !appeared.current.has(appearance)) {
+      appeared.current.add(appearance);
+      roomAudio.stalkerAppear(
+        inRoom
+          ? { x: anchor.p[0], z: anchor.p[2], listener: roomPlayerPose }
+          : undefined,
+      );
     }
     const old = r.stalkerSight;
     if (old.camera !== seen || old.gaze !== gaze || old.anchor !== chosen)

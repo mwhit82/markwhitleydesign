@@ -112,6 +112,7 @@ export function Controller() {
       }
     }
     const prompt =
+      Math.hypot(p.x+3.1,p.z-1.25)<1.5 ? "Hourly special" :
       Math.hypot(p.x-2.2,p.z+3.4)<1.7 ? "Learn to play" :
       Math.hypot(p.x + 3.9, p.z + 1) < 2
         ? "Shop"

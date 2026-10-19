@@ -1,5 +1,9 @@
+import { isHourlySpecial } from "./special-ids";
 import type { Save } from "./game";
 export const accessories = [
+ {id:"mystery-prop",name:"Mystery Prop",category:"hand",price:50,colour:"#e6bd22"},
+ {id:"headphones",name:"Headphones",category:"hat",price:75,colour:"#e6bd22"},
+ {id:"glitch-particles",name:"Glitch Particles",category:"effect",price:100,colour:"#42b8c1"},
  {id:"rainbow-finish",name:"Rainbow Stripes",category:"finish",price:50,colour:"#a855dd"},
  {id:"rainbow-hat",name:"Rainbow Hat",category:"hat",price:50,colour:"#e8ab28"},
  {id:"cake",name:"Party Cake",category:"hand",price:50,colour:"#ed9f89"},
@@ -65,7 +69,7 @@ export function readOutfit(raw: unknown, owned: AccessoryId[]): Outfit {
 }
 export function purchaseAccessory(s: Save, id: AccessoryId): Save {
   const item = accessories.find((a) => a.id === id);
-  return !item || s.ownedAccessories.includes(id) || s.coins < item.price
+  return isHourlySpecial(id) || !item || s.ownedAccessories.includes(id) || s.coins < item.price
     ? s
     : {
         ...s,

@@ -1,5 +1,6 @@
 "use client";
 import { useVR } from "@/lib/deader/vr-state";
+import { HourlyDisplay } from "../hourly-shop";
 import { Sidekick } from "../sidekick";
 import { Box, Sign } from "../environment";
 import { Cone } from "../character";
@@ -14,6 +15,7 @@ export default function Lobby() {
       <LobbyAtmosphere materials={m} />
       {!vr && <Controller />}
       <Sidekick lobby />
+      <HourlyDisplay/>
       <group
         position={[2.2, 0, -3.4]}
         userData={{ vrInteraction: "Learn to play", vrAim: [0, 1.35, 0] }}

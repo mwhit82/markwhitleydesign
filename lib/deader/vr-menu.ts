@@ -2,7 +2,16 @@
 import type { useGame } from "./store";
 import { cosmetics } from "./game";
 import { accessories, bundles, bundleOutfit, type Outfit } from "./cosmetics";
-import { pets } from "./pets";
+import {
+  hourlyOffer,
+  offerCountdown,
+  ownsSpecial,
+  specialEquipped,
+  specialItem,
+  specialPreview,
+} from "./hourly-shop";
+import { isHourlySpecial } from "./special-ids";
+import { pets, type PetId } from "./pets";
 import { achievements } from "./achievements";
 import { unlockedNight } from "./progression";
 import { QUESTIONS, encounterVisitor, DECISION_SECONDS } from "./visitors";
@@ -29,7 +38,7 @@ export type VRScreen = {
   back?: () => void;
   close?: () => void;
   feed?: boolean;
-  preview?: { colour: string; outfit: Outfit; pet: boolean };
+  preview?: { colour: string; outfit: Outfit; pet: boolean; petId?: PetId };
 };
 type State = ReturnType<typeof useGame.getState>;
 export type VRMenuActions = {
@@ -61,7 +70,8 @@ export function vrScreen(s: State, m: VRMenuState, a: VRMenuActions): VRScreen {
     m.confirmation = null;
     if (s.suspension) a.resume();
     else if (s.panel) s.open(null);
-    else if (r.night?.status === "completed" || r.night?.status === "failed") s.lobby();
+    else if (r.night?.status === "completed" || r.night?.status === "failed")
+      s.lobby();
     else s.roomView("explore");
   };
   const screen = (
@@ -169,65 +179,145 @@ export function vrScreen(s: State, m: VRMenuState, a: VRMenuActions): VRScreen {
       nav("settings"),
     );
   }
+  if (s.panel === "special") {
+    const now = Date.now(),
+      offer = hourlyOffer(now),
+      fixture =
+        process.env.NODE_ENV === "development" ? s.specialFixture : null,
+      id = fixture ?? offer.id,
+      item = specialItem(id),
+      owned = ownsSpecial(s.save, id),
+      equipped = specialEquipped(s.save, id);
+    const result = screen(
+      item.name,
+      `${s.save.coins} coins · ${item.price} coins\nChanges in ${offerCountdown(now)}\nMay repeat. Owned items stay yours.`,
+      [
+        button(
+          owned ? "Owned" : "Purchase",
+          () => s.buySpecial(offer.id, offer.hour),
+          !!fixture || owned || s.save.coins < item.price,
+        ),
+        button(
+          equipped ? "Equipped" : "Equip",
+          () => {
+            if (item.category === "pet") s.wearPet("mini-anomaly");
+            else s.wearAccessory(item.category, item.id);
+          },
+          !!fixture || !owned || equipped,
+        ),
+      ],
+      () => {
+        m.page = "home";
+        s.open("shop");
+      },
+    );
+    result.preview = specialPreview(s.save, id);
+    return result;
+  }
   if (s.panel === "shop" || s.panel === "wardrobe") {
     const category = m.page.replace("shop-", ""),
-      categories = ["Colours", "Bundles", "Sidekicks", "Accessories"];
+      wardrobe = s.panel === "wardrobe";
+    if (m.page === "more-shop")
+      return screen(
+        "More from the shop",
+        `${s.save.coins} coins`,
+        [
+          button("Sidekicks", nav("shop-pet")),
+          button("Accessories", nav("shop-accessory")),
+        ],
+        nav("home"),
+      );
     if (!m.page.startsWith("shop-"))
       return screen(
-        s.panel === "shop" ? "Shop" : "Your wardrobe",
+        wardrobe ? "Your wardrobe" : "Shop",
         `${s.save.coins} coins · Choose a category.`,
-        categories.map((c, i) =>
-          button(c, nav("shop-" + ["colour", "bundle", "pet", "accessory"][i])),
-        ),
+        [
+          ...(!wardrobe
+            ? [button("Hourly special", () => s.open("special"))]
+            : []),
+          ...(wardrobe
+            ? ["Colours", "Bundles", "Sidekicks", "Accessories"]
+            : ["Colours", "Bundles", "More items"]
+          ).map((c, i) =>
+            button(
+              c,
+              nav(
+                !wardrobe && i === 2
+                  ? "more-shop"
+                  : "shop-" + ["colour", "bundle", "pet", "accessory"][i],
+              ),
+            ),
+          ),
+        ],
       );
-    const items =
-      category === "colour"
-        ? cosmetics
-        : category === "bundle"
-          ? bundles
-          : category === "pet"
-            ? pets
-            : accessories;
+    const all = [
+      ...cosmetics,
+      ...bundles,
+      ...pets.map((p) => ({ ...p, category: "pet" as const })),
+      ...accessories,
+    ];
+    const owns = (id: string) =>
+      [
+        ...s.save.owned,
+        ...s.save.ownedAccessories,
+        ...s.save.ownedPets,
+        ...s.save.ownedBundles,
+      ].some((x) => x === id) ||
+      !!bundles.find(
+        (b) =>
+          b.id === id &&
+          b.items.every((x) => s.save.ownedAccessories.includes(x)),
+      );
+    const items = all.filter(
+      (i) =>
+        (category === "accessory"
+          ? accessories.some((a) => a.id === i.id)
+          : i.category === category) &&
+        (wardrobe ? owns(i.id) : !isHourlySpecial(i.id)),
+    );
+    if (!items.length)
+      return screen(
+        "Nothing owned yet",
+        "Visit the shop to find your first item.",
+        [],
+        nav("home"),
+      );
     m.index = ((m.index % items.length) + items.length) % items.length;
     const item = items[m.index],
+      owned = owns(item.id),
       colour = cosmetics.find((c) => c.id === s.save.equipped)!.colour;
-    const owned =
-      category === "colour"
-        ? s.save.owned.includes(item.id as (typeof cosmetics)[number]["id"])
-        : category === "pet"
-          ? s.save.ownedPets.includes(item.id as (typeof pets)[number]["id"])
-          : category === "bundle"
-            ? bundles[m.index].items.every((id) =>
-                s.save.ownedAccessories.includes(id),
-              )
-            : s.save.ownedAccessories.includes(accessories[m.index].id);
     const buy = () => {
-      if (category === "colour") s.buy(cosmetics[m.index].id);
-      else if (category === "bundle") s.buyBundle(bundles[m.index].id);
-      else if (category === "pet") s.buyPet(pets[m.index].id);
-      else s.buyAccessory(accessories[m.index].id);
+      if (item.category === "colour") s.buy(item.id);
+      else if (item.category === "bundle") s.buyBundle(item.id);
+      else if (item.category === "pet") s.buyPet(item.id);
+      else s.buyAccessory(item.id);
     };
     const equip = () => {
-      if (category === "colour") s.wear(cosmetics[m.index].id);
-      else if (category === "bundle") s.wearBundle(bundles[m.index].id);
-      else if (category === "pet") s.wearPet(pets[m.index].id);
-      else {
-        const v = accessories[m.index];
+      if (item.category === "colour") s.wear(item.id);
+      else if (item.category === "bundle") s.wearBundle(item.id);
+      else if (item.category === "pet")
+        s.wearPet(s.save.equippedPet === item.id ? null : item.id);
+      else
         s.wearAccessory(
-          v.category,
-          s.save.outfit[v.category] === v.id ? null : v.id,
+          item.category,
+          s.save.outfit[item.category] === item.id ? null : item.id,
         );
-      }
     };
+    const equipped =
+      item.category === "pet"
+        ? s.save.equippedPet === item.id
+        : item.category !== "bundle" && item.category !== "colour"
+          ? s.save.outfit[item.category] === item.id
+          : false;
     const outfit =
-      category === "bundle"
-        ? bundleOutfit(s.save.outfit, bundles[m.index].id)
-        : category === "accessory"
-          ? { ...s.save.outfit, [accessories[m.index].category]: item.id }
+      item.category === "bundle"
+        ? bundleOutfit(s.save.outfit, item.id)
+        : item.category !== "colour" && item.category !== "pet"
+          ? { ...s.save.outfit, [item.category]: item.id }
           : s.save.outfit;
     const result = screen(
       item.name,
-      `${s.save.coins} coins · ${owned ? "Owned" : item.price + " coins"} · ${m.index + 1}/${items.length}\n${category === "bundle" ? bundles[m.index].description : category === "pet" ? "A sidekick that notices clues." : "Preview before equipping."}`,
+      `${s.save.coins} coins · ${owned ? "Owned" : item.price + " coins"} · ${m.index + 1}/${items.length}\n${item.category === "bundle" ? item.description : item.category === "pet" ? "A sidekick that notices clues." : "Preview before equipping."}`,
       [
         button("Previous", () => {
           m.index--;
@@ -235,17 +325,12 @@ export function vrScreen(s: State, m: VRMenuState, a: VRMenuActions): VRScreen {
         button("Next", () => {
           m.index++;
         }),
+        button("Purchase", buy, owned || s.save.coins < item.price || wardrobe),
         button(
-          "Purchase",
-          buy,
-          owned || s.save.coins < item.price || s.panel === "wardrobe",
-        ),
-        button(
-          category === "bundle"
-            ? "Equip set"
-            : category === "accessory" &&
-                s.save.outfit[accessories[m.index].category] === item.id
-              ? "Remove"
+          equipped
+            ? "Remove"
+            : item.category === "bundle"
+              ? "Equip set"
               : "Equip",
           equip,
           !owned,
@@ -253,13 +338,14 @@ export function vrScreen(s: State, m: VRMenuState, a: VRMenuActions): VRScreen {
       ],
       nav("home"),
     );
-    if (category === "pet" && s.save.equippedPet === item.id)
-      result.buttons[3] = button("Remove sidekick", () => s.wearPet(null));
     result.preview = {
       colour:
-        category === "colour" || category === "pet" ? item.colour : colour,
+        item.category === "colour" || item.category === "pet"
+          ? item.colour
+          : colour,
       outfit,
-      pet: category === "pet",
+      pet: item.category === "pet",
+      petId: item.category === "pet" ? item.id : undefined,
     };
     return result;
   }

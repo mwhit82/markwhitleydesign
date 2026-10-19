@@ -1399,3 +1399,19 @@
   opacity: 0;
   pointer-events: none;
 }
+
+/* The single hourly offer keeps its name and actions visible in short viewports. */
+.game .hourlyModal .shopScroll { display:flex; flex-direction:column; gap:10px; }
+.game .hourlyModal h2 { display:block; margin:8px 0; font-size:26px; }
+.game .hourlyModal .preview { flex-shrink:0; height:200px; }
+.game .hourlyModal .purchase { display:flex; gap:10px; flex-wrap:wrap; }
+.game .hourlyModal .purchase button { min-height:48px; flex:1; }
+.hourlyDetails p { margin:6px 0; }
+@media(max-height:500px) and (min-width:600px) {
+ .game .hourlyModal .shopScroll { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:8px 16px; }
+ .game .hourlyModal .shopScroll > label { grid-column:1/-1; }
+ .game .hourlyModal .preview { width:100%; min-width:0; height:150px; min-height:150px; }
+ .game .hourlyModal .hourlyDetails h2 {font-size:22px; margin:0 0 5px;}
+ .game .hourlyModal .hourlyDetails p {font-size:13px; line-height:1.35;}
+ .game .hourlyModal .eyebrow {display:none;}
+}

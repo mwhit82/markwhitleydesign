@@ -1,6 +1,8 @@
+import { isHourlySpecial } from "./special-ids";
 import type { Save } from './game';
 import type { VisitorDefinition } from './visitors';
 export const pets = [
+    { id: "mini-anomaly", name: "Mini Anomaly", colour: "#d7b527", price: 100 },
     { id: 'pip', name: 'Pip', colour: '#ffc928', price: 50 },
     { id: 'patch', name: 'Patch', colour: '#617fa0', price: 75 },
     { id: 'shadow', name: 'Shadow', colour: '#44464c', price: 100 },
@@ -11,7 +13,7 @@ export function readPets(value: unknown): PetId[] {
 }
 export function purchasePet(save: Save, id: PetId): Save {
     const pet = pets.find(p => p.id === id);
-    return !pet || save.ownedPets.includes(id) || save.coins < pet.price ? save : { ...save, coins: save.coins - pet.price, ownedPets: [...save.ownedPets, id] };
+    return isHourlySpecial(id) || !pet || save.ownedPets.includes(id) || save.coins < pet.price ? save : { ...save, coins: save.coins - pet.price, ownedPets: [...save.ownedPets, id] };
 }
 export function equipPet(save: Save, id: PetId | null): Save {
     return id !== null && !save.ownedPets.includes(id) ? save : { ...save, equippedPet: id };

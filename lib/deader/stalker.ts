@@ -131,31 +131,54 @@ export function stalkerGaze(
   direction: { x: number; y: number; z: number },
   offset: { x: number; y: number; z: number },
   unblocked: boolean,
+  faceNormal?: {x:number;y:number;z:number},
 ) {
   const length = Math.hypot(offset.x, offset.y, offset.z);
   return (
     unblocked &&
     length > 0.01 &&
+    (!faceNormal || (faceNormal.x*offset.x+faceNormal.y*offset.y+faceNormal.z*offset.z)/length < -.15) &&
     (direction.x * offset.x + direction.y * offset.y + direction.z * offset.z) /
       length >=
       Math.cos(Math.PI / 15)
   );
 }
-/** Feet positions beside existing cover; exterior positions follow the six feeds. */
+/** Root pivots and local retreat vectors align each pose with real cover. */
 export const STALKER_CAMERA = [
-  { p: [-3.5, 0, -2.7], yaw: 0.5, side: -1 },
-  { p: [-1.85, 3.25, -5.7], yaw: 0, side: -1 },
-  { p: [2.65, -0.4, -8.8], yaw: -0.65, side: 1 },
-  { p: [-2.15, 0, -5.1], yaw: 2.4, side: -1 },
-  { p: [1.05, 0, -4.5], yaw: Math.PI, side: 1 },
-  { p: [3.5, 0, 9.6], yaw: -2.3, side: 1 },
+  { p: [-3.5, 0, -2.7], yaw: 0.5, roll: 0.18, retreat: [-0.7, 0, 0] },
+  { p: [-1.7, 4.12, -5.7], yaw: 0, roll: Math.PI, retreat: [0, 0.75, 0] },
+  { p: [2.65, -0.4, -8.8], yaw: -0.65, roll: -0.18, retreat: [0.7, 0, 0] },
+  { p: [-2.15, 0, -5.1], yaw: 2.4, roll: 0.18, retreat: [-0.7, 0, 0] },
+  {
+    p: [-2.35, 1.65, -4.5],
+    yaw: Math.PI,
+    roll: Math.PI / 2,
+    retreat: [0.8, 0, 0],
+  },
+  { p: [-1.6, 3.33, 5.5], yaw: -2.3, roll: Math.PI, retreat: [0, 0.8, 0] },
 ] as const;
 export const STALKER_ROOM = [
-  { p: [-3.5, 0, -2.65], yaw: 0.65, side: -1 },
-  { p: [3.5, 0, -2.7], yaw: -0.65, side: 1 },
-  { p: [-3.5, 0, 9.6], yaw: 2.5, side: -1 },
-  { p: [3.5, 0, 9.6], yaw: -2.5, side: 1 },
+  {
+    p: [1.05, 1.6, 3.72],
+    yaw: Math.PI,
+    roll: -Math.PI / 2,
+    retreat: [-0.8, 0, 0],
+  },
+  { p: [-1.05, 1.6, 3.95], yaw: 0, roll: -Math.PI / 2, retreat: [-0.8, 0, 0] },
+  { p: [-3.5, 0, 9.6], yaw: 2.5, roll: 0.18, retreat: [-0.7, 0, 0] },
+  { p: [3.5, 0, 9.6], yaw: -2.5, roll: -0.18, retreat: [0.7, 0, 0] },
 ] as const;
+/** A sighting's two appearance cues are keyed independently; feed revisits cannot replay. */
+export function stalkerCueKey(
+  s: StalkerState,
+  cameraVisible: boolean,
+): string | null {
+  return s.phase === "room"
+    ? `${s.shift}:${s.index}:room`
+    : s.phase === "camera" && cameraVisible
+      ? `${s.shift}:${s.index}:camera`
+      : null;
+}
 
 /** Written only by development fixtures; never saved. */
 export const stalkerDebug = { hold: false };

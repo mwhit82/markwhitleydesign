@@ -14,7 +14,7 @@ import { nightClockLabel } from "@/lib/deader/night";
 import {useVR} from "@/lib/deader/vr-state";
 import {VRBoundary,VREntry} from "./vr-entry";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { OrbitControls } from "@react-three/drei";
+import { Preview } from "./preview";
 import { GameSettings, SurvivalUI } from "./survival-ui";
 import { TouchControls } from "./touch-controls";
 import { WeaponUI } from "./weapon";
@@ -27,10 +27,11 @@ import { unlockedNight } from "@/lib/deader/progression";
 import { Modal } from "./modal";
 import { RoomUI } from "./room-ui";
 import { interactRoom } from "./room-controller";
-import { Puppy, PetHints } from "./sidekick";
+import { PetHints } from "./sidekick";
 import { TutorialUI } from "./tutorial-ui";
-import { pets } from "@/lib/deader/pets";
-import { Cone } from "./character";
+import { HourlyShop } from "./hourly-shop";
+import { isHourlySpecial } from "@/lib/deader/special-ids";
+import { pets, type PetId } from "@/lib/deader/pets";
 import {
   cosmetics,
   type Difficulty,
@@ -39,7 +40,6 @@ import {
 import {
   bundles, bundleOutfit,
   accessories,
-  type Outfit,
   type AccessoryCategory,
 } from "@/lib/deader/cosmetics";
 import { achievements } from "@/lib/deader/achievements";
@@ -105,27 +105,6 @@ function Diagnostics({
   });
   return null;
 }
-function Preview({ colour, outfit, pet = false }: { colour: string; outfit: Outfit; pet?: boolean }) {
-  const scale = useGame((s) => renderScale(s.save.settings));
-  const vr=useVR(s=>s.active);
-  return (
-    <div data-vr-preview={JSON.stringify({colour,outfit,pet})} className={styles.preview} aria-label="Rotating 3D outfit preview">
-      {!vr&&<Canvas dpr={[0.75, scale]} camera={{ position: [0, 1.2, 3.2], fov: 38 }}>
-        <ambientLight intensity={1.5} />
-        <directionalLight position={[3, 5, 4]} intensity={3} />
-        <pointLight position={[-3, 2, -2]} intensity={12} color="#b6caba" />
-        {pet ? <Puppy colour={colour} /> : <Cone colour={colour} outfit={outfit} />}
-        <OrbitControls
-          target={[0, 0.8, 0]}
-          autoRotate
-          autoRotateSpeed={2}
-          enablePan={false}
-          enableZoom={false}
-        />
-      </Canvas>}
-    </div>
-  );
-}
 function Cosmetics({ wardrobe }: { wardrobe: boolean }) {
   const { save, buy, wear, buyAccessory, wearAccessory } = useGame();
   const [category, setCategory] = useState<"colour" | "pet" | "bundle" | AccessoryCategory>(
@@ -136,7 +115,7 @@ function Cosmetics({ wardrobe }: { wardrobe: boolean }) {
   const owns = (id: string) =>
     [...save.owned, ...save.ownedAccessories, ...save.ownedPets,...save.ownedBundles].some((v) => v === id) || !!bundles.find(b=>b.id===id&&b.items.every(piece=>save.ownedAccessories.includes(piece)));
   const items = catalogue.filter(
-    (c) => c.category === category && (!wardrobe || owns(c.id)),
+    (c) => c.category === category && (!wardrobe || owns(c.id)) && (wardrobe || !isHourlySpecial(c.id)),
   );
   const item =
     selected === "none"
@@ -162,6 +141,7 @@ function Cosmetics({ wardrobe }: { wardrobe: boolean }) {
       <p className={styles.balance}>
         {save.coins} <span>COINS</span>
       </p>
+      {!wardrobe&&<button onClick={()=>useGame.getState().open("special")}>Hourly special · See this hour’s item</button>}
       <div className={styles.categories} aria-label="Cosmetic categories">
         {(
           [
@@ -188,7 +168,7 @@ function Cosmetics({ wardrobe }: { wardrobe: boolean }) {
       </div>
       {item?.category === "bundle" && <p className={styles.bundleContents}>{item.description} Mix and match all four pieces.</p>}
       <div className={styles.shopGrid}>
-        <Preview colour={colour} outfit={outfit} pet={category === "pet"} />
+        <Preview colour={colour} outfit={outfit} pet={category === "pet"} petId={category === "pet" ? item?.id as PetId : undefined} />
         <div className={styles.items}>
           {items.map((c) => (
             <button
@@ -539,6 +519,7 @@ export default function Game() {
         </div>
       )}
       <TutorialUI />
+      {s.panel === "special" && <HourlyShop />}
       {s.panel === "shop" && <Cosmetics wardrobe={false} />}
       {s.panel === "wardrobe" && <Cosmetics wardrobe />}
       {s.panel === "start" && <StartMenu />}

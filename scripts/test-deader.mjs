@@ -1355,6 +1355,7 @@ test("audio has gesture gating, bounded voices, reusable ambience and complete t
     a.dispose();
     assert.equal(closed, 1);
     assert.deepEqual(a.diagnostics(), {
+      cymbalReady: false,
       voices: 0,
       ambientSources: 0,
       broadcastSources: 0,
@@ -1362,7 +1363,7 @@ test("audio has gesture gating, bounded voices, reusable ambience and complete t
       context: "locked",
     });
     globalThis.fetch=async()=>{throw new Error("offline");};
-    a.unlock();await a.preloadScream();a.dawnScream();
+    a.unlock();await a.preloadScream();await a.preloadCymbal();a.stalkerAppear();a.dawnScream();
     assert.equal(a.diagnostics().voices,0);
     assert.equal(contexts, 2);
     a.dispose();
@@ -2398,4 +2399,46 @@ test('all Stalker fixtures are transient and preserve visitor budget and saves',
  }
  const normal=freshRoom('normal',300);assert.equal(rehearse(normal,'stalker-room'),normal);
  assert.equal(Object.hasOwn(g.newSave(),'stalker'),false);
+});
+
+const hourly=await import(await moduleUrl(resolve('lib/deader/hourly-shop.ts')));
+const specials=await import(await moduleUrl(resolve('lib/deader/special-ids.ts')));
+test('hourly selection is stable, UTC-boundary based, balanced and permits consecutive repeats',()=>{
+ const seen=new Set();let repeats=0,previous=null;
+ for(let hour=490000;hour<491000;hour++){const now=hour*hourly.HOUR_MS,offer=hourly.hourlyOffer(now);seen.add(offer.id);if(offer.id===previous)repeats++;previous=offer.id;assert.deepEqual(hourly.hourlyOffer(now+3599999),offer);assert.equal(offer.nextChange,(hour+1)*hourly.HOUR_MS);assert.equal(hourly.hourlyOffer(offer.nextChange).hour,hour+1);}
+ assert.equal(seen.size,4);assert.ok(repeats>150&&repeats<350);assert.equal(hourly.offerCountdown(490000*hourly.HOUR_MS),'60:00');assert.equal(hourly.offerCountdown(490000*hourly.HOUR_MS+3599000),'00:01');
+});
+test('special purchases require current item and hour, sufficient coins and no previous ownership',()=>{
+ for(const id of specials.SPECIAL_IDS){let now=490000*hourly.HOUR_MS;while(hourly.hourlyOffer(now).id!==id)now+=hourly.HOUR_MS;
+ const offer=hourly.hourlyOffer(now),s=g.newSave(),item=hourly.specialItem(id);
+ assert.equal(hourly.purchaseSpecial({...s,coins:item.price-1},id,offer.hour,now).coins,item.price-1);
+ assert.equal(hourly.purchaseSpecial(s,id,offer.hour-1,now),s);assert.equal(hourly.purchaseSpecial(s,id,offer.hour,now+hourly.HOUR_MS),s);
+ const bought=hourly.purchaseSpecial(s,id,offer.hour,now);assert.equal(bought.coins,s.coins-item.price);assert.ok(hourly.ownsSpecial(bought,id));assert.equal(hourly.purchaseSpecial(bought,id,offer.hour,now),bought);assert.deepEqual(g.readSave(JSON.stringify(bought)),bought);
+ const wrong=specials.SPECIAL_IDS.find(x=>x!==id);assert.equal(hourly.purchaseSpecial(s,wrong,offer.hour,now),s);
+ }
+});
+test('specials cannot bypass rotation through normal shop actions and preserve independent slots',async()=>{
+ const c=await import(await moduleUrl(resolve('lib/deader/cosmetics.ts'))),p=await import(await moduleUrl(resolve('lib/deader/pets.ts')));let s={...g.newSave(),coins:1000};
+ for(const id of specials.SPECIAL_IDS){assert.equal(id==='mini-anomaly'?p.purchasePet(s,id):c.purchaseAccessory(s,id),s);let now=0;while(hourly.hourlyOffer(now).id!==id)now+=hourly.HOUR_MS;s=hourly.purchaseSpecial(s,id,hourly.hourlyOffer(now).hour,now);}
+ s=c.equipAccessory(s,'hat','headphones');s=c.equipAccessory(s,'effect','glitch-particles');s=c.equipAccessory(s,'hand','mystery-prop');s=p.equipPet(s,'mini-anomaly');
+ for(const id of specials.SPECIAL_IDS)assert.equal(hourly.specialEquipped(s,id),true);
+ const removed=c.equipAccessory(s,'hat',null);assert.equal(removed.outfit.effect,'glitch-particles');assert.equal(removed.equippedPet,'mini-anomaly');assert.deepEqual(g.readSave(JSON.stringify(s)),s);
+ for(const version of [1,2,3]){const migrated=g.readSave(JSON.stringify({...s,version}));assert.equal(migrated.coins,s.coins);assert.deepEqual(migrated.ownedAccessories,s.ownedAccessories);}
+});
+test('special VR screen is explicit, small and separates buying from equipping',async()=>{
+ const {vrScreen,newVRMenu}=await import(await moduleUrl(resolve('lib/deader/vr-menu.ts'))),{useGame}=await import(await moduleUrl(resolve('lib/deader/store.ts'))),{activateVRTarget,vrPanelVisible}=await import(await moduleUrl(resolve('lib/deader/vr-interactions.ts')));
+ let opened=null,bought=0,equipped=0;const s={...useGame.getState(),scene:'lobby',panel:null,focused:true,suspension:null,tutorial:null,room:{...useGame.getState().room,view:'explore',night:null,judgement:null,survival:{phase:'idle'}},save:g.newSave(),open:p=>opened=p,buySpecial:()=>bought++,wearPet:()=>equipped++,wearAccessory:()=>equipped++};
+ assert.equal(vrPanelVisible(s),false);assert.equal(activateVRTarget(s,'Hourly special',()=>{}),true);assert.equal(opened,'special');s.panel='special';
+ const view=vrScreen(s,newVRMenu(),{patch:()=>{},recenter:()=>{},exit:()=>{},resume:()=>{},decide:()=>{}});assert.equal(view.buttons.length,2);assert.ok(view.preview);assert.ok(view.close);assert.ok(view.buttons.find(b=>b.text==='Equip').disabled);view.buttons.find(b=>b.text==='Purchase').run();assert.equal(bought,1);assert.equal(equipped,0);
+});
+test('Stalker poses include ceiling and sideways cover, with independent appearance cue keys',()=>{
+ assert.equal(stalkerLogic.STALKER_CAMERA.length,6);assert.equal(stalkerLogic.STALKER_CAMERA[1].roll,Math.PI);assert.equal(stalkerLogic.STALKER_CAMERA[5].roll,Math.PI);assert.equal(Math.abs(stalkerLogic.STALKER_CAMERA[4].roll),Math.PI/2);
+ const s={...stalkerLogic.freshStalker(),phase:'camera'};assert.equal(stalkerLogic.stalkerCueKey(s,false),null);assert.equal(stalkerLogic.stalkerCueKey(s,true),'1:0:camera');assert.equal(stalkerLogic.stalkerCueKey({...s,phase:'room'},false),'1:0:room');assert.equal(stalkerLogic.stalkerCueKey({...s,phase:'retreat'},true),null);
+});
+
+test('Stalker eye contact requires the front of its rotated face',()=>{
+ const direction={x:0,y:0,z:-1},offset={x:0,y:0,z:-2};
+ assert.equal(stalkerLogic.stalkerGaze(direction,offset,true,{x:0,y:0,z:1}),true);
+ assert.equal(stalkerLogic.stalkerGaze(direction,offset,true,{x:0,y:0,z:-1}),false);
+ assert.equal(stalkerLogic.stalkerGaze(direction,offset,false,{x:0,y:0,z:1}),false);
 });

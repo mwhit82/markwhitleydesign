@@ -13,6 +13,7 @@ export const spatial = {
     colour: string;
     outfit: import("@/lib/deader/cosmetics").Outfit;
     pet: boolean;
+    petId?: import("@/lib/deader/pets").PetId;
   },
   auxiliaryFrame: -1,
   lastFeed: -1,
