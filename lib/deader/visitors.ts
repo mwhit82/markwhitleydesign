@@ -280,7 +280,16 @@ export type Outcome = {
   coins: number;
   explanation: string;
 };
+export type DawnEntry = { id: string; profile: VisitorDefinition; decision: Decision | "timeout"; coins: number; shot: boolean; mistakes?: number };
+/** A resident may survive from a previous Infinite shift; record their removal once. */
+export function recordResidentShot(ledger:DawnEntry[],id:string,profile:VisitorDefinition):DawnEntry[]{
+ const existing=ledger.find(e=>e.id===id);
+ if(existing?.shot)return ledger;
+ const mistake=Number(profile.kind==="human");
+ return existing?ledger.map(e=>e.id===id?{...e,shot:true,mistakes:(e.mistakes??0)+mistake}:e):[...ledger,{id,profile,decision:"shoot",coins:0,shot:true,mistakes:mistake}];
+}
 export type Encounters = {
+  ledger: DawnEntry[];
   runId: string;
   seed: number;
   sequence: number;
@@ -309,6 +318,7 @@ export const freshEncounters = (
   runId,
   seed,
   identitySeed: seed,
+  ledger: [],
   queued: null,
   sequence: 0,
   nextIn: 12,
@@ -446,6 +456,7 @@ export function resolveEncounter(
   return {
     ...s,
     active: { ...e, phase: "departing", elapsed: 0, decision },
+    ledger: [...(s.ledger ?? []), {id, profile:v, decision, coins, mistakes:Number(!correct), shot:decision === "shoot"}],
     resolved: [...s.resolved, id],
     streak: correct ? s.streak + 1 : 0,
     bestStreak: Math.max(s.bestStreak, correct ? s.streak + 1 : 0),
@@ -500,6 +511,7 @@ export function expireEncounter(s: Encounters, id: string): Encounters {
   const v = encounterVisitor(e);
   return {
     ...s, active: { ...e, phase: "departing", elapsed: 0, decision: "timeout" },
+    ledger: [...(s.ledger ?? []), {id, profile:v, decision:"timeout", coins:0, mistakes:1, shot:false}],
     resolved: [...s.resolved, id], streak: 0,
     trust: Math.max(0, s.trust - 1), mistakes: s.mistakes + 1,
     result: { id, name: v.name, kind: v.kind, decision: "timeout", correct: false, coins: 0,

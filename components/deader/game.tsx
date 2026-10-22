@@ -440,16 +440,16 @@ export default function Game() {
           </span>
           <span
             className={styles.mistakeCount}
-            aria-label={`${s.room.encounters.mistakes-s.room.mistakeBaseline} mistakes. Judgement at dawn.`}
+            aria-label="Results at dawn"
           >
-            <strong>{s.room.encounters.mistakes-s.room.mistakeBaseline} mistakes</strong><small>Judgement at dawn</small>
+            <strong>Results at dawn</strong><small>Judgement at dawn</small>
           </span>
           <small>
             {s.session?.difficulty} / {s.session?.mode} ·{" "}
             {s.room.night?.duration === 60
               ? "60s REHEARSAL"
               : s.mode === "infinite"
-                ? `STREAK ${s.room.encounters.streak}`
+                ? "INFINITE SHIFT"
                 : NIGHT_TITLES[(s.room.night?.number ?? 1) - 1]}
           </small>
         </div>

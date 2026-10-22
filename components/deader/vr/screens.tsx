@@ -104,7 +104,7 @@ export const VRPanel = memo(function VRPanel() {
       r.encounters.active?.id,
       r.survival.phase === "gameover",
     ].join(":");
-    const inspection = r.view === "inspect" || r.view === "door";
+    const inspection = r.view === "inspect" || r.view === "door" || !!r.judgement;
     const layoutChanged = v.menuLayout !== inspection;
     v.menuLayout = inspection;
     if (v.key !== key) {
@@ -269,7 +269,7 @@ export const VRPanel = memo(function VRPanel() {
       });
       display.texture.needsUpdate = true;
     }
-    const wristText = `${s.save.coins} COINS · ${r.encounters.trust} LIVES | ${nightClockLabel(r.night)} · ${r.weapon.ammo}/6${alert ? " · LOUNGE ALERT" : ""}`;
+    const wristText = `${s.save.coins} COINS · RESULTS AT DAWN | ${nightClockLabel(r.night)} · ${r.weapon.ammo}/6${alert ? " · LOUNGE ALERT" : ""}`;
     if (wristText !== v.watch) {
       v.watch = wristText;
       const c = watch.ctx;

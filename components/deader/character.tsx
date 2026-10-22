@@ -6,6 +6,7 @@ import { characterPose, type AnimationState } from "@/lib/deader/presentation";
 import { useGame } from "@/lib/deader/store";
 import type { Outfit } from "@/lib/deader/cosmetics";
 import { SpecialDetails } from "./special-details";
+import { NewSpecialDetails, porcelainTexture } from "./new-special-details";
 import { BundleDetails, rainbowTexture } from "./bundle-details";
 import { createBittenConeGeometry } from "./bitten-cone";
 import { createCharacterWear } from "./character-wear";
@@ -74,7 +75,7 @@ export function Cone({
   );
   const bitten=useMemo(()=>outfit?.finish==="chipped-finish"?createBittenConeGeometry():null,[outfit?.finish]);
   useEffect(()=>()=>bitten?.dispose(),[bitten]);
-  const rainbow=useMemo(()=>outfit?.finish==="rainbow-finish"?rainbowTexture():null,[outfit?.finish]);
+  const rainbow=useMemo(()=>outfit?.finish==="rainbow-finish"?rainbowTexture():outfit?.finish==="porcelain-cracks"?porcelainTexture():null,[outfit?.finish]);
   useEffect(()=>()=>rainbow?.dispose(),[rainbow]);
   const points = useMemo(
     () => [
@@ -135,6 +136,7 @@ export function Cone({
       ))}
       <group ref={body}>
         <BundleDetails outfit={armed&&outfit?{...outfit,hand:null}:outfit} paused={paused}/>
+        <NewSpecialDetails wear={wear} outfit={armed&&outfit?{...outfit,hand:null}:outfit} paused={paused}/>
         <SpecialDetails wear={wear} outfit={outfit} armed={armed} paused={paused}/>
         {(appearance === "splitter" ? [-1,1] : [0]).map(half=>(
         <mesh key={half} position={[half*split*.12,0,0]} rotation={[0,0,-half*split*.05]} castShadow={!lowDetail}>
@@ -198,7 +200,7 @@ export function Cone({
             <meshStandardMaterial color="#11100f" />
           </mesh>
         ))}
-        {outfit?.hat && outfit.hat!=="rainbow-hat" && outfit.hat!=="headphones" && (
+        {outfit?.hat && outfit.hat!=="rainbow-hat" && outfit.hat!=="headphones" && outfit.hat!=="bent-halo" && outfit.hat!=="midnight-crown" && (
           <group position={[0, 1.38, 0]}>
             <mesh>
               <cylinderGeometry args={[0.11, 0.22, 0.32, 16]} />
@@ -222,7 +224,7 @@ export function Cone({
             </mesh>
           </group>
         )}
-        {outfit?.glasses && (
+        {outfit?.glasses === "round-glasses" && (
           <group position={[0, 0.99, 0.27]} rotation={[-0.33, 0, 0]}>
             {(outfit?.face === "dangling-eye" ? [-.13] : [-0.13, 0.13]).map((x) => (
               <mesh key={x} position={[x, 0, 0]}>
@@ -240,7 +242,7 @@ export function Cone({
             </mesh>
           </group>
         )}
-        {(backpack || outfit?.backpack) && (
+        {(backpack || outfit?.backpack === "shift-pack") && (
           <mesh position={[0, 0.65, -0.3]}>
             <boxGeometry args={[0.55, 0.63, 0.26]} />
             <meshStandardMaterial

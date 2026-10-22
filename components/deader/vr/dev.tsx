@@ -64,7 +64,7 @@ export default function VRDev() {
     setTimeout(() => device?.controllers.right?.updateButtonValue(id, 0), 120);
   };
   return (
-    <div
+    <details open
       data-vr-dev
       data-vr-exclude
       style={{
@@ -81,7 +81,7 @@ export default function VRDev() {
         gap: 6,
       }}
     >
-      <span>LOCAL XR EMULATOR</span>
+      <summary style={{cursor:"pointer",width:"100%"}}>Local test controls</summary>
       <select aria-label="Special item fixture" onChange={e=>{useGame.setState({specialFixture:(e.target.value||null) as SpecialId|null});useGame.getState().open("special");}}><option value="">Live hourly offer</option>{SPECIAL_IDS.map(id=><option key={id} value={id}>{id}</option>)}</select>
       <button onClick={()=>{useGame.setState({specialFixture:null});useGame.getState().open("special");}}>Test hourly shop</button>
       <button
@@ -285,6 +285,6 @@ export default function VRDev() {
         Turn half second
       </button>
       <button onClick={() => tap("b-button")}>Controller menu</button>
-    </div>
+    </details>
   );
 }

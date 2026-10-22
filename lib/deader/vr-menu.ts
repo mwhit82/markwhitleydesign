@@ -3,6 +3,7 @@ import type { useGame } from "./store";
 import { cosmetics } from "./game";
 import { accessories, bundles, bundleOutfit, type Outfit } from "./cosmetics";
 import {
+  specialDescriptions,
   hourlyOffer,
   offerCountdown,
   ownsSpecial,
@@ -16,7 +17,7 @@ import { achievements } from "./achievements";
 import { unlockedNight } from "./progression";
 import { QUESTIONS, encounterVisitor, DECISION_SECONDS } from "./visitors";
 import { FEEDS, broadcastSegment, newsForNight } from "./room";
-import { donutMood } from "./survival";
+import { currentReveal, revealCaption } from "./judgement";
 import { tutorialCopy } from "./tutorial";
 export type VRMenuState = {
   page: string;
@@ -190,7 +191,7 @@ export function vrScreen(s: State, m: VRMenuState, a: VRMenuActions): VRScreen {
       equipped = specialEquipped(s.save, id);
     const result = screen(
       item.name,
-      `${s.save.coins} coins · ${item.price} coins\nChanges in ${offerCountdown(now)}\nMay repeat. Owned items stay yours.`,
+      `${s.save.coins} coins · ${item.price} coins\nChanges in ${offerCountdown(now)}\n${specialDescriptions[id]}\nMay repeat. Owned items stay yours.`,
       [
         button(
           owned ? "Owned" : "Purchase",
@@ -429,8 +430,13 @@ export function vrScreen(s: State, m: VRMenuState, a: VRMenuActions): VRScreen {
       button("Progress", () => s.open("progress")),
       button("Return to lobby", s.lobby),
     ]);
+  if(r.judgement){
+    const j=r.judgement,e=currentReveal(j);
+    const advance=(all=false)=>()=>s.advanceDawn(all);
+    return screen(e?e.profile.name:"Shift results",e?revealCaption(e):`${j.mistakes} mistakes · ${j.failed?"Shift failed":"Night survived"}. Decision earnings: ${r.encounters.ledger.reduce((n,e)=>n+e.coins,0)} coins.`,e?[button("Next",advance()),button("Skip to results",advance(true))]:[]);
+  }
   if (r.survival.phase === "gameover")
-    return screen("Game Over", "The Auditor has ended your shift.", [
+    return screen("Game Over", "Three or more mistakes ended your shift.", [
       button("Retry shift", s.start),
       button("Return to lobby", s.lobby),
     ]);
@@ -573,7 +579,7 @@ export function vrScreen(s: State, m: VRMenuState, a: VRMenuActions): VRScreen {
   if (r.view === "donut")
     return screen(
       "Donut",
-      `Donut is ${donutMood(r.encounters.trust)}. Watch his reactions, but remember that a quiet pet does not guarantee a visitor is safe.`,
+      "Watch Donut’s reactions, but a quiet pet does not guarantee a visitor is safe. Results at dawn.",
       [],
     );
   if (r.view === "tv" || r.view === "lounge-tv")

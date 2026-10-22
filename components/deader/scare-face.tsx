@@ -6,7 +6,7 @@ import * as THREE from 'three';
 import { useGame } from '@/lib/deader/store';
 import { closeScarePose } from '@/lib/deader/presentation';
 import { createCharacterWear } from './character-wear';
-import { dawnScarePose } from '@/lib/deader/judgement';
+import { currentReveal, JUDGEMENT_INTRO_SECONDS, dawnScarePose } from '@/lib/deader/judgement';
 import { visitorById } from '@/lib/deader/visitors';
 /** Camera-relative original cone face: no extra renderer, overlays or postprocessing. */
 export function ScareFace(){
@@ -50,7 +50,9 @@ export function DawnFace(){
   if(!ref.current)return;
   const s=useGame.getState(),j=s.room.judgement;
   if(!j){ref.current.visible=false;anchor.current=null;return;}
-  const pose=dawnScarePose(j.elapsed,s.save.settings.gentleScares,s.save.settings.reducedMotion||matchMedia('(prefers-reduced-motion: reduce)').matches);
+  const entry=currentReveal(j);
+  const active=!!entry&&!entry.shot&&entry.profile.kind==="anomaly";
+  const pose=dawnScarePose(j.entries ? (active?JUDGEMENT_INTRO_SECONDS+j.elapsed%3:0) : j.elapsed,s.save.settings.gentleScares,s.save.settings.reducedMotion||matchMedia('(prefers-reduced-motion: reduce)').matches);
   ref.current.visible=pose.active;
   if(vr){
    if(!pose.active)anchor.current=null;

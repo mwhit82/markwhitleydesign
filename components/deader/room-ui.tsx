@@ -1,7 +1,7 @@
 "use client";
 import { lazy, Suspense, useEffect } from "react";
 import { clockLabel } from "@/lib/deader/game";
-import { donutMood } from "@/lib/deader/survival";
+
 import { useGame } from "@/lib/deader/store";
 import {
   FEEDS,
@@ -116,7 +116,7 @@ export function RoomUI() {
           <h2>{r.view === "donut" ? "Meet Donut." : "Something above you."}</h2>
           <p>
             {r.view === "donut"
-              ? `Donut is ${donutMood(r.encounters.trust)}. ${r.encounters.trust === 3 ? "He drifts quietly in his bowl." : r.encounters.trust === 2 ? "He keeps turning to watch you." : "He circles impatiently. The Auditor will count your mistakes at dawn."}`
+              ? "Donut drifts in his bowl. Watch his reactions when someone arrives; your results are revealed at dawn."
               : "The ladder leads to a sealed ventilation shaft. Check CAM 2 for a better look."}
           </p>
           {r.view === "vent" && (

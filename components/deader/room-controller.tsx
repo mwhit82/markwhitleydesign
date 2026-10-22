@@ -258,7 +258,9 @@ export function RoomController() {
     camera.layers.disable(4);
     if(r.view === "cctv" && r.feed === r.stalker.feed) camera.layers.enable(4);
     let fov = 55;
-    if (
+    if(r.judgement){
+      eye.set(.25,1.6,.4);dummy.position.copy(eye);dummy.lookAt(.25,.9,-3);rotation.copy(dummy.quaternion);
+    } else if (
       r.survival.phase !== "idle" &&
       r.survival.kind === "anomaly" &&
       ["tension", "lunge", "recovery"].includes(r.survival.phase)

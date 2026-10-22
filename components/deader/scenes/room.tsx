@@ -30,7 +30,7 @@ function Donut({ materials: m }: { materials: RoomMaterials }) {
       seq = s.room.survival;
     if (!fish.current || s.panel || (!s.focused || !!s.suspension)) return;
     time.current += Math.min(dt, 0.05);
-    const trust = s.room.encounters.trust,
+    const trust: number = Number(3),
       t = time.current;
     const reduced =
       s.save.settings.reducedMotion ||

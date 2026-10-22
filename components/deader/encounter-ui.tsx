@@ -74,7 +74,7 @@ export function EncounterUI() {
             : e?.phase === "waiting"
               ? "Knock, knock. A visitor is waiting at the door."
               : e?.phase === "departing"
-                ? result?.correct && e.decision === "admit"
+                ? e.decision === "admit"
                   ? "Thank you. I'll be safe now."
                   : "The visitor is leaving."
                 : r.door !== "CLOSED"
@@ -98,15 +98,7 @@ export function EncounterUI() {
       )}
       {result && !["door", "inspect"].includes(r.view) && (
         <aside className={styles.outcome} aria-label="Encounter result">
-          <b>
-            {result.correct
-              ? `Correct · +${result.coins} ${r.night?.duration === 60 ? "practice coins" : "coins"}`
-              : result.decision === "timeout" ? "Time expired · +1 mistake" : "Incorrect · +1 mistake"}
-          </b>
-          <p>
-            {result.name} was {result.kind === "human" ? "human" : "an Anomaly"}
-            . {result.explanation}
-          </p>
+          <b>Results at dawn</b><p>Your decision has been recorded.</p>
         </aside>
       )}
     </>

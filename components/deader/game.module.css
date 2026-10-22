@@ -1415,3 +1415,8 @@
  .game .hourlyModal .hourlyDetails p {font-size:13px; line-height:1.35;}
  .game .hourlyModal .eyebrow {display:none;}
 }
+
+.dawnCaptions { position:absolute; z-index:40; bottom:max(16px,env(safe-area-inset-bottom)); left:50%; transform:translateX(-50%); width:min(92%,520px); padding:12px 18px; color:#f4f4f4; background:rgba(8,10,12,.86); border:1px solid #ffffff44; border-radius:12px; text-align:center; pointer-events:auto; }
+.dawnCaptions h2{font-size:20px;margin:6px 0}.dawnCaptions p{margin:6px 0;font-size:14px}.dawnCaptions button{min-height:44px;padding:8px 16px;margin:4px;color:white;background:#252a2e;border:1px solid #ffffff66;border-radius:6px}
+@media(max-height:480px){.dawnCaptions{bottom:8px;padding:6px 12px}.dawnCaptions h2{font-size:16px}.dawnCaptions p{font-size:12px}}
+@media(max-height:480px) and (min-width:600px){.dawnCaptions{left:auto;right:12px;transform:none;width:min(38vw,320px);bottom:10px}.dawnCaptions button{padding:6px 10px}}

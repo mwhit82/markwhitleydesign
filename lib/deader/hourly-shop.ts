@@ -81,3 +81,18 @@ export function offerCountdown(now: number) {
     .toString()
     .padStart(2, "0")}:${(remaining % 60).toString().padStart(2, "0")}`;
 }
+
+export const specialDescriptions: Record<SpecialId,string> = {
+ "mystery-prop":"A mystery to hold. Decorative only; cannot be used.",
+ "headphones":"Worn black-and-yellow headphones. Replaces your hat.",
+ "mini-anomaly":"A little anomaly on your side. Notices the same clues as other pets.",
+ "glitch-particles":"Coloured glitch fragments. Replaces your particle effect.",
+ "bent-halo":"A crooked, tarnished halo. Replaces your hat.",
+ "midnight-crown":"A chipped black crown with amber studs. Replaces your hat.",
+ "static-specs":"Thick frames with softly moving static lenses. Replaces your glasses.",
+ "moon-patch":"A fabric crescent patch over one eye. Replaces your face accessory.",
+ "lost-signal-pack":"A battered radio pack with a bent aerial. Replaces your backpack.",
+ "pocket-moon":"A small cracked moon ornament. Decorative only; put away while holding the gun.",
+ "porcelain-cracks":"Ivory plastic with painted cracks. Replaces your body finish.",
+ "shadow-moths":"Six drifting shadow moths. Replaces your particle effect; hidden with reduced motion.",
+};

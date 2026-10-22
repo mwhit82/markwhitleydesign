@@ -347,7 +347,7 @@ test("arrival during peephole inspection stays inspectable", () => {
     "VISITOR_WAITING",
   );
 });
-test("store rewards persist once, rejects stale decisions and holds departure for the door", async () => {
+test("store defers rewards until dawn, rejects stale decisions and holds departure for the door", async () => {
   const { useGame } = await import(
     await moduleUrl(resolve("lib/deader/store.ts"))
   );
@@ -371,9 +371,9 @@ test("store rewards persist once, rejects stale decisions and holds departure fo
     },
   });
   useGame.getState().decideVisitor("test-run:1", "admit");
-  assert.equal(useGame.getState().save.coins, 155);
+  assert.equal(useGame.getState().save.coins, 150);
   useGame.getState().decideVisitor("test-run:1", "admit");
-  assert.equal(useGame.getState().save.coins, 155);
+  assert.equal(useGame.getState().save.coins, 150);
   useGame.getState().tickVisitors(0.25);
   assert.equal(useGame.getState().room.encounters.active.elapsed, 0);
   useGame.getState().doorEvent({ type: "opened" });
@@ -381,7 +381,7 @@ test("store rewards persist once, rejects stale decisions and holds departure fo
   assert.equal(useGame.getState().room.door, "CLOSING");
   assert.equal(useGame.getState().room.encounters.active, null);
   useGame.getState().start();
-  assert.equal(useGame.getState().save.coins, 155);
+  assert.equal(useGame.getState().save.coins, 150);
   assert.equal(useGame.getState().room.encounters.trust, 3);
 });
 test("CCTV allows arrivals while manual pause freezes the shared scheduler", async () => {
@@ -617,7 +617,7 @@ test("full five-minute run resolves ten visitors and rewards only after judgemen
     runSeconds: 300,
   });
   useGame.getState().start();
-  for (let i = 0; i < 1232; i++) {
+  for (let i = 0; i < 1360; i++) {
     let s = useGame.getState();
     if (s.room.door === "OPENING") s.doorEvent({ type: "opened" });
     if (s.room.door === "CLOSING") s.doorEvent({ type: "closed" });
@@ -1876,16 +1876,18 @@ async function combatStore(visitor='three'){
   useGame.setState({scene:'room',tutorial:null,panel:null,suspension:null,focused:true,save:g.newSave(),room:r,session:g.createSession('easy','normal')});
   return {useGame,memory};
 }
-test('shooting resolves an Anomaly once, pays visibly and persists after refresh',async()=>{
-  const {useGame,memory}=await combatStore();const id=useGame.getState().room.encounters.active.id;
-  assert.equal(useGame.getState().fireWeapon(id),true);
-  const s=useGame.getState();assert.equal(s.room.weapon.ammo,5);assert.equal(s.room.encounters.active,null);
-  assert.equal(s.save.coins,155);assert.equal(s.room.rewardToast.coins,5);assert.equal(s.room.encounters.correct,1);
-  assert.equal(s.fireWeapon(id),false);assert.equal(useGame.getState().save.coins,155);
-  s.tickVisitors(.25);s.tickVisitors(.25);useGame.getState().fireWeapon(id);assert.equal(useGame.getState().save.coins,155);
-  assert.equal(g.readSave(memory.values().next().value).coins,155);
-  useGame.getState().hydrate();assert.equal(useGame.getState().save.coins,155);
+test('shooting banks a reward once and settles it at dawn',async()=>{
+ const {useGame,memory}=await combatStore();const id=useGame.getState().room.encounters.active.id;
+ assert.equal(useGame.getState().fireWeapon(id),true);
+ let s=useGame.getState();assert.equal(s.room.weapon.ammo,5);assert.equal(s.save.coins,150);assert.equal(s.room.rewardToast,null);
+ assert.equal(s.room.encounters.ledger.length,1);assert.equal(s.room.encounters.ledger[0].coins,5);
+ assert.equal(s.fireWeapon(id),false);
+ useGame.setState({room:{...s.room,night:{...s.room.night,elapsed:599.9}}});
+ useGame.getState().tickVisitors(.25);s=useGame.getState();assert.equal(s.save.coins,155);
+ assert.equal(s.room.judgement.entries[0].shot,true);s.tickVisitors(.25);assert.equal(useGame.getState().save.coins,155);
+ assert.equal(g.readSave(memory.values().next().value).coins,155);
 });
+
 test('gun guards views, pause, door, misses and spent ammunition',async()=>{
   const {useGame}=await combatStore();const id=useGame.getState().room.encounters.active.id;
   for(const view of ['inspect','cctv','tv','arcade','console','door']){
@@ -1951,7 +1953,7 @@ test('opening to aim preserves the deadline and can be cancelled or answered',as
  assert.equal(useGame.getState().room.door,'VISITOR_WAITING');assert.equal(useGame.getState().room.encounters.mistakes,0);
  useGame.getState().roomView('door');useGame.getState().aimDoor();useGame.getState().doorEvent({type:'opened'});useGame.getState().roomView('door');
  r=useGame.getState().room;assert.equal(room.canConfirmDoor(r,r.encounters.active.id),true);
- useGame.getState().decideVisitor(r.encounters.active.id,'admit');assert.equal(useGame.getState().save.coins,155);
+ useGame.getState().decideVisitor(r.encounters.active.id,'admit');assert.equal(useGame.getState().save.coins,150);
 });
 
 test('all early mistakes remain playable and never start a jumpscare',async()=>{
@@ -2406,7 +2408,7 @@ const specials=await import(await moduleUrl(resolve('lib/deader/special-ids.ts')
 test('hourly selection is stable, UTC-boundary based, balanced and permits consecutive repeats',()=>{
  const seen=new Set();let repeats=0,previous=null;
  for(let hour=490000;hour<491000;hour++){const now=hour*hourly.HOUR_MS,offer=hourly.hourlyOffer(now);seen.add(offer.id);if(offer.id===previous)repeats++;previous=offer.id;assert.deepEqual(hourly.hourlyOffer(now+3599999),offer);assert.equal(offer.nextChange,(hour+1)*hourly.HOUR_MS);assert.equal(hourly.hourlyOffer(offer.nextChange).hour,hour+1);}
- assert.equal(seen.size,4);assert.ok(repeats>150&&repeats<350);assert.equal(hourly.offerCountdown(490000*hourly.HOUR_MS),'60:00');assert.equal(hourly.offerCountdown(490000*hourly.HOUR_MS+3599000),'00:01');
+ assert.equal(seen.size,specials.SPECIAL_IDS.length);assert.ok(repeats>30&&repeats<160);assert.equal(hourly.offerCountdown(490000*hourly.HOUR_MS),'60:00');assert.equal(hourly.offerCountdown(490000*hourly.HOUR_MS+3599000),'00:01');
 });
 test('special purchases require current item and hour, sufficient coins and no previous ownership',()=>{
  for(const id of specials.SPECIAL_IDS){let now=490000*hourly.HOUR_MS;while(hourly.hourlyOffer(now).id!==id)now+=hourly.HOUR_MS;
@@ -2421,7 +2423,7 @@ test('specials cannot bypass rotation through normal shop actions and preserve i
  const c=await import(await moduleUrl(resolve('lib/deader/cosmetics.ts'))),p=await import(await moduleUrl(resolve('lib/deader/pets.ts')));let s={...g.newSave(),coins:1000};
  for(const id of specials.SPECIAL_IDS){assert.equal(id==='mini-anomaly'?p.purchasePet(s,id):c.purchaseAccessory(s,id),s);let now=0;while(hourly.hourlyOffer(now).id!==id)now+=hourly.HOUR_MS;s=hourly.purchaseSpecial(s,id,hourly.hourlyOffer(now).hour,now);}
  s=c.equipAccessory(s,'hat','headphones');s=c.equipAccessory(s,'effect','glitch-particles');s=c.equipAccessory(s,'hand','mystery-prop');s=p.equipPet(s,'mini-anomaly');
- for(const id of specials.SPECIAL_IDS)assert.equal(hourly.specialEquipped(s,id),true);
+ for(const id of ["headphones","glitch-particles","mystery-prop","mini-anomaly"])assert.equal(hourly.specialEquipped(s,id),true);
  const removed=c.equipAccessory(s,'hat',null);assert.equal(removed.outfit.effect,'glitch-particles');assert.equal(removed.equippedPet,'mini-anomaly');assert.deepEqual(g.readSave(JSON.stringify(s)),s);
  for(const version of [1,2,3]){const migrated=g.readSave(JSON.stringify({...s,version}));assert.equal(migrated.coins,s.coins);assert.deepEqual(migrated.ownedAccessories,s.ownedAccessories);}
 });
@@ -2441,4 +2443,63 @@ test('Stalker eye contact requires the front of its rotated face',()=>{
  assert.equal(stalkerLogic.stalkerGaze(direction,offset,true,{x:0,y:0,z:1}),true);
  assert.equal(stalkerLogic.stalkerGaze(direction,offset,true,{x:0,y:0,z:-1}),false);
  assert.equal(stalkerLogic.stalkerGaze(direction,offset,false,{x:0,y:0,z:1}),false);
+});
+
+test('dawn ledger snapshots decisions, excludes Mimics and preserves harmless kids',()=>{
+ let e=visitors.resolveEncounter(waiting('bea'),'test-run:1','admit');
+ assert.equal(e.ledger.length,1);assert.equal(e.ledger[0].profile.kind,'human');assert.equal(e.ledger[0].coins,5);
+ assert.equal(visitors.resolveEncounter(e,'test-run:1','reject'),e);
+ const timed=visitors.expireEncounter(waiting('three'),'test-run:1');assert.equal(timed.ledger[0].decision,'timeout');assert.equal(timed.ledger[0].coins,0);
+ const kids=visitors.resolveEncounter(waiting('kids'),'test-run:1','reject');assert.equal(kids.ledger[0].coins,5);assert.equal(kids.mistakes,0);
+ const mimic=visitors.resolveEncounter(waiting('mimic'),'test-run:1','admit');
+ assert.equal(judgementLogic.processionEntries(mimic.ledger).length,0);
+ assert.equal(judgementLogic.processionEntries(kids.ledger).length,1);
+});
+test('dawn captions distinguish living anomalies, killed anomalies and human ghosts',()=>{
+ const a=visitors.resolveEncounter(waiting('three'),'test-run:1','reject').ledger[0];
+ assert.equal(judgementLogic.revealCaption(a),'');assert.ok(judgementLogic.revealCaption({...a,shot:true}).length>0);
+ const h=visitors.resolveEncounter(waiting('bea'),'test-run:1','admit').ledger[0];
+ assert.match(judgementLogic.revealCaption(h),/Thank|kindness/);assert.notEqual(judgementLogic.revealCaption({...h,shot:true}),judgementLogic.revealCaption(h));
+});
+test('procession timing, Next and Skip never mutate ledger rewards',()=>{
+ const entries=[...visitors.resolveEncounter(waiting('bea'),'test-run:1','admit').ledger,...visitors.resolveEncounter(waiting('three'),'test-run:1','reject').ledger];
+ const j={...judgementLogic.beginJudgement(2),entries};assert.equal(judgementLogic.judgementDuration(j),10);
+ assert.equal(judgementLogic.currentReveal(j),entries[0]);assert.equal(judgementLogic.currentReveal(judgementLogic.skipReveal(j)),entries[1]);
+ const end=judgementLogic.skipReveal(j,true);assert.equal(end.elapsed,6);assert.equal(judgementLogic.currentReveal(end),undefined);assert.equal(end.entries,entries);
+ assert.equal(judgementLogic.tickJudgement(j,Infinity),j);assert.equal(judgementLogic.tickJudgement(j,99).elapsed,.25);
+ assert.equal(judgementLogic.judgementDuration({...j,entries:[]}),4);
+});
+test('VR exposes procession controls and allows pause over judgement',async()=>{
+ const {vrScreen,newVRMenu}=await import(await moduleUrl(resolve('lib/deader/vr-menu.ts'))),{vrPanelVisible}=await import(await moduleUrl(resolve('lib/deader/vr-interactions.ts'))),{useGame}=await import(await moduleUrl(resolve('lib/deader/store.ts')));
+ const entries=visitors.resolveEncounter(waiting('bea'),'test-run:1','admit').ledger;let patch=null;
+ const s={...useGame.getState(),advanceDawn:all=>{patch=all;},panel:null,suspension:null,tutorial:null,room:{...room.freshRoom(),judgement:{...judgementLogic.beginJudgement(0),entries}}};
+ assert.equal(vrPanelVisible(s),true);
+ const model=vrScreen(s,newVRMenu(),{patch:p=>patch=p,resume(){},recenter(){},exit(){},decide(){}});
+ assert.equal(model.buttons.length,2);model.buttons[1].run();assert.equal(patch,true);
+ assert.equal(vrScreen({...s,panel:'pause'},newVRMenu(),{patch(){},resume(){},recenter(){},exit(){},decide(){}}).title,'Paused');
+});
+test('dawn settles a failed shift once, pause and skip preserve judgement',async()=>{
+ const {useGame}=await combatStore();const s=useGame.getState();const e=visitors.resolveEncounter(waiting('bea'),'test-run:1','admit');
+ useGame.setState({room:{...s.room,encounters:{...e,mistakes:3},night:{...s.room.night,elapsed:599.9}}});useGame.getState().tickVisitors(.25);
+ assert.equal(useGame.getState().save.coins,155);let r=useGame.getState().room;assert.equal(r.judgement.failed,true);
+ useGame.setState({panel:'pause'});useGame.getState().tickVisitors(.25);assert.equal(useGame.getState().room,r);
+ useGame.setState({panel:null,room:{...r,judgement:judgementLogic.skipReveal(r.judgement,true)}});
+ for(let i=0;i<20;i++)useGame.getState().tickVisitors(.25);
+ assert.equal(useGame.getState().room.night.status,'failed');assert.equal(useGame.getState().save.coins,155);
+});
+test('new special cosmetics replace only their slot and round-trip saves',async()=>{
+ const c=await import(await moduleUrl(resolve('lib/deader/cosmetics.ts')));let s={...g.newSave(),coins:2000};
+ for(const id of specials.SPECIAL_IDS.filter(id=>id!=='mini-anomaly')){
+  let now=0;while(hourly.hourlyOffer(now).id!==id)now+=hourly.HOUR_MS;
+  s=hourly.purchaseSpecial(s,id,hourly.hourlyOffer(now).hour,now);const item=hourly.specialItem(id),before=s.outfit;
+  s=c.equipAccessory(s,item.category,id);assert.equal(s.outfit[item.category],id);
+  for(const slot of Object.keys(before))if(slot!==item.category)assert.equal(s.outfit[slot],before[slot]);
+ }
+ assert.deepEqual(g.readSave(JSON.stringify(s)),s);
+});
+test('resident shooting preserves prior decision and handles previous Infinite residents once',()=>{
+ const entry=visitors.resolveEncounter(waiting('bea'),'test-run:1','admit').ledger;
+ const shot=visitors.recordResidentShot(entry,'test-run:1',entry[0].profile);assert.equal(shot.length,1);assert.equal(shot[0].coins,5);assert.equal(shot[0].decision,'admit');assert.equal(shot[0].mistakes,1);
+ assert.equal(visitors.recordResidentShot(shot,'test-run:1',entry[0].profile),shot);
+ const old=visitors.recordResidentShot([],'prior-shift',entry[0].profile);assert.equal(old[0].coins,0);assert.equal(old[0].shot,true);
 });

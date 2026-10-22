@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { useGame } from "@/lib/deader/store";
 import {
+  specialDescriptions,
   hourlyOffer,
   offerCountdown,
   ownsSpecial,
@@ -76,13 +77,7 @@ export function HourlyShop() {
           stay.
         </p>
         <p>
-          {item.category === "pet"
-            ? "A little anomaly on your side. Notices the same clues as other pets."
-            : item.category === "hand"
-              ? "A mystery to hold. Decorative only; cannot be used."
-              : item.category === "hat"
-                ? "Worn black-and-yellow headphones. Replaces your hat."
-                : "Coloured glitch fragments. Replaces your current particle effect."}
+          {specialDescriptions[id]}
         </p>
         <p>Yours forever once purchased. Find owned specials in Customise.</p></div>
         <Preview {...preview} />

@@ -246,7 +246,7 @@ export function SurvivalUI() {
           NIGHT {r.night?.number ?? s.session?.night ?? 1} / JUDGEMENT FAILED
         </p>
         <h2>THE ANOMALOUS</h2>
-        <p>The Auditor counted three or more mistakes.</p>
+        <p>The dawn reveal counted three or more mistakes.</p>
         <dl className={styles.results}>
           <div>
             <dt>Correct decisions</dt>

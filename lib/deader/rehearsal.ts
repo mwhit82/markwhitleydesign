@@ -1,6 +1,6 @@
 import { freshStalker } from "./stalker";
 import type { RoomState } from './room';
-import { VISITORS, generatedVisitor } from './visitors';
+import { VISITORS, generatedVisitor, type DawnEntry } from './visitors';
 import { SEATS } from './lounge';
 export type Rehearsal = 'stalker-room'|'stalker-follow'|'stalker-cam-0'|'stalker-cam-1'|'stalker-cam-2'|'stalker-cam-3'|'stalker-cam-4'|'stalker-cam-5'|'armed-mirror'|'standard'|'lounge'|'scare'|'armed'|'judgement-pass'|'judgement-fail'|'mimic'|'splitter'|'glitched'|'kids'|'pair'|'push'|'rainbow'|'injured';
 /** Development-only caller; sessions retain the no-reward 60-second duration. */
@@ -12,7 +12,10 @@ export function rehearse(room:RoomState,scenario:Rehearsal):RoomState {
     return {...room,view:scenario==='stalker-room'?'explore':'cctv',feed:feed as RoomState['feed'],stalker:{...freshStalker(),phase:scenario==='stalker-room'?'room':'camera',feed,anchor:0,follow:scenario==='stalker-follow'}};
   }
 
-  if(scenario==='judgement-pass'||scenario==='judgement-fail')return {...room,night:{...room.night,elapsed:599},encounters:{...room.encounters,mistakes:scenario==='judgement-fail'?3:2}};
+  if(scenario==='judgement-pass'||scenario==='judgement-fail'){
+    const ledger:DawnEntry[]=['bea','three','glitched','kids','mimic'].map((type,i)=>({id:`${id}:${i}`,profile:generatedVisitor(type,1234,i),decision:i===2?'shoot':'admit',coins:5,shot:i===2}));
+    return {...room,night:{...room.night,elapsed:599},encounters:{...room.encounters,ledger,mistakes:scenario==='judgement-fail'?3:2}};
+  }
   if(scenario==='armed-mirror')return {...room,weapon:{...room.weapon,collected:true}};
   if(scenario==='armed')return {...room,weapon:{...room.weapon,collected:true},door:'OPEN',visitorId:id,encounters:{...room.encounters,active:{id,visitor:'three',phase:'waiting',elapsed:0,asked:[],decision:null}}};
   if(scenario==='scare')return {...room,door:'VISITOR_WAITING',visitorId:id,view:'door',encounters:{...room.encounters,active:{id,visitor:'three',phase:'waiting',elapsed:0,asked:[],decision:null}}};

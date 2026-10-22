@@ -1,6 +1,15 @@
 import { isHourlySpecial } from "./special-ids";
 import type { Save } from "./game";
 export const accessories = [
+ {id:"bent-halo",name:"Bent Halo",category:"hat",price:75,colour:"#a09060"},
+ {id:"midnight-crown",name:"Midnight Crown",category:"hat",price:75,colour:"#25282d"},
+ {id:"static-specs",name:"Static Specs",category:"glasses",price:60,colour:"#839497"},
+ {id:"moon-patch",name:"Moon Patch",category:"face",price:50,colour:"#d1c8a1"},
+ {id:"lost-signal-pack",name:"Lost Signal Pack",category:"backpack",price:100,colour:"#454a42"},
+ {id:"pocket-moon",name:"Pocket Moon",category:"hand",price:75,colour:"#d4d1bc"},
+ {id:"porcelain-cracks",name:"Porcelain Cracks",category:"finish",price:100,colour:"#e1ddd2"},
+ {id:"shadow-moths",name:"Shadow Moths",category:"effect",price:100,colour:"#33313e"},
+
  {id:"mystery-prop",name:"Mystery Prop",category:"hand",price:50,colour:"#e6bd22"},
  {id:"headphones",name:"Headphones",category:"hat",price:75,colour:"#e6bd22"},
  {id:"glitch-particles",name:"Glitch Particles",category:"effect",price:100,colour:"#42b8c1"},

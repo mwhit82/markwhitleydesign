@@ -23,8 +23,7 @@ export function vrPanelVisible(
   s: Pick<State, "panel" | "suspension" | "tutorial" | "room">,
 ) {
   return (
-    !s.room.judgement &&
-    (!!s.panel ||
+    (!!s.room.judgement || !!s.panel ||
       !!s.suspension ||
       !!s.tutorial ||
       s.room.view !== "explore" ||
