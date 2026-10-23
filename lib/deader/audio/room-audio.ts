@@ -1,6 +1,7 @@
 import { DAWN_SCARE_SECONDS } from '../judgement';
 /** Gesture-unlocked synthesis. One context for the game; bounded voices, explicit cleanup. */
 export type Cue =
+  | "oven"
   | "shot"
   | "bark"
   | "jump"
@@ -289,7 +290,7 @@ export class RoomAudio {
     )
       return;
     const count =
-      kind === "knock" ? 3 : kind === "bark" ? 2 : kind === "news" ? 3 : kind === "stutter" ? 2 : 1;
+      kind === "oven" ? 3 : kind === "knock" ? 3 : kind === "bark" ? 2 : kind === "news" ? 3 : kind === "stutter" ? 2 : 1;
     if (this.voices.size + count > 12) return;
     if (kind === "shot") { this.gunshot(c); return; }
     if (kind === "knock") { this.bang(c); return; }
@@ -315,7 +316,7 @@ export class RoomAudio {
       osc.type =
         kind === "open" || kind === "plastic" ? "sawtooth" : "triangle";
       const frequency =
-        kind === "bark" ? 260 : kind === "jump" ? 540 : kind === "news"
+        kind === "oven" ? 880 : kind === "bark" ? 260 : kind === "jump" ? 540 : kind === "news"
           ? [220, 277, 330][i]
           : kind === "voice"
             ? 160
@@ -336,11 +337,11 @@ export class RoomAudio {
                           : 135;
       osc.frequency.setValueAtTime(frequency, start);
       osc.frequency.exponentialRampToValueAtTime(
-        kind === "news" ? frequency : 45,
+        kind === "news" || kind === "oven" ? frequency : 45,
         start + length,
       );
       filter.type = "lowpass";
-      filter.frequency.value = kind === "news" ? 1800 : 800;
+      filter.frequency.value = kind === "news" || kind === "oven" ? 1800 : 800;
       stereo.pan.value = Math.max(-1, Math.min(1, pan));
       gain.gain.setValueAtTime(0.0001, start);
       gain.gain.exponentialRampToValueAtTime(

@@ -1,3 +1,4 @@
+import { freshKitchen, type Kitchen } from "./kitchen";
 import { freshStalker, emptyStalkerSight, type StalkerState, type StalkerSight } from "./stalker";
 import { freshWeapon, type Weapon, type Judgement } from "./judgement";
 import type { Resident } from "./lounge";
@@ -15,9 +16,10 @@ export type DoorState =
   | "CLOSING"
   | "LOCKED";
 export type RoomView =
-  "console" | "arcade" | "tv" | "lounge-tv" | "explore" | "door" | "inspect" | "cctv" | "news" | "donut" | "vent";
+  "fridge" | "oven" | "console" | "arcade" | "tv" | "lounge-tv" | "explore" | "door" | "inspect" | "cctv" | "news" | "donut" | "vent";
 export type Feed = 0 | 1 | 2 | 3 | 4 | 5;
 export type RoomState = {
+  kitchen: Kitchen;
   stalker: StalkerState;
   stalkerSight: StalkerSight;
   previewBundle?: "rainbow"|"injured";
@@ -41,6 +43,7 @@ export const freshRoom = (
   duration?: 300 | 60,
   session?: Session,
 ): RoomState => ({
+  kitchen: freshKitchen(),
   stalker: freshStalker(session?.night ?? 1), stalkerSight: emptyStalkerSight(),
   judgement: null, mistakeBaseline: 0, weapon: freshWeapon(), rewardToast: null,
   residents: [],

@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from 'react';
 import { useGame } from '@/lib/deader/store';
-import { arcadeLevel, ARCADE_END, freshArcade, stepArcade } from '@/lib/deader/arcade';
+import { arcadeLevel, ARCADE_PLAYER_SIZE, arcadePlayerAngle, arcadeSpikeVertices, ARCADE_END, freshArcade, stepArcade } from '@/lib/deader/arcade';
 import { roomAudio } from '@/lib/deader/audio/room-audio';
 import styles from './game.module.css';
 export default function ArcadeUI() {
@@ -93,9 +93,10 @@ export default function ArcadeUI() {
                 ctx.strokeStyle = '#d9dad3';
                 ctx.beginPath();
                 if (o.kind === 'spike') {
-                    ctx.moveTo(x, ground);
-                    ctx.lineTo(x + o.w * scale / 2, ground - o.h * scale);
-                    ctx.lineTo(x + o.w * scale, ground);
+                    arcadeSpikeVertices(o).forEach((p,i)=>{
+                        if(i===0)ctx.moveTo(p.x*scale-offset,ground-p.y*scale);
+                        else ctx.lineTo(p.x*scale-offset,ground-p.y*scale);
+                    });
                     ctx.closePath();
                 }
                 else
@@ -104,13 +105,13 @@ export default function ArcadeUI() {
                 ctx.stroke();
             }
             ctx.save();
-            ctx.translate(149, ground - run.current.y * scale - 14);
-            if (!run.current.grounded)
-                ctx.rotate(run.current.x * 2);
+            const half = ARCADE_PLAYER_SIZE * scale / 2;
+            ctx.translate(135 + half, ground - run.current.y * scale - half);
+            ctx.rotate(-arcadePlayerAngle(run.current));
             ctx.fillStyle = '#d7ac42';
-            ctx.fillRect(-14, -14, 28, 28);
+            ctx.fillRect(-half, -half, half*2, half*2);
             ctx.strokeStyle = '#f4d47d';
-            ctx.strokeRect(-14, -14, 28, 28);
+            ctx.strokeRect(-half, -half, half*2, half*2);
             ctx.strokeStyle = '#675b3c';
             ctx.beginPath();
             ctx.moveTo(-9, -8);

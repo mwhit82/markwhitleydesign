@@ -13,7 +13,7 @@ export const VR_TARGETS = [
   "Watch TV",
   "Watch lounge TV",
   "Donut",
-  "Vent",
+  "Vent", "Fridge", "Oven",
 ] as const;
 export type VRTarget = (typeof VR_TARGETS)[number];
 export const isVRTarget = (value: unknown): value is VRTarget =>
@@ -23,7 +23,7 @@ export function vrPanelVisible(
   s: Pick<State, "panel" | "suspension" | "tutorial" | "room">,
 ) {
   return (
-    (!!s.room.judgement || !!s.panel ||
+    (!!s.room.kitchen.failure || !!s.room.judgement || !!s.panel ||
       !!s.suspension ||
       !!s.tutorial ||
       s.room.view !== "explore" ||
@@ -61,11 +61,12 @@ export function activateVRTarget(
   }
   if (
     s.room.view !== "explore" ||
-    s.room.survival.phase !== "idle" ||
+    s.room.survival.phase !== "idle" || !!s.room.kitchen.failure ||
     s.room.judgement ||
     s.room.night?.status === "completed"
   )
     return false;
+  if(target === "Fridge" || target === "Oven") { s.roomView(target === "Fridge" ? "fridge" : "oven"); return true; }
   if (target === "Take gun") {
     patch({ prompt: target });
     s.collectWeapon();

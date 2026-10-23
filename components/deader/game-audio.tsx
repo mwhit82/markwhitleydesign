@@ -9,6 +9,7 @@ import { ambienceLevel } from "@/lib/deader/presentation";
 export function GameAudio() {
   const diagnostics = useRef<HTMLSpanElement>(null);
   useEffect(() => {
+    let ovenSignal = "", needsSignal = "", fireSignal = "";
     let seconds = 0,
       nextCreak = 19,
       previousRun = "";
@@ -55,6 +56,14 @@ export function GameAudio() {
         roomAudio.ambience(0);
         return;
       }
+      const k=r.kitchen;
+      if(s.scene==="room"&&k.failure==="fire"&&fireSignal!==r.encounters.runId){roomAudio.play("rumble");fireSignal=r.encounters.runId;}
+      const oven=s.scene!=="room"||r.judgement||r.night?.status==="failed"?"":k.oven==="ready"?`${k.seconds>=45?Math.floor(k.seconds/3):"ready"}`:"";
+      if(oven&&oven!==ovenSignal)roomAudio.play("oven");
+      ovenSignal=oven;
+      const needs=s.scene!=="room"||r.night?.status!=="running"?"":`${k.hunger<=10?2:k.hunger<=25?1:0}:${k.thirst<=10?2:k.thirst<=25?1:0}`;
+      if(needs&&needs!=="0:0"&&needs!==needsSignal)roomAudio.play("oven");
+      needsSignal=needs;
       seconds += 0.1;
       const busy = s.scene === "room" && (r.survival.phase !== "idle" || !!r.judgement);
       const spatial = tvSound(roomPlayerPose.x, roomPlayerPose.z, roomPlayerPose.yaw);

@@ -26,6 +26,7 @@ import {
   ROOM_OBSTACLES,
   ROOM_CLOSED_OBSTACLES,
 } from "@/lib/deader/game";
+import { KITCHEN_OBSTACLES } from "@/lib/deader/kitchen";
 import { moveInRooms, SEATS } from "@/lib/deader/lounge";
 import { gameInput } from "@/lib/deader/input";
 import { roomAudio } from "@/lib/deader/audio/room-audio";
@@ -188,8 +189,9 @@ function Rig() {
       spatial.recenter = true;
       spatial.dragging = null;
       a.targetsAt = 0;
-      rig.current.position.set(0, 0, s.scene === "lobby" ? 0.8 : 3.2);
-      rig.current.rotation.set(0, 0, 0);
+      const kitchenFixture=process.env.NODE_ENV==="development"&&s.scene==="room"&&s.rehearsal.startsWith("kitchen");
+      rig.current.position.set(kitchenFixture?5.8:0, 0, kitchenFixture?7.2:s.scene === "lobby" ? 0.8 : 3.2);
+      rig.current.rotation.set(0, kitchenFixture?-Math.PI/2:0, 0);
       a.last = key;
       a.recenter = -1;
       a.blocked = true;
@@ -270,7 +272,7 @@ function Rig() {
         ? LOBBY_OBSTACLES
         : [
             ...(r.door === "OPEN" ? ROOM_OBSTACLES : ROOM_CLOSED_OBSTACLES),
-            ...SEATS.map((p) => ({ ...p, hx: 0.42, hz: 0.38 })),
+            ...SEATS.map((p) => ({ ...p, hx: 0.42, hz: 0.38 })), ...KITCHEN_OBSTACLES,
           ];
     const valid = (p: { x: number; z: number }) =>
       validVRFloor(p, s.scene, obstacles);

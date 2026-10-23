@@ -1,3 +1,4 @@
+import { KITCHEN_OBSTACLES, roomFloor } from "./kitchen";
 import { visitorById, type VisitorDefinition } from './visitors';
 import { move, ROOM_OBSTACLES, ROOM_CLOSED_OBSTACLES } from './game';
 export const MIMIC_ATTACK_SECONDS=15;
@@ -41,8 +42,8 @@ export function residentPosition(r:Resident) {
 }
 const furniture=SEATS.map(p=>({...p,hx:.42,hz:.38}));
 export function moveInRooms(p:{x:number;z:number},x:number,z:number,dt:number,open:boolean){
-  const obstacles=[...(open?ROOM_OBSTACLES:ROOM_CLOSED_OBSTACLES),...furniture];
-  const valid=(q:typeof p)=>Math.abs(q.x)<=3.4&&q.z>=-3.5&&q.z<=10.4&&(Math.abs(q.z-3.8)>.4||Math.abs(q.x)<.7);
+  const obstacles=[...(open?ROOM_OBSTACLES:ROOM_CLOSED_OBSTACLES),...furniture,...KITCHEN_OBSTACLES];
+  const valid=roomFloor;
   let next=move(p,x,z,dt,11,obstacles);
   if(valid(next))return next;
   next={x:next.x,z:p.z}; if(valid(next))return next;

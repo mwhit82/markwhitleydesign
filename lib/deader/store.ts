@@ -1,4 +1,5 @@
 "use client";
+import { freshKitchen, tickKitchen, kitchenBeforeDawn, kitchenAction, type KitchenAction } from "./kitchen";
 import { purchaseSpecial } from "./hourly-shop";
 import type { SpecialId } from "./special-ids";
 import { stalkerDebug, tickStalker, dismissStalker, freshStalker, emptyStalkerSight } from "./stalker";
@@ -78,6 +79,7 @@ import { loadLocalSave, writeLocalSave } from "./persistence";
 export { SAVE_KEY } from "./persistence";
 export type Panel = "special" | "shop" | "wardrobe" | "start" | "pause" | "progress" | "tutorial" | null;
 type State = {
+  useKitchen: (action:KitchenAction)=>void;
   specialFixture: SpecialId | null;
   buySpecial: (id:SpecialId, hour:number)=>void;
   buyBundle:(id:BundleId)=>void;
@@ -185,11 +187,18 @@ export const useGame = create<State>((set, get) => ({
     set({room,save,storageFailed:save!==s.save?persist(save):s.storageFailed});
     return true;
   },
+  useKitchen: action => {
+    const s=get();
+    if(s.scene!=="room"||s.panel||s.suspension||!s.focused||s.room.judgement||s.room.survival.phase!=="idle"||s.room.night?.status==="failed"||s.room.night?.status==="completed")return;
+    if(!((s.room.view==="fridge"&&["food","drink"].includes(action))||(s.room.view==="oven"&&["cook","eat","off"].includes(action))))return;
+    set({room:{...s.room,kitchen:kitchenAction(s.room.kitchen,action)}});
+    if(action==="eat"&&s.room.kitchen.oven==="ready")get().tutorialAdvance("kitchen");
+  },
   tutorial: null, tutorialMessage: null, arcade: null,
   beginTutorial: () => { get().lobby(); set({ tutorial: "move" }); },
   tutorialAdvance: (event) => {
     const step=get().tutorial;
-    const next: Partial<Record<TutorialStep,TutorialStep>>={move:"look",look:"tablet",inspect:"questions",questions:"camera",camera:"decide",tv:"finish"};
+    const next: Partial<Record<TutorialStep,TutorialStep>>={move:"look",look:"tablet",inspect:"questions",questions:"camera",camera:"decide",tv:"kitchen",kitchen:"finish"};
     if(step===event&&next[event]) set({tutorial:next[event],tutorialMessage:null});
   },
   interactLobby: () => {
@@ -300,10 +309,15 @@ export const useGame = create<State>((set, get) => ({
       return;
     if (s.tutorial) {
       const report=newsForNight(1);
-      set({room:{...s.room,newsSeconds:loopBroadcast(s.room.newsSeconds,delta,broadcastDuration(report)),residents:tickResidents(s.room.residents,delta,s.room.door==="OPEN")}});
+      const practiceKitchen=tickKitchen(s.room.kitchen,delta,false);
+      set({room:{...s.room,kitchen:{...practiceKitchen,failure:null,seconds:Math.min(44,practiceKitchen.seconds)},newsSeconds:loopBroadcast(s.room.newsSeconds,delta,broadcastDuration(report)),residents:tickResidents(s.room.residents,delta,s.room.door==="OPEN")}});
       return;
     }
     const dt=Math.min(delta,.25);
+    if(s.room.kitchen.failure){
+      const kitchen=tickKitchen(s.room.kitchen,dt);
+      set({room:{...s.room,kitchen,survival:{...s.room.survival,phase:kitchen.failure!=="fire"||kitchen.fireSeconds>=3?"gameover":"idle"}}});return;
+    }
     if(s.room.night?.status==="completed"||s.room.night?.status==="failed")return;
     if(s.room.judgement) {
       const judgement=tickJudgement(s.room.judgement,delta);
@@ -317,7 +331,7 @@ export const useGame = create<State>((set, get) => ({
       } else if(n.mode==="infinite") {
         let save=allowed?recordInfiniteNight(s.save,s.room.encounters.runId,n.number):s.save;
         if(allowed)save=unlockAchievements(recordInfinite(save,{streak:s.room.encounters.bestStreak,night:n.number+1,correct:s.room.encounters.correct,totalNights:n.number}));
-        set({save,storageFailed:save!==s.save?persist(save):s.storageFailed,room:{...s.room,judgement:null,mistakeBaseline:s.room.encounters.mistakes,encounters:{...s.room.encounters,trust:3,ledger:[]},weapon:{...s.room.weapon,ammo:6,cooldown:0},night:{...n,number:n.number+1,arrivalStart:s.room.encounters.sequence,status:"running",nextArrival:n.elapsed+12}}});
+        set({save,storageFailed:save!==s.save?persist(save):s.storageFailed,room:{...s.room,kitchen:freshKitchen(),judgement:null,mistakeBaseline:s.room.encounters.mistakes,encounters:{...s.room.encounters,trust:3,ledger:[]},weapon:{...s.room.weapon,ammo:6,cooldown:0},night:{...n,number:n.number+1,arrivalStart:s.room.encounters.sequence,status:"running",nextArrival:n.elapsed+12}}});
       } else {
         const night={...n,status:"completed" as const,endingSeconds:14};
         let save=allowed?completeNightReward(s.save,night,s.room.encounters.runId):s.save;
@@ -328,13 +342,23 @@ export const useGame = create<State>((set, get) => ({
     }
     set({room:{...s.room,weapon:{...s.room.weapon,cooldown:Math.max(0,s.room.weapon.cooldown-dt)},rewardToast:s.room.rewardToast&&s.room.rewardToast.seconds>dt?{...s.room.rewardToast,seconds:s.room.rewardToast.seconds-dt}:null}});
     s=get();
+    if(s.room.night?.status==="running") {
+      const kitchen=kitchenBeforeDawn(s.room.kitchen,dt,((s.room.night.mode==="infinite"?s.room.night.number*600:600)-s.room.night.elapsed)/nightRate(s.room.night));
+      if(kitchen.failure){
+        gameInput.reset();
+        set({arcade:null,prompt:null,room:{...s.room,kitchen,view:"explore",night:{...s.room.night,status:"failed"},residents:cancelMimics(s.room.residents),encounters:{...s.room.encounters,active:null,queued:null,pair:undefined},survival:{...s.room.survival,phase:kitchen.failure==="fire"?"idle":"gameover"}}});
+        if(typeof document!=="undefined"&&document.pointerLockElement)document.exitPointerLock();
+        return;
+      }
+      set({room:{...s.room,kitchen}});s=get();
+    }
     if(s.room.night) {
       const night=advanceNight(s.room.night,delta,false,s.room.encounters.trust);
       if(night.status==="judging") {
         gameInput.reset();
         let settled=s.save;
         if(rewardsAllowed(s.tutorial,night.duration)) for(const entry of s.room.encounters.ledger) if(entry.coins) settled=reward(settled,`visitor:${entry.id}`,entry.coins);
-        set({save:settled,storageFailed:settled!==s.save?persist(settled):s.storageFailed,arcade:null,prompt:null,room:{...s.room,night:{...night,cancelledVisitor:!!s.room.encounters.active},judgement:{...beginJudgement(judgementMistakes(s.room.encounters.mistakes,s.room.mistakeBaseline)),entries:processionEntries(s.room.encounters.ledger)},stalker:freshStalker(night.number),stalkerSight:emptyStalkerSight(),view:"explore",visitorId:null,door:"CLOSED",encounters:{...s.room.encounters,active:null,queued:null,pair:undefined},residents:cancelMimics(s.room.residents),survival:{...s.room.survival,phase:"idle"}}});
+        set({save:settled,storageFailed:settled!==s.save?persist(settled):s.storageFailed,arcade:null,prompt:null,room:{...s.room,night:{...night,cancelledVisitor:!!s.room.encounters.active},kitchen:{...s.room.kitchen,oven:"off",seconds:0},judgement:{...beginJudgement(judgementMistakes(s.room.encounters.mistakes,s.room.mistakeBaseline)),entries:processionEntries(s.room.encounters.ledger)},stalker:freshStalker(night.number),stalkerSight:emptyStalkerSight(),view:"explore",visitorId:null,door:"CLOSED",encounters:{...s.room.encounters,active:null,queued:null,pair:undefined},residents:cancelMimics(s.room.residents),survival:{...s.room.survival,phase:"idle"}}});
         if(typeof document!=="undefined"&&document.pointerLockElement)document.exitPointerLock();
         return;
       }

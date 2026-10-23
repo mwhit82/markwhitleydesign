@@ -269,7 +269,7 @@ export const VRPanel = memo(function VRPanel() {
       });
       display.texture.needsUpdate = true;
     }
-    const wristText = `${s.save.coins} COINS · RESULTS AT DAWN | ${nightClockLabel(r.night)} · ${r.weapon.ammo}/6${alert ? " · LOUNGE ALERT" : ""}`;
+    const wristText = `HUNGER ${Math.ceil(r.kitchen.hunger)}% · THIRST ${Math.ceil(r.kitchen.thirst)}% | ${nightClockLabel(r.night)} · ${r.kitchen.oven!=="off"?`${r.kitchen.seconds>=45?"SMOKE":r.kitchen.oven==="ready"?"EAT":"OVEN"} ${Math.ceil((r.kitchen.oven==="cooking"?20:60)-r.kitchen.seconds)}s`: `${r.weapon.ammo}/6`}${alert ? " · LOUNGE ALERT" : ""}`;
     if (wristText !== v.watch) {
       v.watch = wristText;
       const c = watch.ctx;

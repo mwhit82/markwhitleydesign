@@ -1,3 +1,4 @@
+import { kitchenMessage, failureMessage } from "./kitchen";
 /** Explicit headset screens. No DOM scraping or synthetic clicks. */
 import type { useGame } from "./store";
 import { cosmetics } from "./game";
@@ -435,8 +436,9 @@ export function vrScreen(s: State, m: VRMenuState, a: VRMenuActions): VRScreen {
     const advance=(all=false)=>()=>s.advanceDawn(all);
     return screen(e?e.profile.name:"Shift results",e?revealCaption(e):`${j.mistakes} mistakes · ${j.failed?"Shift failed":"Night survived"}. Decision earnings: ${r.encounters.ledger.reduce((n,e)=>n+e.coins,0)} coins.`,e?[button("Next",advance()),button("Skip to results",advance(true))]:[]);
   }
+  if(r.kitchen.failure === "fire" && r.kitchen.fireSeconds<3)return screen("FIRE", "The unattended oven has set the house on fire.", []);
   if (r.survival.phase === "gameover")
-    return screen("Game Over", "Three or more mistakes ended your shift.", [
+    return screen("Game Over", r.kitchen.failure ? failureMessage(r.kitchen) : "Three or more mistakes ended your shift.", [
       button("Retry shift", s.start),
       button("Return to lobby", s.lobby),
     ]);
@@ -450,6 +452,13 @@ export function vrScreen(s: State, m: VRMenuState, a: VRMenuActions): VRScreen {
       button("Replay night", s.start),
       button("Return to lobby", s.lobby),
     ]);
+  if(r.view === "fridge" || r.view === "oven") {
+    const k=r.kitchen;
+    return screen(r.view === "fridge" ? "Fridge" : "Oven", `${kitchenMessage(k)}. Hunger ${Math.ceil(k.hunger)}% · Thirst ${Math.ceil(k.thirst)}%`,[
+      ...(r.view === "fridge" ? [button(k.food?"Carrying food":"Take food",()=>s.useKitchen("food"),k.food),button("Drink",()=>s.useKitchen("drink"),k.thirst>=100)] : k.oven === "off" ? [button(k.food?"Start cooking · 20s":"Get food from fridge",()=>s.useKitchen("cook"),!k.food)] : [...(k.oven === "ready"?[button("Collect and eat",()=>s.useKitchen("eat"))]:[]),button("Switch off / discard",()=>s.useKitchen("off"))]),
+      button("Back to room",()=>s.roomView("explore"))
+    ]);
+  }
   if (["inspect", "door", "cctv"].includes(r.view)) {
     const waiting = e?.phase === "waiting",
       v = e ? encounterVisitor(e, s.session?.difficulty) : null;

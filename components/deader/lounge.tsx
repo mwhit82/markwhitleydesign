@@ -18,7 +18,10 @@ export function Lounge({materials:m}:{materials:RoomMaterials}) {
     <UncPortrait/>
     <Box position={[0,-.11,7.3]} size={[7.6,.2,7]} material={m.floor}/>
     <Box position={[0,3.33,7.3]} size={[7.6,.12,7]} material={m.wood}/>
-    {[-3.8,3.8].map(x=><Box key={x} position={[x,1.65,7.3]} size={[.2,3.3,7]} material={m.plaster}/>)}
+    <Box position={[-3.8,1.65,7.3]} size={[.2,3.3,7]} material={m.plaster}/>
+    <Box position={[3.8,1.65,5.05]} size={[.2,3.3,2.5]} material={m.plaster}/>
+    <Box position={[3.8,1.65,9.5]} size={[.2,3.3,2.6]} material={m.plaster}/>
+    <Box position={[3.8,2.95,7.25]} size={[.2,.7,1.9]} material={m.wood}/>
     <Box position={[0,1.65,10.8]} size={[7.6,3.3,.2]} material={m.plaster}/>
     <Sign text="HOLDING LOUNGE" rotation={[0,Math.PI,0]} position={[0,2.65,3.65]} width={1.8} height={.3}/>
     <Box position={[3.3,1.1,10.65]} size={[.8,2.2,.08]} material={m.wood}/>

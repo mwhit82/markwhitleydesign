@@ -1,3 +1,4 @@
+import { roomFloor } from "./kitchen";
 /** Meta Quest Browser keeps the OculusBrowser token, including desktop mode.
  * https://developers.meta.com/vr/documentation/web/browser-specs/
  * This is a UI gate; immersive-vr support is checked separately before enabling XR.
@@ -76,10 +77,7 @@ export function validVRFloor(
   if (
     scene === "lobby"
       ? Math.abs(p.x) > 4.7 || Math.abs(p.z) > 4.7
-      : Math.abs(p.x) > 3.4 ||
-        p.z < -3.5 ||
-        p.z > 10.4 ||
-        (Math.abs(p.z - 3.8) < 0.4 && Math.abs(p.x) > 0.7)
+      : !roomFloor(p)
   )
     return false;
   return !obstacles.some(

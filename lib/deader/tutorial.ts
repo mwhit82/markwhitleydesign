@@ -1,5 +1,5 @@
 import type { RoomState } from './room';
-export type TutorialStep = 'move' | 'look' | 'tablet' | 'inspect' | 'questions' | 'camera' | 'decide' | 'tv' | 'finish';
+export type TutorialStep = 'move' | 'look' | 'tablet' | 'inspect' | 'questions' | 'camera' | 'decide' | 'tv' | 'kitchen' | 'finish';
 export const tutorialCopy: Record<TutorialStep, {
     title: string;
     body: string;
@@ -12,6 +12,7 @@ export const tutorialCopy: Record<TutorialStep, {
     camera: { title: 'Check the cameras', body: 'Step back into the room. Find CCTV, choose View cameras, then select Door rear.' },
     decide: { title: 'Answer the door', body: 'Return to the door. Bea has two eyes and a consistent story. Choose Answer the door, then Let in.' },
     tv: { title: 'Watch the news', body: 'Find the TV above Donut’s bowl and choose Watch TV. Subtitles appear only while watching.' },
+    kitchen: { title: 'Try the kitchen', body: 'Go through the lounge to KITCHEN. Take food from the fridge, start the oven, then collect and eat after 20 seconds. Drink from the fridge when thirsty. Switch off an unattended oven before it starts a fire. Needs stay full during practice.' },
     finish: { title: 'Ready for your shift', body: 'CCTV also has Impossible Shift between knocks. It saves your place when a visitor arrives. Shop sidekicks bark at arrivals and point out clues you have seen. A quiet pet does not mean someone is safe. Correct choices earn five coins. At dawn the Auditor counts mistakes: three or more fails the shift. The shelf gun has six shots; shooting humans adds mistakes.' },
 };
 export function tutorialRoom(room: RoomState): RoomState {

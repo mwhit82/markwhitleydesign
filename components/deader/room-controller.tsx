@@ -13,6 +13,7 @@ import { roomAudio } from "@/lib/deader/audio/room-audio";
 import { roomPlayerPose } from "./player-reflection";
 
 const targets: Record<string, RoomView> = {
+  Fridge: "fridge", Oven: "oven",
   "Watch TV": "tv",
   "Watch lounge TV": "lounge-tv",
   Door: "door",
@@ -25,7 +26,7 @@ export function interactRoom() {
   if (
     s.panel ||
     (!s.focused || !!s.suspension) ||
-    s.room.survival.phase !== "idle" ||
+    s.room.survival.phase !== "idle" || !!s.room.kitchen.failure ||
     s.room.night?.status === "completed" || !!s.room.judgement ||
     s.room.view !== "explore" ||
     !s.prompt
@@ -48,8 +49,9 @@ export function RoomController() {
   const resolution = useGame((s) => s.save.settings.resolution);
   const quality = useGame((s) => s.save.settings.quality);
   const mirrorCheck=process.env.NODE_ENV==='development'&&useGame.getState().room.night?.duration===60&&useGame.getState().rehearsal==='armed-mirror';
-  const pos = useRef(mirrorCheck?{x:-2,z:-.75}:{ x: 0, z: 3.2 });
-  const angles = useRef({ yaw: mirrorCheck?Math.PI/2:0, pitch: mirrorCheck?-.12:0 });
+  const kitchenCheck=process.env.NODE_ENV==='development'&&useGame.getState().rehearsal.startsWith("kitchen");
+  const pos = useRef(kitchenCheck?{x:5.8,z:7.2}:mirrorCheck?{x:-2,z:-.75}:{ x: 0, z: 3.2 });
+  const angles = useRef({ yaw: kitchenCheck?-Math.PI/2:mirrorCheck?Math.PI/2:0, pitch: mirrorCheck?-.12:0 });
   const dragging = useRef(false);
   const clickStart = useRef<{x:number;y:number}|null>(null);
   const reduced = useRef(false);
@@ -222,7 +224,7 @@ export function RoomController() {
       s.focused && !s.suspension &&
       !r.judgement &&
       r.survival.phase === "idle" &&
-      r.night?.status !== "completed";
+      r.night?.status !== "completed" && !r.kitchen.failure;
     if (!enabled) gameInput.reset();
     const { x, z } = enabled ? gameInput.movement() : { x: 0, z: 0 };
     const a = angles.current;

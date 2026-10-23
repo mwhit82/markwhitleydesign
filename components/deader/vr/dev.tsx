@@ -152,6 +152,8 @@ export default function VRDev() {
           "stalker-cam-5",
           "standard",
           "scare",
+          "kitchen",
+          "kitchen-fire",
           "armed",
           "armed-mirror",
           "mimic",

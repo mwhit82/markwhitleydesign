@@ -3,6 +3,15 @@ import assert from "node:assert/strict";
 import { moduleUrl } from "./rally-test-loader.mjs";
 import { resolve } from "node:path";
 const g = await import(await moduleUrl(resolve("lib/deader/game.ts")));
+// Keep visitor regression bots alive through the real appliance actions.
+function feedTestPlayer(useGame) {
+ const s=useGame.getState(),k=s.room.kitchen,view=s.room.view;
+ if(s.room.night?.status!=="running")return;
+ if(k.thirst<30){s.roomView('fridge');useGame.getState().useKitchen('drink');}
+ if(k.hunger<50&&k.oven==='off'){s.roomView('fridge');useGame.getState().useKitchen('food');s.roomView('oven');useGame.getState().useKitchen('cook');}
+ if(k.oven==='ready'){s.roomView('oven');useGame.getState().useKitchen('eat');}
+ useGame.getState().roomView(view);
+}
 test("starter balance persists and purchases are atomic", () => {
   const s = g.newSave();
   assert.equal(s.coins, 150);
@@ -618,6 +627,7 @@ test("full five-minute run resolves ten visitors and rewards only after judgemen
   });
   useGame.getState().start();
   for (let i = 0; i < 1360; i++) {
+    feedTestPlayer(useGame);
     let s = useGame.getState();
     if (s.room.door === "OPENING") s.doorEvent({ type: "opened" });
     if (s.room.door === "CLOSING") s.doorEvent({ type: "closed" });
@@ -957,6 +967,7 @@ test("all nine story/difficulty combinations finish full runs with their schedul
         useGame.getState().room.night,
       ).length;
       for (let i = 0; i < 2400; i++) {
+        feedTestPlayer(useGame);
         const s = useGame.getState();
         if (s.room.door === "OPENING") s.doorEvent({ type: "opened" });
         if (s.room.door === "CLOSING") s.doorEvent({ type: "closed" });
@@ -1498,6 +1509,7 @@ test("ignoring visitors reaches Game Over without completion rewards", async () 
     useGame.setState({save:g.newSave(),selectedNight:1,mode:"normal",difficulty,panel:null,focused:true,runSeconds:300});
     useGame.getState().start();
     for(let i=0;i<2600;i++){
+      feedTestPlayer(useGame);
       const s=useGame.getState();
       if(s.room.door==="CLOSING") s.doorEvent({type:"closed"});
       s.tickVisitors(.25);
@@ -1824,7 +1836,11 @@ test('guided practice freezes deadlines, protects rewards and permits forgiving 
   assert.match(useGame.getState().tutorialMessage,/Try again/);
   useGame.getState().decideVisitor(id,'admit');assert.equal(useGame.getState().tutorial,'tv');
   assert.deepEqual(useGame.getState().save,save);assert.equal(useGame.getState().room.residents.length,1);
-  useGame.getState().roomView('tv');assert.equal(useGame.getState().tutorial,'finish');
+  useGame.getState().roomView('tv');assert.equal(useGame.getState().tutorial,'kitchen');
+  useGame.getState().roomView('fridge');useGame.getState().useKitchen('food');
+  useGame.getState().roomView('oven');useGame.getState().useKitchen('cook');
+  for(let i=0;i<81;i++)useGame.getState().tickVisitors(.25);
+  useGame.getState().useKitchen('eat');assert.equal(useGame.getState().tutorial,'finish');
   useGame.getState().lobby();assert.equal(useGame.getState().tutorial,null);
   assert.equal(tutorialModule.rewardsAllowed('finish',300),false);
   assert.equal(tutorialModule.rewardsAllowed(null,60),false);
@@ -2502,4 +2518,111 @@ test('resident shooting preserves prior decision and handles previous Infinite r
  const shot=visitors.recordResidentShot(entry,'test-run:1',entry[0].profile);assert.equal(shot.length,1);assert.equal(shot[0].coins,5);assert.equal(shot[0].decision,'admit');assert.equal(shot[0].mistakes,1);
  assert.equal(visitors.recordResidentShot(shot,'test-run:1',entry[0].profile),shot);
  const old=visitors.recordResidentShot([],'prior-shift',entry[0].profile);assert.equal(old[0].coins,0);assert.equal(old[0].shot,true);
+});
+
+test('arcade spikes leave their empty upper corners safe but retain real contacts',()=>{
+ const spike={x:0,y:0,w:.8,h:.9};
+ assert.equal(arcadeModule.arcadeHitsSpike({x:-.6,y:.6,grounded:true},spike),false);
+ assert.equal(arcadeModule.arcadeHitsSpike({x:.75,y:.6,grounded:true},spike),false);
+ assert.equal(arcadeModule.arcadeHitsSpike({x:.1,y:.95,grounded:true},spike),false);
+ assert.equal(arcadeModule.arcadeHitsSpike({x:.1,y:.8,grounded:true},spike),true);
+ assert.equal(arcadeModule.arcadeHitsSpike({x:-.3,y:.1,grounded:true},spike),true);
+ assert.equal(arcadeModule.arcadeHitsSpike({x:.5,y:.1,grounded:true},spike),true);
+ // A slight visual graze is deliberately safe; deeper contact still kills.
+ assert.equal(arcadeModule.arcadeHitsSpike({x:.1,y:.88,grounded:true},spike),false);
+ assert.equal(arcadeModule.arcadeHitsSpike({x:.1,y:.84,grounded:true},spike),true);
+});
+test('arcade spike collision follows the rotating cube rather than its bounding square',()=>{
+ const rotated={x:Math.PI/8,y:1,grounded:false};
+ const upperCorner={x:.98,y:1.58,w:.1,h:.1};
+ assert.equal(arcadeModule.arcadeHitsSpike(rotated,upperCorner),false);
+ assert.equal(arcadeModule.arcadeHitsSpike({...rotated,grounded:true},upperCorner),true);
+ const side={x:rotated.x+.325+.38,y:1.30,w:.2,h:.2};
+ assert.equal(arcadeModule.arcadeHitsSpike(rotated,side),true);
+ assert.equal(arcadeModule.arcadeHitsSpike({...rotated,grounded:true},side),false);
+});
+test('arcade draw and collision geometry share size, rotation and translated spike vertices',()=>{
+ const s={x:Math.PI/8,y:2,grounded:false};
+ assert.equal(arcadeModule.arcadePlayerAngle(s),-Math.PI/4);
+ const points=arcadeModule.arcadePlayerVertices(s),half=arcadeModule.ARCADE_PLAYER_SIZE/2;
+ const radius=(half-arcadeModule.ARCADE_HIT_INSET)*Math.SQRT2;
+ for(const p of points)assert.ok(Math.abs(Math.hypot(p.x-s.x-half,p.y-s.y-half)-radius)<1e-10);
+ assert.deepEqual(arcadeModule.arcadeSpikeVertices({x:4,y:2,w:.8,h:.9}),[{x:4,y:2},{x:4.4,y:2.9},{x:4.8,y:2}]);
+});
+test('arcade simulation survives the former invisible spike corner and still crashes on impact',()=>{
+ const run={...arcadeModule.freshArcade(),status:'running',grounded:false,vy:0};
+ assert.equal(arcadeModule.stepArcade({...run,x:11.4,y:.7},1/120,false).status,'running');
+ assert.equal(arcadeModule.stepArcade({...run,x:12.1,y:.5},1/120,false).status,'crashed');
+});
+
+const kitchenLogic=await import(await moduleUrl(resolve('lib/deader/kitchen.ts')));
+test('kitchen food ownership, cooking, recovery and duplicate actions',()=>{
+ const {freshKitchen,kitchenAction:a,tickKitchen:t}=kitchenLogic;
+ let k=freshKitchen();assert.equal(a(k,'cook'),k);
+ k=a(k,'food');assert.equal(a(k,'food'),k);k=a(k,'cook');assert.equal(k.food,false);assert.equal(a(k,'cook'),k);
+ for(let i=0;i<80;i++)k=t(k,.25);
+ assert.equal(k.oven,'ready');k=a(k,'eat');assert.equal(k.hunger,100);assert.equal(k.oven,'off');assert.equal(a(k,'eat'),k);
+ k=a(a(k,'food'),'cook');k=a(k,'off');assert.equal(k.food,false);assert.equal(k.oven,'off');
+ assert.equal(t(k,NaN),k);assert.equal(t(k,-1),k);assert.ok(k.thirst-t(k,100).thirst<.3);
+});
+test('needs expire at real deadlines and oven burns only after warning window',()=>{
+ const {freshKitchen:f,tickKitchen:t,kitchenAction:a,kitchenMessage}=kitchenLogic;
+ let k=f();for(let i=0;i<480;i++)k=t(k,.25);assert.equal(k.failure,'thirst');assert.equal(a(k,'drink'),k);
+ k=f();for(let i=0;i<840;i++){k=t(k,.25);if(i===400)k=a(k,'drink');}assert.equal(k.failure,'hunger');
+ k=a(a(f(),'food'),'cook');for(let i=0;i<180;i++)k=t(k,.25);
+ assert.match(kitchenMessage(k),/SMOKE/);assert.equal(k.failure,null);
+ const rescued=a(k,'off');assert.equal(t(rescued,.25).failure,null);
+ for(let i=0;i<60;i++)k=t(k,.25);assert.equal(k.failure,'fire');
+ for(let i=0;i<12;i++)k=t(k,.25);assert.equal(k.fireSeconds,3);
+});
+test('dawn wins exact ties, but not failures earlier within the same frame',()=>{
+ const {freshKitchen:f,kitchenBeforeDawn:t}=kitchenLogic;
+ let k={...f(),thirst:.1/1.2};assert.equal(t(k,.25,.1),k);
+ assert.equal(t(k,.25,.2).failure,'thirst');
+ k={...f(),oven:'ready',seconds:59.9};assert.equal(t(k,.25,.1),k);assert.equal(t(k,.25,.2).failure,'fire');
+});
+test('kitchen space supports movement and VR floor while rejecting walls and appliances',()=>{
+ const {roomFloor,KITCHEN_OBSTACLES}=kitchenLogic;
+ assert.ok(roomFloor({x:3.8,z:7.2}));assert.ok(roomFloor({x:6,z:7}));assert.equal(roomFloor({x:3.8,z:5}),false);assert.equal(roomFloor({x:9,z:7}),false);
+ assert.ok(vr.validVRFloor({x:6,z:7},'room',KITCHEN_OBSTACLES));assert.equal(vr.validVRFloor({x:7.65,z:6},'room',KITCHEN_OBSTACLES),false);
+});
+test('survival pauses, fails once without revealing identities or banking rewards, and resets on retry',async()=>{
+ const {useGame}=await combatStore();let s=useGame.getState();
+ useGame.setState({room:{...s.room,kitchen:{...kitchenLogic.freshKitchen(),thirst:.01}}});
+ for(const patch of [{panel:'pause'},{focused:false},{suspension:'visibility'}]){
+  useGame.setState(patch);useGame.getState().tickVisitors(.25);assert.equal(useGame.getState().room.kitchen.thirst,.01);
+  useGame.setState({panel:null,focused:true,suspension:null});
+ }
+ const save=useGame.getState().save;
+ useGame.getState().tickVisitors(.25);s=useGame.getState();assert.equal(s.room.night.status,'failed');assert.equal(s.room.survival.phase,'gameover');assert.equal(s.room.judgement,null);assert.equal(s.save,save);
+ s.tickVisitors(.25);assert.equal(useGame.getState().save,save);
+ s.start();assert.deepEqual(useGame.getState().room.kitchen,kitchenLogic.freshKitchen());
+});
+test('appliance actions require correct open view and VR exposes compact explicit controls',async()=>{
+ const {useGame}=await combatStore();const {vrScreen,newVRMenu}=await import(await moduleUrl(resolve('lib/deader/vr-menu.ts')));
+ useGame.getState().useKitchen('food');assert.equal(useGame.getState().room.kitchen.food,false);
+ useGame.getState().roomView('fridge');const s=useGame.getState();const screen=vrScreen(s,newVRMenu(),{patch(){},resume(){},recenter(){},exit(){},decide(){}});
+ assert.equal(screen.title,'Fridge');assert.equal(screen.buttons.length,3);screen.buttons[0].run();assert.equal(useGame.getState().room.kitchen.food,true);
+});
+test('fire failure waits three active seconds, clears encounters and preserves saved rewards',async()=>{
+ const {useGame}=await combatStore();const s=useGame.getState(),save=s.save;
+ useGame.setState({room:{...s.room,kitchen:{...kitchenLogic.freshKitchen(),oven:'ready',seconds:59.9}}});
+ s.tickVisitors(.25);assert.equal(useGame.getState().room.kitchen.failure,'fire');assert.equal(useGame.getState().room.survival.phase,'idle');assert.equal(useGame.getState().room.encounters.active,null);
+ useGame.setState({panel:'pause'});s.tickVisitors(.25);assert.equal(useGame.getState().room.kitchen.fireSeconds,0);useGame.setState({panel:null});
+ for(let i=0;i<12;i++)s.tickVisitors(.25);
+ assert.equal(useGame.getState().room.survival.phase,'gameover');assert.equal(useGame.getState().save,save);
+});
+test('dawn cancels oven and Infinite rollover replenishes needs',async()=>{
+ const {useGame}=await combatStore();let s=useGame.getState();
+ useGame.setState({room:{...s.room,kitchen:{...kitchenLogic.freshKitchen(),hunger:30,thirst:20,oven:'cooking',seconds:10},night:{...s.room.night,mode:'infinite',elapsed:599.9}}});
+ s.tickVisitors(.1);assert.equal(useGame.getState().room.kitchen.oven,'off');
+ for(let i=0;i<50;i++)useGame.getState().tickVisitors(.1);
+ s=useGame.getState();assert.equal(s.room.night.number,2);assert.ok(s.room.kitchen.hunger>99);assert.ok(s.room.kitchen.thirst>99);
+});
+test('kitchen continues across object views but actions do not bypass pause',async()=>{
+ for(const view of ['cctv','inspect','arcade','fridge','oven']){
+  const {useGame}=await combatStore();const s=useGame.getState();useGame.setState({room:{...s.room,view}});
+  s.tickVisitors(.25);assert.ok(useGame.getState().room.kitchen.hunger<100,view);
+ }
+ const {useGame}=await combatStore();useGame.getState().roomView('fridge');useGame.setState({panel:'pause'});useGame.getState().useKitchen('food');assert.equal(useGame.getState().room.kitchen.food,false);
 });

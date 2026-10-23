@@ -2,10 +2,11 @@ import { freshStalker } from "./stalker";
 import type { RoomState } from './room';
 import { VISITORS, generatedVisitor, type DawnEntry } from './visitors';
 import { SEATS } from './lounge';
-export type Rehearsal = 'stalker-room'|'stalker-follow'|'stalker-cam-0'|'stalker-cam-1'|'stalker-cam-2'|'stalker-cam-3'|'stalker-cam-4'|'stalker-cam-5'|'armed-mirror'|'standard'|'lounge'|'scare'|'armed'|'judgement-pass'|'judgement-fail'|'mimic'|'splitter'|'glitched'|'kids'|'pair'|'push'|'rainbow'|'injured';
+export type Rehearsal = 'kitchen'|'kitchen-fire'|'stalker-room'|'stalker-follow'|'stalker-cam-0'|'stalker-cam-1'|'stalker-cam-2'|'stalker-cam-3'|'stalker-cam-4'|'stalker-cam-5'|'armed-mirror'|'standard'|'lounge'|'scare'|'armed'|'judgement-pass'|'judgement-fail'|'mimic'|'splitter'|'glitched'|'kids'|'pair'|'push'|'rainbow'|'injured';
 /** Development-only caller; sessions retain the no-reward 60-second duration. */
 export function rehearse(room:RoomState,scenario:Rehearsal):RoomState {
   if(room.night?.duration!==60||scenario==='standard')return room;
+  if(scenario==='kitchen'||scenario==='kitchen-fire')return {...room,kitchen:{...room.kitchen,hunger:40,thirst:40,...(scenario==='kitchen-fire'?{oven:'ready' as const,seconds:44}:{})}};
   const id=`${room.encounters.runId}:fixture`;
   if(scenario.startsWith('stalker-')) {
     const feed=scenario.startsWith('stalker-cam-')?Number(scenario.slice(-1)):0;

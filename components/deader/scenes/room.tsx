@@ -11,6 +11,7 @@ import * as THREE from "three";
 import { Box, Sign } from "../environment";
 import { Visitors } from "../visitors";
 import { LoungeInsetRenderer } from "../lounge-alert";
+import { KitchenRoom } from "../kitchen";
 import { Lounge } from "../lounge";
 import { ScareFace } from "../scare-face";
 import { RoomTV } from "../room-tv";
@@ -261,7 +262,7 @@ export default function Room() {
       />
       <Donut materials={m} />
       <RoomTV />
-      <Lounge materials={m}/><LoungeInsetRenderer/>
+      <Lounge materials={m}/><KitchenRoom materials={m}/><LoungeInsetRenderer/>
       <ScareFace/>
       <Box
         position={[-2.1, 0.38, 1.25]}

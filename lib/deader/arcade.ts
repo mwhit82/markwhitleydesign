@@ -7,6 +7,38 @@ export type ArcadeState = {
     status: 'ready' | 'running' | 'crashed' | 'won';
     grounded: boolean;
 };
+export const ARCADE_PLAYER_SIZE = .65;
+// Slightly inside the visible cube: outlines and grazing edges are forgiving.
+export const ARCADE_HIT_INSET = .025;
+type Point = { x: number; y: number };
+type Obstacle = { x: number; y: number; w: number; h: number };
+export const arcadePlayerAngle = (s: Pick<ArcadeState, 'x' | 'grounded'>) => s.grounded ? 0 : -s.x * 2;
+export const arcadeSpikeVertices = (o: Obstacle): Point[] => [
+    { x: o.x, y: o.y }, { x: o.x + o.w / 2, y: o.y + o.h }, { x: o.x + o.w, y: o.y },
+];
+export function arcadePlayerVertices(s: Pick<ArcadeState, 'x' | 'y' | 'grounded'>): Point[] {
+    const half = ARCADE_PLAYER_SIZE / 2, radius = half - ARCADE_HIT_INSET;
+    const angle = arcadePlayerAngle(s), c = Math.cos(angle), sin = Math.sin(angle);
+    return [[-radius, -radius], [radius, -radius], [radius, radius], [-radius, radius]].map(([x,y]) => ({
+        x: s.x + half + x * c - y * sin, y: s.y + half + x * sin + y * c,
+    }));
+}
+/** Convex polygon SAT: both sloping spike edges and rotated cube edges separate empty space. */
+export function arcadeHitsSpike(s: Pick<ArcadeState, 'x' | 'y' | 'grounded'>, o: Obstacle): boolean {
+    const half = ARCADE_PLAYER_SIZE / 2, reach = Math.SQRT2 * half;
+    if(s.x + half + reach <= o.x || s.x + half - reach >= o.x + o.w ||
+       s.y + half + reach <= o.y || s.y + half - reach >= o.y + o.h) return false;
+    const cube = arcadePlayerVertices(s), spike = arcadeSpikeVertices(o);
+    for(const polygon of [cube, spike]) for(let i=0; i<polygon.length; i++) {
+        const a = polygon[i], b = polygon[(i+1)%polygon.length];
+        const nx = -(b.y-a.y), ny = b.x-a.x;
+        let minA=Infinity,maxA=-Infinity,minB=Infinity,maxB=-Infinity;
+        for(const p of cube){const v=p.x*nx+p.y*ny;minA=Math.min(minA,v);maxA=Math.max(maxA,v);}
+        for(const p of spike){const v=p.x*nx+p.y*ny;minB=Math.min(minB,v);maxB=Math.max(maxB,v);}
+        if(maxA <= minB + 1e-9 || maxB <= minA + 1e-9)return false;
+    }
+    return true;
+}
 export const ARCADE_SPEED = 5;
 export const ARCADE_END = 225;
 export const arcadeLevel = [
@@ -38,14 +70,18 @@ export function stepArcade(s: ArcadeState, delta: number, jump: boolean): Arcade
             r.grounded = true;
         }
         for (const o of arcadeLevel) {
-            if (r.x + .65 <= o.x || r.x >= o.x + o.w)
+            if(o.kind === 'spike') {
+                if(arcadeHitsSpike(r,o)){r.status='crashed';return r;}
                 continue;
-            if (o.kind === 'block' && oldY >= o.h - .025 && r.y <= o.h && r.vy <= 0) {
+            }
+            if (r.x + ARCADE_PLAYER_SIZE <= o.x || r.x >= o.x + o.w)
+                continue;
+            if (oldY >= o.h - .025 && r.y <= o.h && r.vy <= 0) {
                 r.y = o.h;
                 r.vy = 0;
                 r.grounded = true;
             }
-            else if (r.y < o.h - .08 && r.y + .65 > o.y + .08) {
+            else if (r.y < o.h - .08 && r.y + ARCADE_PLAYER_SIZE > o.y + .08) {
                 r.status = 'crashed';
                 return r;
             }

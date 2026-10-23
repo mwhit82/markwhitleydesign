@@ -1420,3 +1420,11 @@
 .dawnCaptions h2{font-size:20px;margin:6px 0}.dawnCaptions p{margin:6px 0;font-size:14px}.dawnCaptions button{min-height:44px;padding:8px 16px;margin:4px;color:white;background:#252a2e;border:1px solid #ffffff66;border-radius:6px}
 @media(max-height:480px){.dawnCaptions{bottom:8px;padding:6px 12px}.dawnCaptions h2{font-size:16px}.dawnCaptions p{font-size:12px}}
 @media(max-height:480px) and (min-width:600px){.dawnCaptions{left:auto;right:12px;transform:none;width:min(38vw,320px);bottom:10px}.dawnCaptions button{padding:6px 10px}}
+
+.kitchenStatus { position:absolute; bottom: max(78px, calc(env(safe-area-inset-bottom) + 66px)); left:50%; transform:translateX(-50%); z-index:15; display:flex; flex-wrap:wrap; justify-content:center; gap:4px 14px; width:max-content; max-width:52%; padding:8px 12px; background:#090d11df; border:1px solid #ffffff40; border-radius:8px; color:#fff; font-size:12px; pointer-events:none; }
+.kitchenStatus span[data-low="true"] { color:#ffb58a; font-weight:700; }
+.kitchenStatus strong { flex-basis:100%; text-align:center; }
+@media(max-width:600px) { .kitchenStatus { bottom: max(152px, calc(env(safe-area-inset-bottom) + 138px)); max-width:90%; font-size:11px; } }
+.kitchenFire { position:absolute; inset:0; z-index:50; background:#311909bb; color:white; display:flex; flex-direction:column; justify-content:center; align-items:center; pointer-events:none; }
+
+.kitchenStatus meter { width:46px; height:8px; margin-left:5px; accent-color:#e3d5b6; }

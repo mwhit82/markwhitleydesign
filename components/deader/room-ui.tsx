@@ -9,6 +9,7 @@ import {
 } from "@/lib/deader/room";
 import { roomAudio } from "@/lib/deader/audio/room-audio";
 import { LoungeAlertUI } from "./lounge-alert";
+import { KitchenUI } from "./kitchen-ui";
 import { ConsoleUI } from "./console-ui";
 import { EncounterUI } from "./encounter-ui";
 import { DoorMenu } from "./door-menu";
@@ -28,8 +29,10 @@ export function RoomUI() {
   const exit = () => s.roomView("explore");
   if (s.panel || r.survival.phase !== "idle" || (r.night?.status === "completed" || !!r.judgement))
     return null;
+  if(r.kitchen.failure)return <KitchenUI />;
   return (
     <>
+      <KitchenUI />
       {r.view !== "arcade" && r.view !== "console" && <EncounterUI />}
       {r.view === "console" && <ConsoleUI />}
       {r.view === "arcade" && <Suspense fallback={<p>Loading arcade…</p>}><ArcadeUI /></Suspense>}

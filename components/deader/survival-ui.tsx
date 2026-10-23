@@ -1,4 +1,5 @@
 "use client";
+import { failureMessage } from "@/lib/deader/kitchen";
 import { useEffect, useRef } from "react";
 import { achievements } from "@/lib/deader/achievements";
 import { useGame } from "@/lib/deader/store";
@@ -243,11 +244,11 @@ export function SurvivalUI() {
     return (
       <Modal label="Game Over" onClose={s.lobby}>
         <p className={styles.eyebrow}>
-          NIGHT {r.night?.number ?? s.session?.night ?? 1} / JUDGEMENT FAILED
+          NIGHT {r.night?.number ?? s.session?.night ?? 1} / {r.kitchen.failure ? "SURVIVAL FAILED" : "JUDGEMENT FAILED"}
         </p>
         <h2>THE ANOMALOUS</h2>
-        <p>The dawn reveal counted three or more mistakes.</p>
-        <dl className={styles.results}>
+        <p>{r.kitchen.failure ? failureMessage(r.kitchen) : "The dawn reveal counted three or more mistakes."}</p>
+        {!r.kitchen.failure && <dl className={styles.results}>
           <div>
             <dt>Correct decisions</dt>
             <dd>{r.encounters.correct}</dd>
@@ -260,14 +261,14 @@ export function SurvivalUI() {
             <dt>Coins earned</dt>
             <dd>{r.encounters.earned}</dd>
           </div>
-        </dl>
-        {r.night?.mode === "infinite" && (
+        </dl>}
+        {!r.kitchen.failure && r.night?.mode === "infinite" && (
           <p>
             Best streak this run: {r.encounters.bestStreak} · Nights survived:{" "}
             {Math.max(0,r.night.number-1)}
           </p>
         )}
-        <p>Your earned coins and cosmetics are safe.</p>
+        <p>{r.kitchen.failure ? "Previously saved coins and cosmetics are safe. This shift’s pending rewards were not banked." : "Your earned coins and cosmetics are safe."}</p>
         <div className={styles.pauseActions}>
           <button className={styles.primary} onClick={s.start}>
             Retry shift
