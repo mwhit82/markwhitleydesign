@@ -1431,3 +1431,75 @@
 
 .actionIcon { display:inline-block; width:20px; height:20px; flex-shrink:0; margin-right:8px; vertical-align:-4px; color:#e8e4da; pointer-events:none; }
 button:disabled .actionIcon { color:inherit; }
+
+/* Clear glass controls: stable layouts and unambiguous actions. */
+.game { --glass:rgba(9,11,13,.68); }
+.scrim { background:#00000026; backdrop-filter:blur(4px); }
+.modal { background:linear-gradient(135deg,rgba(23,26,30,.68),rgba(8,10,13,.7)); }
+.suspendScrim { background:#080a0d66; backdrop-filter:blur(4px); }
+.actionIcon { color:inherit; }
+.game .shopModal { position:relative; }
+.game .shopModal .shopTitle { display:block!important; font-size:24px!important; margin:4px 0 12px; }
+.shopBalance { position:absolute; right:16px; top:16px; height:52px; display:flex; align-items:center; gap:8px; padding:8px 14px; border:1px solid var(--line); border-radius:6px; background:var(--glass); font-variant-numeric:tabular-nums; }
+.shopBalance .actionIcon { margin:0; }.shopBalance span {font-size:12px;}
+.game .shopModal .categories {margin-top:12px;}
+.game .admitButton { border:2px solid #8cc69e; background:#244f3638; }
+.game .rejectButton { border:2px solid #d99191; background:#5c222238; }
+.decisionButtons .actionIcon {width:26px;height:26px;vertical-align:-6px;}
+.game .doorActions,.game .setupFooter {background:rgba(9,11,13,.7);}
+.game .inspectionQuestions {top:max(90px,env(safe-area-inset-top));bottom:max(96px,calc(env(safe-area-inset-bottom) + 80px));right:20px;left:auto;width:min(380px,34vw);max-height:none;overflow:auto;}
+.game .kitchenStatus { top:max(128px,calc(env(safe-area-inset-top) + 116px));bottom:auto;left:max(18px,env(safe-area-inset-left));transform:none;width:286px;max-width:calc(100% - 36px);display:grid;grid-template-columns:1fr 1fr;gap:4px 12px;padding:8px 10px;background:var(--glass);font-size:12px; }
+.needMeter {display:grid;grid-template-columns:1fr 4ch;align-items:center;gap:3px 4px;min-width:0;}
+.needMeter b {text-align:right;font-variant-numeric:tabular-nums;font-weight:400;}
+.game .needMeter meter {grid-column:1/-1;width:100%;height:8px;margin:0;}
+.needMeter small {grid-column:1/-1;min-height:14px;line-height:14px;font-size:11px;}
+.needMeter[data-low="true"] small {color:#edd6a2;}.needMeter[data-urgent="true"] small {color:#ffb4a5;}
+.game .kitchenStatus strong {grid-column:1/-1;height:14px;line-height:14px;font-size:10px;white-space:nowrap;text-align:left;}
+@media(max-width:600px) and (orientation:portrait) {
+ .game .inspectionQuestions {top:35dvh;bottom:max(100px,calc(env(safe-area-inset-bottom) + 88px));left:12px;right:12px;width:auto;max-height:none;}
+ .game .kitchenStatus {top:max(128px,calc(env(safe-area-inset-top) + 116px));width:260px;}
+ .shopBalance {gap:4px;padding:6px 8px;}.shopBalance span {display:none;}
+}
+@media(max-height:500px) and (orientation:landscape) {
+ .game .inspectionQuestions {top:16px;bottom:76px;width:34vw;max-height:none;}
+ .game .kitchenStatus {top:82px;width:260px;}
+}
+.game:not(.surveillance) .encounterStatus {top:max(222px,calc(env(safe-area-inset-top) + 210px));left:max(18px,env(safe-area-inset-left));max-width:286px;}
+.game.surveillance .kitchenStatus {top:auto;bottom:88px;}
+@media(max-width:600px) and (orientation:portrait) {
+ .game:not(.surveillance) .encounterStatus {top:222px;width:260px;right:auto;}
+}
+@media(max-height:500px) and (orientation:landscape) {
+ .game:not(.surveillance) .encounterStatus {top:180px;max-width:260px;}
+}
+.game .shopScroll {overflow-x:hidden;}
+.game .shopGrid {grid-template-columns:minmax(0,1fr) minmax(0,1fr);}
+.game .shopGrid > *, .game .items, .game .items button {min-width:0;}
+.game .items {grid-template-columns:minmax(0,1fr);}
+.game .items i {flex-shrink:0;}
+@media(max-width:800px) {
+ .game .shopGrid {grid-template-columns:minmax(0,1fr);}
+ .game .items {grid-template-columns:repeat(2,minmax(0,1fr));}
+}
+@media(max-height:500px) and (orientation:landscape) {
+ .game .shopModal .shopTitle {position:absolute;top:24px;left:200px;margin:0;font-size:20px!important;}
+ .game .shopScroll > button {min-height:36px;padding:6px 12px;margin-bottom:6px;}
+ .game .shopModal .categories {margin:0;padding-bottom:4px;}
+ .game .shopModal .categories button {min-height:40px;padding:6px 12px;}
+}
+
+.shopHeader {display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:8px;flex-shrink:0;min-height:48px;}
+.game .shopHeader h2 {font-size:22px;margin:0;text-align:center;}
+.game .shopHeader button {width:44px;height:44px;min-height:44px;padding:0;display:grid;place-items:center;}
+.shopHeader .actionIcon {margin:0;}
+.shopUtilities {display:flex;justify-content:flex-end;align-items:center;gap:8px;min-width:0;}
+.headerBalance {display:flex;align-items:center;gap:6px;min-height:44px;padding:6px 10px;border:1px solid var(--line);border-radius:6px;background:var(--glass);font-size:14px;font-variant-numeric:tabular-nums;white-space:nowrap;}
+.headerBalance span {font-size:11px;}
+@media(max-width:600px) {
+ .shopHeader {grid-template-columns:minmax(44px,1fr) auto minmax(44px,1fr);gap:4px;}
+ .game .shopHeader h2 {font-size:18px;}
+ .shopUtilities {gap:4px;}
+ .headerBalance {padding:4px;font-size:12px;gap:3px;}
+ .headerBalance span {display:none;}
+ .headerBalance .actionIcon {width:16px;height:16px;}
+}

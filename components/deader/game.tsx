@@ -133,16 +133,17 @@ function Cosmetics({ wardrobe }: { wardrobe: boolean }) {
   const outfit = item?.category === "bundle" ? bundleOutfit(save.outfit,item.id) : { ...save.outfit };
   if (item && item.category !== "colour" && item.category !== "pet" && item.category !== "bundle") outfit[item.category] = item.id;
   return (
-    <Modal label={wardrobe ? "Character customisation" : "Cosmetics shop"} className={styles.shopModal} closeLabel="Back to lobby">
+    <Modal label={wardrobe ? "Character customisation" : "Cosmetics shop"} className={styles.shopModal} header={
+      <header className={styles.shopHeader}>
+        <button aria-label="Back to lobby" title="Back to lobby" onClick={()=>useGame.getState().open(null)}><ActionIcon name="back" /></button>
+        <h2>{wardrobe?'Locker':'Shop'}</h2>
+        <div className={styles.shopUtilities}>
+          {!wardrobe&&<button aria-label="Hourly special" title="Hourly special" onClick={()=>useGame.getState().open("special")}><ActionIcon name="clock" /></button>}
+          <div className={styles.headerBalance} aria-label={`${save.coins} coins`}><ActionIcon name="cash" /><b>{save.coins}</b><span>coins</span></div>
+        </div>
+      </header>
+    }>
       <div className={styles.shopScroll}>
-      <p className={styles.eyebrow}>
-        AFTER HOURS / {wardrobe ? "DRESSING ROOM" : "SUPPLY COUNTER"}
-      </p>
-      <h2>{wardrobe ? "Make it personal." : "Made for the night shift."}</h2>
-      <p className={styles.balance}>
-        {save.coins} <span>COINS</span>
-      </p>
-      {!wardrobe&&<button onClick={()=>useGame.getState().open("special")}><ActionIcon name="shop" />Hourly special · See this hour’s item</button>}
       <div className={styles.categories} aria-label="Cosmetic categories">
         {(
           [
@@ -251,7 +252,7 @@ function Progress() {
   const { save, claim } = useGame();
   return (
     <Modal label="Achievements and progression">
-      <p className={styles.eyebrow}>YOUR NIGHT-SHIFT RECORD</p>
+
       <h2>A little worse for wear.</h2>
       <p className={styles.balance}>
         {save.coins} <span>COINS</span>
@@ -298,7 +299,7 @@ function StartMenu() {
   return (
     <Modal label="Start game" className={styles.setupModal}>
       <header className={styles.setupHeader}>
-        <p className={styles.eyebrow}>NIGHT SHIFT / SOLO</p>
+
         <h2>Choose your shift.</h2>
       </header>
       <div className={styles.setupBody}>
@@ -337,7 +338,7 @@ function StartMenu() {
               <span><strong>{title}</strong><small>{locked ? `Complete Night ${i} to unlock` : save.completions[difficulty].includes(i + 1) ? "Completed · Replay" : "5 minutes · Judgement at dawn"}</small></span>
               <span aria-hidden="true">{locked ? "Locked" : selectedNight === i + 1 ? "✓" : ""}</span>
             </button>;
-          }) : <div className={styles.infiniteCard}><p className={styles.eyebrow}>UNTIL YOUR LUCK RUNS OUT</p><h3>The endless shift.</h3><p>Judgement every five minutes. Survive with fewer than three mistakes, then start a fresh shift.</p><small>Best night: {save.infiniteRecords.night} · Best streak: {save.infiniteRecords.streak}</small></div>}
+          }) : <div className={styles.infiniteCard}><h3>The endless shift.</h3><p>Judgement every five minutes. Survive with fewer than three mistakes, then start a fresh shift.</p><small>Best night: {save.infiniteRecords.night} · Best streak: {save.infiniteRecords.streak}</small></div>}
           {process.env.NODE_ENV === "development" && <label className={styles.devRun}>Local test length<select value={runSeconds} onChange={e => useGame.setState({runSeconds: Number(e.target.value) === 60 ? 60 : 300, selectedNight: Number(e.target.value) === 60 ? selectedNight : Math.min(selectedNight, unlockedNight(save))})}><option value="300">Full night · 5 minutes</option><option value="60">Development rehearsal · 60 seconds · no rewards saved</option></select></label>}
           {process.env.NODE_ENV === "development" && runSeconds === 60 && <label className={styles.devRun}>Rehearsal scene<select value={rehearsal} onChange={e=>useGame.setState({rehearsal:e.target.value as typeof rehearsal})}><option value="kitchen">Kitchen practice</option><option value="kitchen-fire">Kitchen smoke / fire</option><option value="standard">Normal arrivals</option><option value="lounge">Full lounge · 12 residents</option><option value="scare">Anomaly at the door</option><option value="armed">Gun · open doorway</option><option value="armed-mirror">Gun · mirror check</option>{["dawn-looks","stalker-room","stalker-follow","stalker-cam-0","stalker-cam-1","stalker-cam-2","stalker-cam-3","stalker-cam-4","stalker-cam-5","mimic","splitter","glitched","kids","pair","push","rainbow","injured"].map(id=><option key={id} value={id}>{id} · local fixture</option>)}<option value="judgement-pass">Dawn · pass</option><option value="judgement-fail">Dawn · fail</option></select></label>}
         </section>
@@ -528,12 +529,17 @@ export default function Game() {
       {s.panel === "progress" && <Progress />}
       {s.panel === "pause" && (
         <Modal label="Paused">
-          <p className={styles.eyebrow}>TAKE A BREATHER</p>
-          <h2>Off the clock.</h2>
+
+          <h2>Paused</h2>
           <p>
-            The shift clock and visitors are paused. Inspect carefully and
-            choose who to trust. Three mistakes fail the judgement at 5:55 AM.
+            Your shift is paused.
           </p>
+            <button className={styles.primary} onClick={() => {
+              s.open(null);
+              if (s.suspension === "interrupted") useGame.setState({ suspension: null, focused: true });
+            }}>
+              <ActionIcon name="play" />Return to game
+            </button>
           <button onClick={() => s.open("progress")}>
             Achievements & rewards
             {achievements.some(
@@ -546,12 +552,7 @@ export default function Game() {
           </button>
           <GameSettings />
           <div className={styles.pauseActions}>
-            <button className={styles.primary} onClick={() => {
-              s.open(null);
-              if (s.suspension === "interrupted") useGame.setState({ suspension: null, focused: true });
-            }}>
-              <ActionIcon name="play" />Resume
-            </button>
+
             {s.scene === "room" && (
               <button onClick={s.lobby}><ActionIcon name="back" />Return to lobby</button>
             )}

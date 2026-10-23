@@ -142,12 +142,12 @@ export function TouchControls() {
         if (e.shiftKey && document.activeElement === first) { e.preventDefault(); final.focus(); }
         else if (!e.shiftKey && document.activeElement === final) { e.preventDefault(); first.focus(); }
       }}>
-        <h2>Ready to return?</h2>
+        <h2>Paused</h2>
         <p>Your shift, visitors and decision countdown are paused.</p>
-        <button autoFocus onClick={() => {
+        <button className={styles.primary} autoFocus onClick={() => {
           gameInput.reset(); roomAudio.unlock();
           useGame.setState({ suspension: null, focused: true });
-        }}><ActionIcon name="play" />Resume game</button>
+        }}><ActionIcon name="play" />Return to game</button>
         <button onClick={() => s.open("pause")}><ActionIcon name="settings" />Open menu</button>
       </section>
     </div>}

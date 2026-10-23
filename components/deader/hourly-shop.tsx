@@ -70,7 +70,7 @@ export function HourlyShop() {
             </select>
           </label>
         )}
-        <div className={styles.hourlyDetails}><p className={styles.eyebrow}>ONE ITEM · EVERY HOUR</p>
+        <div className={styles.hourlyDetails}>
         <h2>{item.name}</h2>
         <p className={styles.balance}>{s.save.coins} COINS</p>
         <p>

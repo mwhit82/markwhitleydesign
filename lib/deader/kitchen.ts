@@ -1,3 +1,6 @@
+export const HUNGER_SECONDS=420, THIRST_SECONDS=240;
+export const needWarning=(value:number,kind:"hunger"|"thirst")=>value<=25?(kind==="hunger"?"Eat now":"Drink now"):value<=50?(kind==="hunger"?"Eat soon":"Drink soon"):"";
+export const showNeeds=(view:string)=>!["door","inspect"].includes(view);
 /** Shift-local survival; time is real active seconds, independent of story clock. */
 export type KitchenAction = 'food' | 'drink' | 'cook' | 'eat' | 'off';
 export type Kitchen = { hunger:number; thirst:number; food:boolean; oven:'off'|'cooking'|'ready'; seconds:number; failure:null|'hunger'|'thirst'|'fire'; fireSeconds:number };
@@ -15,8 +18,8 @@ export function tickKitchen(k:Kitchen,delta:number,drain=true):Kitchen {
  if(!Number.isFinite(delta)||delta<=0)return k;
  const dt=Math.min(delta,.25);
  if(k.failure)return k.failure==='fire'?{...k,fireSeconds:Math.min(3,k.fireSeconds+dt)}:k;
- const hunger=drain?Math.max(0,k.hunger-dt*100/210):k.hunger;
- const thirst=drain?Math.max(0,k.thirst-dt*100/120):k.thirst;
+ const hunger=drain?Math.max(0,k.hunger-dt*100/HUNGER_SECONDS):k.hunger;
+ const thirst=drain?Math.max(0,k.thirst-dt*100/THIRST_SECONDS):k.thirst;
  const seconds=k.oven==='off'?0:k.seconds+dt;
  const oven=k.oven==='cooking'&&seconds>=20?'ready':k.oven;
  const failure=seconds>=60?'fire':hunger<=1e-8?'hunger':thirst<=1e-8?'thirst':null;
@@ -34,7 +37,7 @@ export function roomFloor(p:{x:number;z:number}) {
 
 /** Dawn wins ties, but a failure earlier in the same frame still ends the shift. */
 export function kitchenBeforeDawn(k:Kitchen,delta:number,untilDawn:number):Kitchen {
- const deadline=Math.min(k.hunger*2.1,k.thirst*1.2,k.oven==='off'?Infinity:60-k.seconds);
+ const deadline=Math.min(k.hunger*HUNGER_SECONDS/100,k.thirst*THIRST_SECONDS/100,k.oven==='off'?Infinity:60-k.seconds);
  if(untilDawn<=Math.min(.25,delta)+1e-8 && deadline>=untilDawn-1e-8)return k;
  return tickKitchen(k,delta);
 }

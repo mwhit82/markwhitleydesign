@@ -2209,14 +2209,15 @@ test('VR screen model has focused pages and independent shop purchase/equip acti
  view.buttons.find(b=>b.text==='Purchase').run();assert.equal(bought,1);assert.equal(equipped,0);
  s.save.coins=149;view=vrScreen(s,m,actions);assert.equal(view.buttons.find(b=>b.text==='Purchase').disabled,true);
 });
-test('VR confirmations expire with encounter identity and CCTV keeps decisions visible',async()=>{
+test('VR decisions execute directly and retain the encounter ID',async()=>{
  const {vrScreen,newVRMenu}=await import(await moduleUrl(resolve('lib/deader/vr-menu.ts')));
  const {useGame}=await import(await moduleUrl(resolve('lib/deader/store.ts')));
  const s={...useGame.getState(),panel:null,suspension:null,room:{...useGame.getState().room,night:null,view:'cctv',survival:{phase:'idle'},encounters:{active:{id:'a',visitor:'bea',phase:'waiting',elapsed:3,asked:[]}}}};
- const actions={patch:()=>{},resume:()=>{},recenter:()=>{},exit:()=>{},decide:()=>{}},m=newVRMenu();
- let view=vrScreen(s,m,actions);assert.equal(view.feed,true);assert.equal(view.buttons.length,4);view.buttons.find(b=>b.text==='Let in').run();assert.equal(m.confirmation.id,'a');
- view=vrScreen(s,m,actions);assert.ok(view.buttons.some(b=>b.text==='Confirm'));
- s.room.encounters.active={...s.room.encounters.active,id:'b'};view=vrScreen(s,m,actions);assert.equal(m.confirmation,null);assert.ok(view.buttons.some(b=>b.text==='Let in'));
+ const calls=[],actions={patch:()=>{},resume:()=>{},recenter:()=>{},exit:()=>{},decide:(...args)=>calls.push(args)},m=newVRMenu();
+ const view=vrScreen(s,m,actions);assert.equal(view.feed,true);assert.equal(view.buttons.length,4);
+ view.buttons.find(b=>b.text==='Let in').run();assert.deepEqual(calls,[['a','admit']]);
+ assert.ok(!vrScreen(s,m,actions).buttons.some(b=>b.text==='Confirm'));
+ view.buttons.find(b=>b.text==='Send away').run();assert.deepEqual(calls[1],['a','reject']);
 });
 test('VR decision bridge requires live headset and preserves desktop CCTV restrictions',async()=>{
  const {useGame}=await import(await moduleUrl(resolve('lib/deader/store.ts')));
@@ -2567,8 +2568,8 @@ test('kitchen food ownership, cooking, recovery and duplicate actions',()=>{
 });
 test('needs expire at real deadlines and oven burns only after warning window',()=>{
  const {freshKitchen:f,tickKitchen:t,kitchenAction:a,kitchenMessage}=kitchenLogic;
- let k=f();for(let i=0;i<480;i++)k=t(k,.25);assert.equal(k.failure,'thirst');assert.equal(a(k,'drink'),k);
- k=f();for(let i=0;i<840;i++){k=t(k,.25);if(i===400)k=a(k,'drink');}assert.equal(k.failure,'hunger');
+ let k=f();for(let i=0;i<960;i++)k=t(k,.25);assert.equal(k.failure,'thirst');assert.equal(a(k,'drink'),k);
+ k=f();for(let i=0;i<1680;i++){k=t(k,.25);if(i===800)k=a(k,'drink');}assert.equal(k.failure,'hunger');
  k=a(a(f(),'food'),'cook');for(let i=0;i<180;i++)k=t(k,.25);
  assert.match(kitchenMessage(k),/SMOKE/);assert.equal(k.failure,null);
  const rescued=a(k,'off');assert.equal(t(rescued,.25).failure,null);
@@ -2577,7 +2578,7 @@ test('needs expire at real deadlines and oven burns only after warning window',(
 });
 test('dawn wins exact ties, but not failures earlier within the same frame',()=>{
  const {freshKitchen:f,kitchenBeforeDawn:t}=kitchenLogic;
- let k={...f(),thirst:.1/1.2};assert.equal(t(k,.25,.1),k);
+ let k={...f(),thirst:.1/2.4};assert.equal(t(k,.25,.1),k);
  assert.equal(t(k,.25,.2).failure,'thirst');
  k={...f(),oven:'ready',seconds:59.9};assert.equal(t(k,.25,.1),k);assert.equal(t(k,.25,.2).failure,'fire');
 });
@@ -2680,4 +2681,28 @@ test('VR vector icon paths are cached and preserve canvas drawing state',async()
   drawActionIcon(ctx,'camera',0,0,32);const count=created;drawActionIcon(ctx,'camera',10,10,32,true);
   assert.equal(created,count);assert.ok(strokes>0);assert.equal(saved,restored);
  }finally{globalThis.Path2D=original;}
+});
+
+test('needs warn early and hide only in door views',()=>{
+ const {needWarning:w,showNeeds,HUNGER_SECONDS,THIRST_SECONDS}=kitchenLogic;
+ assert.equal(HUNGER_SECONDS,420);assert.equal(THIRST_SECONDS,240);
+ assert.equal(w(51,'hunger'),'');assert.equal(w(50,'hunger'),'Eat soon');assert.equal(w(25,'hunger'),'Eat now');
+ assert.equal(w(50,'thirst'),'Drink soon');assert.equal(w(25,'thirst'),'Drink now');
+ for(const v of ['door','inspect'])assert.equal(showNeeds(v),false);
+ for(const v of ['explore','fridge','oven','cctv','arcade'])assert.equal(showNeeds(v),true);
+});
+
+test('VR preview clears depth without clearing colour and restores render state even on failure',async()=>{
+ const {renderVRPreview}=await import(await moduleUrl(resolve('lib/deader/vr-preview.ts')));
+ const calls=[],scene={},camera={};
+ const gl={autoClear:true,clearDepth(){calls.push('depth');},render(s,c){assert.equal(this.autoClear,false);assert.equal(s,scene);assert.equal(c,camera);calls.push('render');}};
+ renderVRPreview(gl,scene,camera);assert.deepEqual(calls,['depth','render']);assert.equal(gl.autoClear,true);
+ gl.render=()=>{throw Error('context lost');};assert.throws(()=>renderVRPreview(gl,scene,camera));assert.equal(gl.autoClear,true);
+ gl.autoClear=false;assert.throws(()=>renderVRPreview(gl,scene,camera));assert.equal(gl.autoClear,false);
+});
+test('VR grab lightbar highlights hover and retained drag without animated states',async()=>{
+ const {grabBarColour}=await import(await moduleUrl(resolve('lib/deader/vr-preview.ts')));
+ assert.notEqual(grabBarColour(false,false),grabBarColour(true,false));
+ assert.equal(grabBarColour(true,false),grabBarColour(false,true));
+ assert.equal(grabBarColour(true,true),grabBarColour(false,true));
 });

@@ -262,3 +262,21 @@ The reflected player and all descendant cosmetics/particles use dedicated layer 
 `action-icons.ts` is the explicit shared action registry for the installed Hugeicons outline collection. DOM icons retain labels and are decorative to screen readers. VR draws the same selected local vectors through a bounded Path2D cache in `canvas-icons.ts`, without remote assets or extra render targets.
 
 Validation: 156 targeted tests pass; production build/type validation and game lint pass. Browser spot checks confirmed shop icons and the dawn monster sequence with no logged errors. Automated layer tests cover both XR eye masks and newly mounted particles. Full responsive layout, repeated-transition resource measurements and physical Quest outfit/mirror/comfort checks remain to be completed before release.
+
+### Clear glass menus and calmer needs (24 October 2026)
+
+Shop and Locker use compact titles and a top-right coin badge. Menus use roughly 68–70% black glass; icons inherit foreground colour. Door admission/rejection acts immediately with live-encounter guards, checkmark/green and no-entry/red buttons. VR uses the same meanings and direct decision path. Pause prioritises Return to game.
+
+Hunger drains over 420 active seconds, thirst over 240. Shared constants also drive dawn deadline comparisons. Warnings begin at 50%, urgent at 25%. Door and peephole views hide needs without pausing their simulation; oven timings and fire are unchanged. Fixed meter/number/warning slots prevent resizing. The peephole question panel uses available height. Responsive shop grids constrain intrinsic canvas widths to prevent sideways overflow.
+
+Validation: 157 tests cover needs, deadlines, warning thresholds, visibility and direct VR decisions alongside existing regressions. Browser checks covered portrait shop (390×844), landscape shop (844×390), tablet (1024×768), full-height peephole questions and immediate rejection. Initial icon-registry wiring error found in browser/type checks was corrected; production build and lint pass. Physical Quest contrast/comfort and full controller playtesting remain manual release checks. No save migration or GitHub push in this change.
+
+### Compact headers and solid VR preview (24 October 2026)
+
+Shop/Locker now provide their own accessible Modal header: icon-only Back to lobby, independently centred title, coin badge and (Shop only) a clock shortcut. Categories immediately follow this row. The existing Hugeicons registry supplies the clock for regular and VR actions.
+
+VR menus use a static 15px lightbar instead of drag instructions, retaining the original larger grab hit area. Either controller hovering the handle or an active drag brightens it; these states invalidate the canvas texture. No animated glow is added.
+
+VR preview characters are portalled into a separate scene with original materials and normal internal depth testing. A priority-2 pass renders after the base scene/menu and clears depth only, restoring autoClear in finally. During judgement the existing DawnFace pass owns the base render; otherwise the preview pass renders it. No render targets, cloned character materials, or headset-pose changes are introduced. Portal children are unmounted on preview/VR transitions.
+
+Validation: 159 tests pass, including render order/state restoration on failure and lightbar state. Production build, TypeScript and targeted lint pass. Browser checked the compact phone header, clock navigation and desktop header; the VR emulator showed the text-free lightbar without browser errors. Full rotating-outfit preview, both-eye occlusion, controller drag and sustained resource measurements still require headset/emulator follow-up; these are not claimed as verified on physical Quest. Changes remain local alongside the preceding UI work.

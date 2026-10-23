@@ -25,13 +25,11 @@ export type VRMenuState = {
   page: string;
   index: number;
   answer: string;
-  confirmation: null | { id: string; decision: "admit" | "reject" };
 };
 export const newVRMenu = (): VRMenuState => ({
   page: "home",
   index: 0,
   answer: "",
-  confirmation: null,
 });
 export type VRButton = { icon?: ActionIconName; text: string; run: () => void; disabled?: boolean };
 export type VRScreen = {
@@ -61,7 +59,6 @@ export function vrScreen(s: State, m: VRMenuState, a: VRMenuActions): VRScreen {
     m.page = page;
     m.index = 0;
     m.answer = "";
-    m.confirmation = null;
   };
   const button = (
     text: string,
@@ -70,7 +67,6 @@ export function vrScreen(s: State, m: VRMenuState, a: VRMenuActions): VRScreen {
   ): VRButton => ({ text, run, disabled, icon:iconForAction(text) });
   const close = () => {
     m.page = "home";
-    m.confirmation = null;
     if (s.suspension) a.resume();
     else if (s.panel) s.open(null);
     else if (r.night?.status === "completed" || r.night?.status === "failed")
@@ -83,13 +79,11 @@ export function vrScreen(s: State, m: VRMenuState, a: VRMenuActions): VRScreen {
     buttons: VRButton[],
     back?: () => void,
   ): VRScreen => ({ title, body, buttons, back, close });
-  if (m.confirmation && (e?.id !== m.confirmation.id || e.phase !== "waiting"))
-    m.confirmation = null;
   if (s.suspension)
     return screen(
       "Game paused",
       "Your controllers are ready. Resume when you are comfortable.",
-      [button("Resume", a.resume), button("Return to lobby", s.lobby)],
+      [button("Return to game", a.resume), button("Return to lobby", s.lobby)],
     );
   if (a.feedFailed && ["cctv", "inspect", "door"].includes(r.view) && !s.panel)
     return screen(
@@ -427,7 +421,7 @@ export function vrScreen(s: State, m: VRMenuState, a: VRMenuActions): VRScreen {
   }
   if (s.panel === "pause")
     return screen("Paused", "Take your time.", [
-      button("Resume", close),
+      button("Return to game", close),
       button("VR settings", nav("settings")),
       button("Progress", () => s.open("progress")),
       button("Return to lobby", s.lobby),
@@ -475,23 +469,7 @@ export function vrScreen(s: State, m: VRMenuState, a: VRMenuActions): VRScreen {
       ? `${v!.name} · ${s.tutorial ? "Practice" : seconds + " seconds"}`
       : "No visitor waiting";
     let result: VRScreen;
-    if (m.confirmation) {
-      const c = m.confirmation;
-      result = screen(
-        title,
-        `${c.decision === "admit" ? "Let in" : "Send away"} ${v?.name}?`,
-        [
-          button("Confirm", () => {
-            a.decide(c.id, c.decision);
-            m.confirmation = null;
-            m.page = "home";
-          }),
-          button("Go back", () => {
-            m.confirmation = null;
-          }),
-        ],
-      );
-    } else if (m.page === "questions" && waiting)
+    if (m.page === "questions" && waiting)
       result = screen(
         title,
         m.answer ||
@@ -550,14 +528,14 @@ export function vrScreen(s: State, m: VRMenuState, a: VRMenuActions): VRScreen {
           button(
             "Let in",
             () => {
-              m.confirmation = { id: e!.id, decision: "admit" };
+              a.decide(e!.id,"admit"); m.page="home";
             },
             !waiting,
           ),
           button(
             "Send away",
             () => {
-              m.confirmation = { id: e!.id, decision: "reject" };
+              a.decide(e!.id,"reject"); m.page="home";
             },
             !waiting,
           ),

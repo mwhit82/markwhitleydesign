@@ -360,6 +360,7 @@ function Rig() {
     )
       spatial.dragging = null;
     spatial.hovered = null;
+    spatial.grabHovered = false;
     const dominant = prefs.leftHanded ? "left" : "right";
     trackedHands.leftVisible = trackedHands.rightVisible = false;
     let interaction: string | null = null;
@@ -398,6 +399,7 @@ function Rig() {
       const ui = a.ray
         .intersectObjects(Array.from(uiTargets), false)
         .find((h) => visibleTarget(h.object));
+      if (ui?.object.userData.vrGrab) spatial.grabHovered = true;
       if (ui && (hand === dominant || !spatial.hovered))
         spatial.hovered = ui.object;
       const worldHit = hits.find((h) => !h.object.userData.vrUI);

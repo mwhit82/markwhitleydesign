@@ -24,14 +24,8 @@ export function VisitorQuestions({ showCountdown = true }: { showCountdown?: boo
   const v = encounterVisitor(e, s.session?.difficulty);
   return (
     <section className={styles.questions} aria-label="Visitor questions">
-      <p className={styles.eyebrow}>ASK THROUGH THE CLOSED DOOR</p>
+
       {showCountdown && <DecisionCountdown />}
-      {s.session?.difficulty === "easy" && (
-        <p>
-          Count the eyes, watch for unnatural stops, and check whether all three
-          answers agree.
-        </p>
-      )}
       {QUESTIONS.map((q) => (
         <div key={q.id}>
           <button
@@ -90,10 +84,7 @@ export function EncounterUI() {
         <div className={styles.inspectionClock}><DecisionCountdown /></div>
         <div className={styles.inspectionQuestions}>
           <details className={styles.touchQuestions} open={!s.touchActive}><summary>Visitor questions</summary><VisitorQuestions showCountdown={false} /></details>
-          <p className={styles.note}>
-            Compare the answers, appearance and CCTV movement. Step back to
-            decide.
-          </p>
+
         </div></>
       )}
       {result && !["door", "inspect"].includes(r.view) && (

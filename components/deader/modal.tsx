@@ -11,8 +11,10 @@ export function Modal({
   className = "",
   closeLabel,
   focusDialog = false,
+  header,
 }: {
   children: ReactNode;
+  header?: ReactNode;
   label: string;
   onClose?: () => void;
   className?: string;
@@ -57,13 +59,13 @@ export function Modal({
           }
         }}
       >
-        <button
+        {header ?? <button
           className={styles.close}
           onClick={onClose ?? (() => useGame.getState().open(null))}
           aria-label={closeLabel ?? "Close menu"}
         >
           {closeLabel ?? "×"}
-        </button>
+        </button>}
         {tutorial && <div className={styles.practiceNote}><p>{tutorialMessage ?? tutorialCopy[tutorial].body}</p><button onClick={()=>useGame.getState().lobby()}><ActionIcon name="close" />Exit tutorial</button></div>}
         {children}
       </div>

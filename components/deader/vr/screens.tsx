@@ -1,4 +1,6 @@
 "use client";
+import { renderVRPreview, grabBarColour } from "@/lib/deader/vr-preview";
+import { needWarning, showNeeds } from "@/lib/deader/kitchen";
 import { iconForAction } from "@/lib/deader/action-icons";
 import { drawActionIcon } from "@/lib/deader/canvas-icons";
 import {
@@ -11,7 +13,7 @@ import {
 } from "@/lib/deader/vr-feed";
 import { nightClockLabel } from "@/lib/deader/night";
 import { memo, useEffect, useMemo, useRef, useState } from "react";
-import { useFrame, useThree } from "@react-three/fiber";
+import { createPortal, useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import { useGame } from "@/lib/deader/store";
 import { useVR, vrTestTargets } from "@/lib/deader/vr-state";
@@ -82,6 +84,7 @@ export const VRPanel = memo(function VRPanel() {
       registerUI(grab.current, null);
       spatial.panel = null;
       spatial.dragging = null;
+      spatial.grabHovered = false;
       spatial.feed = false;
       spatial.preview = null;
     },
@@ -114,6 +117,7 @@ export const VRPanel = memo(function VRPanel() {
       v.key = key;
       v.next = 0;
       spatial.dragging = null;
+      spatial.grabHovered = false;
     }
     if (visible && (spatial.recenter || !v.open || layoutChanged)) {
       const p = placeVRPanel(
@@ -238,19 +242,21 @@ export const VRPanel = memo(function VRPanel() {
       body,
       all.map((b) => b && [b.text, b.disabled, b.icon]),
       hover,
+      spatial.grabHovered,
+      !!spatial.dragging,
       visible,
     ]);
     if (signature !== v.signature) {
       v.signature = signature;
 
       const c = display.ctx;
-      c.fillStyle = "#0c1015";
+      c.clearRect(0,0,1024,768);
+      c.fillStyle = "rgba(12,16,21,.7)";
       c.fillRect(0, 0, 1024, 768);
       c.strokeStyle = "#8a949e";
       c.strokeRect(2, 2, 1020, display.canvas.height - 4);
-      c.fillStyle = "#aeb8c2";
-      c.font = "22px sans-serif";
-      c.fillText("HOLD TRIGGER HERE TO MOVE", 28, 35);
+      c.fillStyle = grabBarColour(spatial.grabHovered,!!spatial.dragging);
+      c.fillRect(12, 8, 1000, 15);
       c.fillStyle = "white";
       c.font = "bold 36px sans-serif";
       c.fillText(title, 28, 88);
@@ -261,9 +267,10 @@ export const VRPanel = memo(function VRPanel() {
         const x = i < 4 ? 20 : 20 + (i - 4) * 330,
           y = i < 4 ? 246 + i * 96 : 660,
           w = i < 4 ? 984 : 314;
-        c.fillStyle = hover === i ? "#47515c" : "#242b33";
+        c.fillStyle = hover === i ? "#47515c" : b.text==="Return to game"?"#536575":"#242b33";
         c.fillRect(x, y, w, 84);
-        c.strokeStyle = b.disabled ? "#3d4248" : "#9aa5af";
+        c.strokeStyle = b.disabled ? "#3d4248" : b.text==="Let in"?"#8cc69e":b.text==="Send away"?"#d99191":b.text==="Return to game"?"#ffffff":"#9aa5af";
+        c.lineWidth=b.text==="Let in"||b.text==="Send away"||b.text==="Return to game"?3:1;
         c.strokeRect(x, y, w, 84);
         c.fillStyle = b.disabled ? "#818992" : "white";
         c.font = "32px sans-serif";
@@ -273,7 +280,7 @@ export const VRPanel = memo(function VRPanel() {
       });
       display.texture.needsUpdate = true;
     }
-    const wristText = `HUNGER ${Math.ceil(r.kitchen.hunger)}% · THIRST ${Math.ceil(r.kitchen.thirst)}% | ${nightClockLabel(r.night)} · ${r.kitchen.oven!=="off"?`${r.kitchen.seconds>=45?"SMOKE":r.kitchen.oven==="ready"?"EAT":"OVEN"} ${Math.ceil((r.kitchen.oven==="cooking"?20:60)-r.kitchen.seconds)}s`: `${r.weapon.ammo}/6`}${alert ? " · LOUNGE ALERT" : ""}`;
+    const wristText = ` ${showNeeds(r.view)?`H ${Math.ceil(r.kitchen.hunger)}% ${needWarning(r.kitchen.hunger,"hunger")} · T ${Math.ceil(r.kitchen.thirst)}% ${needWarning(r.kitchen.thirst,"thirst")} | `:""}${nightClockLabel(r.night)} · ${r.kitchen.oven!=="off"?`${r.kitchen.seconds>=45?"SMOKE":r.kitchen.oven==="ready"?"EAT":"OVEN"} ${Math.ceil((r.kitchen.oven==="cooking"?20:60)-r.kitchen.seconds)}s`: `${r.weapon.ammo}/6`}${alert ? " · LOUNGE ALERT" : ""}`;
     if (wristText !== v.watch) {
       v.watch = wristText;
       const c = watch.ctx;
@@ -323,6 +330,7 @@ export const VRPanel = memo(function VRPanel() {
           <planeGeometry args={[1.3, 0.975]} />
           <meshBasicMaterial
             map={display.texture}
+            transparent
             toneMapped={false}
             depthTest={false}
             depthWrite={false}
@@ -585,6 +593,8 @@ export function VRFeed() {
 }
 
 function VRPreview() {
+  const overlay = useMemo(()=>new THREE.Scene(),[]);
+  const mainScene=useThree(s=>s.scene);
   const [preview, setPreview] = useState<typeof spatial.preview>(null),
     group = useRef<THREE.Group>(null),
     signature = useRef("");
@@ -601,38 +611,7 @@ function VRPreview() {
       group.current.rotation.y += dt * 0.35;
     }
   });
-  useEffect(() => {
-    const restored: {
-      mesh: THREE.Mesh;
-      material: THREE.Material | THREE.Material[];
-      order: number;
-    }[] = [];
-    group.current?.traverse((o) => {
-      if (o instanceof THREE.Mesh) {
-        restored.push({ mesh: o, material: o.material, order: o.renderOrder });
-        const clone = (m: THREE.Material) => {
-          const c = m.clone();
-          c.depthTest = false;
-          c.depthWrite = false;
-          return c;
-        };
-        o.material = Array.isArray(o.material)
-          ? o.material.map(clone)
-          : clone(o.material);
-        o.renderOrder = 102;
-      }
-    });
-    return () =>
-      restored.forEach(({ mesh, material, order }) => {
-        (Array.isArray(mesh.material)
-          ? mesh.material
-          : [mesh.material]
-        ).forEach((m) => m.dispose());
-        mesh.material = material;
-        mesh.renderOrder = order;
-      });
-  }, [preview]);
-  return (
+  return createPortal(
     <group
       ref={group}
       scale={0.28}
@@ -645,7 +624,21 @@ function VRPreview() {
         ) : (
           <Cone colour={preview.colour} outfit={preview.outfit} />
         ))}
+      <VRPreviewPass visible={!!preview} mainScene={mainScene} />
+      <ambientLight intensity={.6} />
       <pointLight position={[0, 2, 2]} intensity={3} distance={3} />
-    </group>
+    </group>, overlay
   );
+}
+
+/** A separate depth buffer pass preserves self-occlusion without wall clipping.
+ * DawnFace owns the base render only during judgement; otherwise this pass does.
+ */
+function VRPreviewPass({visible,mainScene}:{visible:boolean;mainScene:THREE.Scene}) {
+  useFrame(({gl,scene,camera})=>{
+    if(!useGame.getState().room.judgement)gl.render(mainScene,camera);
+    if(!visible)return;
+    renderVRPreview(gl,scene,camera);
+  },2);
+  return null;
 }

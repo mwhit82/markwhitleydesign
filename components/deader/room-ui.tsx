@@ -47,14 +47,11 @@ export function RoomUI() {
       {r.view === "inspect" && (
         <div className={styles.inspection}>
           <div className={styles.inspectionActions}>
-            <p>
-              PEEPHOLE / {r.visitorId ? "VISITOR WAITING" : "LANDING EMPTY"}
-            </p>
             <button
               autoFocus
               onClick={() => s.doorEvent({ type: "leave-inspection" })}
             >
-              <ActionIcon name="admit" />Answer the door
+              <ActionIcon name="door" />Answer the door
             </button>
           </div>
         </div>

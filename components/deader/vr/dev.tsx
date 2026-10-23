@@ -30,7 +30,7 @@ export default function VRDev() {
     },
     [],
   );
-  const [target, setTarget] = useState("Resume");
+  const [target, setTarget] = useState("Return to game");
   useEffect(() => {
     const key = (e: KeyboardEvent) => {
       const names: Record<string, string> = {
@@ -52,7 +52,7 @@ export default function VRDev() {
           ?.click();
       if (e.key === "k") setTarget("VR settings");
       if (e.key === "j") setTarget("Next");
-      if (e.key === "u") setTarget("Resume");
+      if (e.key === "u") setTarget("Return to game");
       if (e.key === "b") setTarget("Back to lobby");
     };
     window.addEventListener("keydown", key);
@@ -257,6 +257,9 @@ export default function VRDev() {
         Test night
       </button>
       <button onClick={() => useGame.getState().open("shop")}>Test shop</button>
+      <button onClick={() => useGame.getState().open("wardrobe")}>Test locker</button>
+      <button onClick={() => useGame.getState().roomView("door")}>Test door</button>
+      <button onClick={() => useGame.getState().doorEvent({type:"inspect"})}>Test peephole</button>
       <button onClick={() => useGame.getState().open("pause")}>
         Test pause
       </button>

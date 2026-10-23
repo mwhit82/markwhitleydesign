@@ -7,6 +7,7 @@ export const spatial = {
   distance: 1.2,
   offset: new THREE.Vector3(),
   recenter: true,
+  grabHovered: false,
   hovered: null as THREE.Object3D | null,
   feed: false,
   preview: null as null | {

@@ -8,7 +8,7 @@ export function ConsoleUI() {
     const s = useGame(), e = s.room.encounters.active;
     const unavailable = !!e && e.phase !== "approaching";
     return <Modal focusDialog label="CCTV console" onClose={() => s.roomView('explore')}>
-    <DecisionCountdown /><p className={styles.eyebrow}>NIGHT SHIFT TERMINAL</p><h2>{e?.phase === 'waiting' ? 'Someone’s at the door.' : 'Keep an eye out.'}</h2>
+    <DecisionCountdown /><h2>{e?.phase === 'waiting' ? 'Someone’s at the door.' : 'Keep an eye out.'}</h2>
     {e?.phase === 'waiting' && <button onClick={() => s.doorEvent({ type: 'inspect' })}><ActionIcon name="admit" />Answer the door</button>}
     <div className={styles.consoleChoices}>
       <button onClick={() => s.roomView('cctv')}><strong><ActionIcon name="camera" />View cameras</strong><span>Six live views of the building</span></button>

@@ -1,7 +1,7 @@
 "use client";
 import { ActionIcon } from "./action-icon";
 import { useGame } from '@/lib/deader/store';
-import { kitchenMessage } from '@/lib/deader/kitchen';
+import { kitchenMessage, needWarning, showNeeds } from '@/lib/deader/kitchen';
 import { Modal } from './modal';
 import styles from './game.module.css';
 export function KitchenUI(){
@@ -9,11 +9,15 @@ export function KitchenUI(){
  if(!s.room.night&&!s.tutorial)return null;
  return <>
  {k.failure==='fire'&&<div className={styles.kitchenFire} role="alert"><h2>FIRE</h2><p>The oven was left burning.</p></div>}
- <div className={styles.kitchenStatus} role="status">
-  <span data-low={k.hunger<=25}>Hunger {Math.ceil(k.hunger)}%{k.hunger<=10?' — EAT NOW':k.hunger<=25?' — eat soon':''}<meter aria-label="Hunger" min={0} max={100} value={k.hunger}/></span>
-  <span data-low={k.thirst<=25}>Thirst {Math.ceil(k.thirst)}%{k.thirst<=10?' — DRINK NOW':k.thirst<=25?' — drink soon':''}<meter aria-label="Thirst" min={0} max={100} value={k.thirst}/></span>
-  {k.oven!=='off'&&<strong>{kitchenMessage(k)}</strong>}
- </div>
+ {showNeeds(s.room.view)&&!s.panel&&!s.suspension&&<div className={styles.kitchenStatus}>
+  {(['hunger','thirst'] as const).map(kind=><div className={styles.needMeter} key={kind} data-low={k[kind]<=50} data-urgent={k[kind]<=25}>
+   <span>{kind==='hunger'?'Hunger':'Thirst'}</span><b>{Math.ceil(k[kind])}%</b>
+   <meter aria-label={kind==='hunger'?'Hunger':'Thirst'} min={0} max={100} value={k[kind]}/>
+   <small role="status">{needWarning(k[kind],kind)||'\u00a0'}</small>
+  </div>)}
+  <strong>{k.oven!=='off'?kitchenMessage(k):'\u00a0'}</strong>
+ </div>}
+
  {(s.room.view==='fridge'||s.room.view==='oven')&&<Modal label={s.room.view==='fridge'?'Fridge':'Oven'} onClose={()=>s.roomView('explore')}>
   <h2>{s.room.view==='fridge'?'Fridge':'Oven'}</h2>
   <p>{s.room.view==='fridge'?'Free supplies. Take a meal to cook, or drink here.':kitchenMessage(k)}</p>
