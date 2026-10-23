@@ -1,4 +1,5 @@
 "use client";
+import { ActionIcon } from "./action-icon";
 import { failureMessage } from "@/lib/deader/kitchen";
 import { useEffect, useRef } from "react";
 import { achievements } from "@/lib/deader/achievements";
@@ -176,7 +177,7 @@ export function SurvivalUI() {
             FOR NOW.
           </h2>
         )}
-        <button onClick={() => s.open("pause")}>Pause · Esc</button>
+        <button onClick={() => s.open("pause")}><ActionIcon name="pause" />Pause · Esc</button>
       </div>
     );
   }
@@ -225,7 +226,7 @@ export function SurvivalUI() {
             </button>
           )}
           <button className={styles.primary} onClick={s.start}>
-            Replay night
+            <ActionIcon name="retry" />Replay night
           </button>
           {achievements.some(
             (a) =>
@@ -236,7 +237,7 @@ export function SurvivalUI() {
               Achievement rewards ready
             </button>
           )}
-          <button onClick={s.lobby}>Return to lobby</button>
+          <button onClick={s.lobby}><ActionIcon name="back" />Return to lobby</button>
         </div>
       </Modal>
     );
@@ -271,7 +272,7 @@ export function SurvivalUI() {
         <p>{r.kitchen.failure ? "Previously saved coins and cosmetics are safe. This shift’s pending rewards were not banked." : "Your earned coins and cosmetics are safe."}</p>
         <div className={styles.pauseActions}>
           <button className={styles.primary} onClick={s.start}>
-            Retry shift
+            <ActionIcon name="retry" />Retry shift
           </button>
           {achievements.some(
             (a) =>
@@ -282,7 +283,7 @@ export function SurvivalUI() {
               Achievement rewards ready
             </button>
           )}
-          <button onClick={s.lobby}>Return to lobby</button>
+          <button onClick={s.lobby}><ActionIcon name="back" />Return to lobby</button>
         </div>
       </Modal>
     );
@@ -306,7 +307,7 @@ export function SurvivalUI() {
       className={`${styles.survivalOverlay} ${seq.phase === "blackout" ? styles.blackout : ""}`}
     >
       <p role="status">{text}</p>
-      <button onClick={() => s.open("pause")}>Pause · Esc</button>
+      <button onClick={() => s.open("pause")}><ActionIcon name="pause" />Pause · Esc</button>
     </div>
   );
 }

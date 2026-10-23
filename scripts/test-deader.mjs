@@ -2626,3 +2626,58 @@ test('kitchen continues across object views but actions do not bypass pause',asy
  }
  const {useGame}=await combatStore();useGame.getState().roomView('fridge');useGame.setState({panel:'pause'});useGame.getState().useKitchen('food');assert.equal(useGame.getState().room.kitchen.food,false);
 });
+
+const reflectionLayers=await import(await moduleUrl(resolve('lib/deader/render-layers.ts')));
+const scareLooks=await import(await moduleUrl(resolve('lib/deader/scare-appearance.ts')));
+const actionIconRegistry=await import(await moduleUrl(resolve('lib/deader/action-icons.ts')));
+test('mirror-only body and newly mounted accessories stay outside both XR eye masks',async()=>{
+ const THREE=await import('three');const body=new THREE.Group(),hat=new THREE.Object3D();body.add(hat);
+ reflectionLayers.setReflectionOnly(body);
+ const camera=new THREE.PerspectiveCamera();const xrMask=camera.layers.mask|reflectionLayers.XR_EYE_MASK;
+ const left=xrMask&~(1<<2),right=xrMask&~(1<<1);
+ assert.equal(reflectionLayers.REFLECTION_MASK&reflectionLayers.XR_EYE_MASK,0);
+ for(const object of [body,hat]){assert.equal(object.layers.mask&left,0);assert.equal(object.layers.mask&right,0);}
+ const particles=new THREE.Object3D();body.add(particles);reflectionLayers.setReflectionOnly(body);
+ assert.equal(particles.layers.mask&right,0);
+ camera.layers.enable(reflectionLayers.REFLECTION_LAYER);assert.ok(camera.layers.test(particles.layers));
+ const hand=new THREE.Object3D();assert.ok(hand.layers.mask&left);assert.ok(hand.layers.mask&right);
+});
+test('dawn monsters keep encounter colours and distinguishing features without stale traits',()=>{
+ const profile={...visitors.visitorById('three'),name:'Random identity',colour:'#4477cc'};
+ const third=scareLooks.scareAppearance(profile);assert.equal(third.colour,'#4477cc');assert.equal(third.thirdEye,true);
+ const ordinary=scareLooks.scareAppearance({...profile,appearance:'ordinary',colour:'#992255'});
+ assert.deepEqual(ordinary,{colour:'#992255',thirdEye:false,mouthWidth:1,split:false,glitch:false});
+ assert.equal(scareLooks.scareAppearance({...profile,appearance:'wide-mouth'}).mouthWidth,1.4);
+ assert.equal(scareLooks.scareAppearance({...profile,appearance:'splitter'}).split,true);
+ assert.equal(scareLooks.scareAppearance({...profile,appearance:'glitched'}).glitch,true);
+ const entry={id:'snapshot',profile,coins:0,shot:false,decision:'admit'};
+ assert.equal(scareLooks.dawnAppearance(entry).colour,profile.colour);
+ assert.equal(scareLooks.dawnAppearance({...entry,shot:true}),null);
+ assert.equal(scareLooks.dawnAppearance({...entry,profile:{...profile,kind:'human'}}),null);
+ assert.equal(scareLooks.dawnAppearance(undefined),null);
+});
+test('button icon registry uses supported local vector primitives and explicit action meanings',()=>{
+ const {actionIcons,iconForAction}=actionIconRegistry;
+ for(const icon of Object.values(actionIcons))for(const [tag,a] of icon){
+  assert.ok(['path','circle','ellipse','rect','line','polyline','polygon'].includes(tag),tag);
+  assert.ok(!Object.values(a).some(v=>typeof v==='string'&&v.includes('http')));
+ }
+ assert.equal(iconForAction('Let in'),'admit');assert.equal(iconForAction('Send away'),'reject');assert.equal(iconForAction('Drink'),'drink');assert.equal(iconForAction('Invented action'),undefined);
+});
+test('VR appliance and door buttons retain labels, callbacks and icon identifiers',async()=>{
+ const {useGame}=await combatStore();const {vrScreen,newVRMenu}=await import(await moduleUrl(resolve('lib/deader/vr-menu.ts')));
+ useGame.getState().roomView('fridge');
+ const model=vrScreen(useGame.getState(),newVRMenu(),{patch(){},resume(){},recenter(){},exit(){},decide(){}});
+ assert.equal(model.buttons.find(b=>b.text==='Drink').icon,'drink');
+ const food=model.buttons.find(b=>b.text==='Take food');assert.equal(food.icon,'food');food.run();assert.ok(useGame.getState().room.kitchen.food);
+});
+test('VR vector icon paths are cached and preserve canvas drawing state',async()=>{
+ let created=0;const original=globalThis.Path2D;
+ globalThis.Path2D=class {constructor(){created++;} arc(){} ellipse(){} roundRect(){} moveTo(){} lineTo(){} closePath(){}};
+ try{
+  const {drawActionIcon}=await import(await moduleUrl(resolve('lib/deader/canvas-icons.ts')));
+  let saved=0,restored=0,strokes=0;const ctx={save(){saved++;},restore(){restored++;},translate(){},scale(){},fill(){},stroke(){strokes++;}};
+  drawActionIcon(ctx,'camera',0,0,32);const count=created;drawActionIcon(ctx,'camera',10,10,32,true);
+  assert.equal(created,count);assert.ok(strokes>0);assert.equal(saved,restored);
+ }finally{globalThis.Path2D=original;}
+});

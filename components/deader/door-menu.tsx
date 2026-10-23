@@ -1,4 +1,5 @@
 "use client";
+import { ActionIcon } from "./action-icon";
 import { useEffect, useState } from "react";
 import { canConfirmDoor } from "@/lib/deader/room";
 import { useGame } from "@/lib/deader/store";
@@ -26,13 +27,13 @@ export function DoorMenu() {
           const current = useGame.getState();
           if (current.suspension || !current.focused || current.panel || !canConfirmDoor(current.room, choice.id)) return;
           setChoice(null); roomAudio.unlock(); current.doorEvent({type: choice.admit ? "open-confirmed" : "reject"});
-        }}>Confirm</button><button onClick={() => setChoice(null)}>Go back</button>
+        }}><ActionIcon name="equip" />Confirm</button><button onClick={() => setChoice(null)}><ActionIcon name="back" />Go back</button>
       </div></> : <div className={styles.decisionButtons}>
-        <button className={styles.primary} disabled={!canOpen} onClick={() => setChoice({id: visitor?.id ?? null, admit:true})}>{waiting ? "Let in" : "Open door"}</button>
-        {waiting ? <button disabled={!ready} onClick={() => setChoice({id:visitor.id,admit:false})}>Send away</button> : <button disabled={r.door !== "OPEN"} onClick={() => s.doorEvent({type:"close"})}>Close door</button>}
+        <button className={styles.primary} disabled={!canOpen} onClick={() => setChoice({id: visitor?.id ?? null, admit:true})}><ActionIcon name="admit" />{waiting ? "Let in" : "Open door"}</button>
+        {waiting ? <button disabled={!ready} onClick={() => setChoice({id:visitor.id,admit:false})}><ActionIcon name="reject" />Send away</button> : <button disabled={r.door !== "OPEN"} onClick={() => s.doorEvent({type:"close"})}><ActionIcon name="reject" />Close door</button>}
       </div>}
-      {waiting && r.weapon.collected && !s.tutorial && <button onClick={s.aimDoor}>Open doorway to aim · does not admit</button>}
-      <div className={styles.doorSecondary}><button disabled={!ready} onClick={() => s.doorEvent({type:"inspect"})}>Look again</button><button onClick={() => s.roomView("explore")}>Step away</button></div>
+      {waiting && r.weapon.collected && !s.tutorial && <button onClick={s.aimDoor}><ActionIcon name="admit" />Open doorway to aim · does not admit</button>}
+      <div className={styles.doorSecondary}><button disabled={!ready} onClick={() => s.doorEvent({type:"inspect"})}><ActionIcon name="inspect" />Look again</button><button onClick={() => s.roomView("explore")}><ActionIcon name="back" />Step away</button></div>
     </footer>
   </Modal>;
 }

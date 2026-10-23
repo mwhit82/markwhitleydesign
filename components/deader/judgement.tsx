@@ -1,4 +1,5 @@
 "use client";
+import { ActionIcon } from "./action-icon";
 import { useEffect, useLayoutEffect, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
@@ -60,7 +61,7 @@ export function JudgementUI(){
  <p>5:55 AM · {entry?"THE VISITORS RETURN":"SHIFT RESULTS"}</p>
  <h2>{entry?entry.profile.name:`${j.mistakes} mistake${j.mistakes===1?"":"s"} · ${j.failed?"Shift failed":"Night survived"}`}</h2>
  <p>{entry?revealCaption(entry):`Decision earnings: ${s.room.encounters.ledger.reduce((n,e)=>n+e.coins,0)} coins. Fewer than three mistakes to survive.`}</p>
- {entry&&<div><button onClick={()=>advanceReveal()}>Next</button><button onClick={()=>advanceReveal(true)}>Skip to results</button></div>}
- <button onClick={()=>s.open("pause")}>Pause</button>
+ {entry&&<div><button onClick={()=>advanceReveal()}><ActionIcon name="next" />Next</button><button onClick={()=>advanceReveal(true)}><ActionIcon name="next" />Skip to results</button></div>}
+ <button onClick={()=>s.open("pause")}><ActionIcon name="pause" />Pause</button>
  </div>;
 }

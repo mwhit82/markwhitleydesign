@@ -1,4 +1,5 @@
 "use client";
+import { ActionIcon } from "./action-icon";
 import { useEffect, useRef, type ReactNode } from "react";
 import { tutorialCopy } from "@/lib/deader/tutorial";
 import { useGame } from "@/lib/deader/store";
@@ -63,7 +64,7 @@ export function Modal({
         >
           {closeLabel ?? "×"}
         </button>
-        {tutorial && <div className={styles.practiceNote}><p>{tutorialMessage ?? tutorialCopy[tutorial].body}</p><button onClick={()=>useGame.getState().lobby()}>Exit tutorial</button></div>}
+        {tutorial && <div className={styles.practiceNote}><p>{tutorialMessage ?? tutorialCopy[tutorial].body}</p><button onClick={()=>useGame.getState().lobby()}><ActionIcon name="close" />Exit tutorial</button></div>}
         {children}
       </div>
     </div>

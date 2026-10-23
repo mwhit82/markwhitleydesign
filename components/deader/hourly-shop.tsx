@@ -1,4 +1,5 @@
 "use client";
+import { ActionIcon } from "./action-icon";
 import { useEffect, useState } from "react";
 import { useGame } from "@/lib/deader/store";
 import {
@@ -87,7 +88,7 @@ export function HourlyShop() {
           disabled={!!fixture || owned || s.save.coins < item.price}
           onClick={() => s.buySpecial(offer.id, offer.hour)}
         >
-          {owned ? "Owned" : `Purchase · ${item.price} coins`}
+          <ActionIcon name="shop" />{owned ? "Owned" : `Purchase · ${item.price} coins`}
         </button>
         <button
           className={styles.primary}
@@ -97,9 +98,9 @@ export function HourlyShop() {
             else s.wearAccessory(item.category, item.id);
           }}
         >
-          {equipped ? "Equipped" : "Equip"}
+          <ActionIcon name="equip" />{equipped ? "Equipped" : "Equip"}
         </button>
-        <button onClick={() => s.open("shop")}>Back to shop</button>
+        <button onClick={() => s.open("shop")}><ActionIcon name="back" />Back to shop</button>
       </div>
     </Modal>
   );

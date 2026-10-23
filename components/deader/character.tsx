@@ -22,6 +22,7 @@ export function Cone({
   animationKey,
   backpack = false,
   outfit,
+  hideHandItem = armed,
   selfie = false,
   appearance = "ordinary",
   paused = false,
@@ -38,6 +39,7 @@ export function Cone({
   animationKey?: string | number;
   backpack?: boolean;
   outfit?: Outfit;
+  hideHandItem?: boolean;
   selfie?: boolean;
   appearance?: "ordinary" | "third-eye" | "wide-mouth" | "splitter" | "glitched" | "kids";
   paused?: boolean;
@@ -135,9 +137,9 @@ export function Cone({
         </group>
       ))}
       <group ref={body}>
-        <BundleDetails outfit={armed&&outfit?{...outfit,hand:null}:outfit} paused={paused}/>
-        <NewSpecialDetails wear={wear} outfit={armed&&outfit?{...outfit,hand:null}:outfit} paused={paused}/>
-        <SpecialDetails wear={wear} outfit={outfit} armed={armed} paused={paused}/>
+        <BundleDetails outfit={hideHandItem&&outfit?{...outfit,hand:null}:outfit} paused={paused}/>
+        <NewSpecialDetails wear={wear} outfit={hideHandItem&&outfit?{...outfit,hand:null}:outfit} paused={paused}/>
+        <SpecialDetails wear={wear} outfit={outfit} armed={hideHandItem} paused={paused}/>
         {(appearance === "splitter" ? [-1,1] : [0]).map(half=>(
         <mesh key={half} position={[half*split*.12,0,0]} rotation={[0,0,-half*split*.05]} castShadow={!lowDetail}>
           {bitten?<primitive object={bitten} attach="geometry"/>:<latheGeometry onUpdate={geometry=>{if(!rainbow)return;const uv=geometry.attributes.uv,pos=geometry.attributes.position;for(let i=0;i<uv.count;i++)uv.setY(i,(pos.getY(i)-.23)/1.3);uv.needsUpdate=true;}} args={[points, lowDetail ? 16 : 40, appearance === "splitter" ? (half===-1?Math.PI:0) : 0, appearance === "splitter" ? Math.PI : Math.PI*2]} />}

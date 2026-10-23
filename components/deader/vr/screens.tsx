@@ -1,4 +1,6 @@
 "use client";
+import { iconForAction } from "@/lib/deader/action-icons";
+import { drawActionIcon } from "@/lib/deader/canvas-icons";
 import {
   feedHealth,
   retryVRFeed,
@@ -234,7 +236,7 @@ export const VRPanel = memo(function VRPanel() {
     const signature = JSON.stringify([
       title,
       body,
-      all.map((b) => b && [b.text, b.disabled]),
+      all.map((b) => b && [b.text, b.disabled, b.icon]),
       hover,
       visible,
     ]);
@@ -265,7 +267,9 @@ export const VRPanel = memo(function VRPanel() {
         c.strokeRect(x, y, w, 84);
         c.fillStyle = b.disabled ? "#818992" : "white";
         c.font = "32px sans-serif";
-        c.fillText(b.text, x + 18, y + 52);
+        const icon=b.icon??iconForAction(b.text);
+        if(icon)drawActionIcon(c,icon,x+18,y+25,32,!!b.disabled);
+        c.fillText(b.text, x + (icon?62:18), y + 52, w-(icon?80:36));
       });
       display.texture.needsUpdate = true;
     }

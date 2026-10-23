@@ -1,4 +1,5 @@
 "use client";
+import { ActionIcon } from "./action-icon";
 import {useVR} from "@/lib/deader/vr-state";
 import { useEffect, useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
@@ -40,6 +41,6 @@ export function LoungeAlertUI(){
   <div role="status"><strong>{alert.leaving?'It’s leaving!':'Something has transformed!'}</strong><span>HOLDING LOUNGE · {alert.seconds}s</span></div>
   <canvas id="anomalous-lounge-inset" width={WIDTH} height={HEIGHT} aria-label="Live camera of the transformed visitor"/>
   <p>Through the doorway behind you.</p>
-  <button onClick={()=>{useGame.setState({room:{...useGame.getState().room,feed:5}});s.roomView('cctv');}}>View lounge camera</button>
+  <button onClick={()=>{useGame.setState({room:{...useGame.getState().room,feed:5}});s.roomView('cctv');}}><ActionIcon name="camera" />View lounge camera</button>
  </aside>;
 }

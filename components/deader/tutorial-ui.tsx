@@ -1,4 +1,5 @@
 "use client";
+import { ActionIcon } from "./action-icon";
 import { useGame } from '@/lib/deader/store';
 import { tutorialCopy } from '@/lib/deader/tutorial';
 import { Modal } from './modal';
@@ -6,7 +7,7 @@ import styles from './game.module.css';
 export function TutorialUI() {
     const s = useGame();
     if (s.panel === 'tutorial')
-        return <Modal label="Learn to play"><p className={styles.eyebrow}>NIGHT SHIFT TRAINING</p><h2>Let’s practise together.</h2><p>Learn to move, investigate and answer the door. No timer, lost hearts or jumpscares. Leave whenever you like.</p><button onClick={s.beginTutorial}>Start guided practice</button><button onClick={() => s.open(null)}>Back to lobby</button></Modal>;
+        return <Modal label="Learn to play"><p className={styles.eyebrow}>NIGHT SHIFT TRAINING</p><h2>Let’s practise together.</h2><p>Learn to move, investigate and answer the door. No timer, lost hearts or jumpscares. Leave whenever you like.</p><button onClick={s.beginTutorial}><ActionIcon name="play" />Start guided practice</button><button onClick={() => s.open(null)}><ActionIcon name="back" />Back to lobby</button></Modal>;
     if (!s.tutorial || s.panel || ["fridge", "oven", "console", "door", "donut", "vent"].includes(s.room.view))
         return null;
     const copy = tutorialCopy[s.tutorial];

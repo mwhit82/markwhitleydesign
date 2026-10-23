@@ -142,7 +142,7 @@ export default function VRDev() {
         onChange={(e) => setFixture(e.target.value as Rehearsal)}
       >
         {[
-          "stalker-room",
+          "dawn-looks","stalker-room",
           "stalker-follow",
           "stalker-cam-0",
           "stalker-cam-1",

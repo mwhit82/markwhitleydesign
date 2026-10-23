@@ -1,4 +1,5 @@
 "use client";
+import { ActionIcon } from "./action-icon";
 import { useGame } from '@/lib/deader/store';
 import { kitchenMessage } from '@/lib/deader/kitchen';
 import { Modal } from './modal';
@@ -17,12 +18,12 @@ export function KitchenUI(){
   <h2>{s.room.view==='fridge'?'Fridge':'Oven'}</h2>
   <p>{s.room.view==='fridge'?'Free supplies. Take a meal to cook, or drink here.':kitchenMessage(k)}</p>
   <div className={styles.pauseActions}>
-   {s.room.view==='fridge'?<><button disabled={k.food} onClick={()=>s.useKitchen('food')}>{k.food?'Carrying food':'Take food'}</button><button disabled={k.thirst>=100} onClick={()=>s.useKitchen('drink')}>Drink</button></>:<>
-    {k.oven==='off'&&<button disabled={!k.food} onClick={()=>s.useKitchen('cook')}>{k.food?'Start cooking · 20 seconds':'Get food from the fridge first'}</button>}
-    {k.oven==='ready'&&<button onClick={()=>s.useKitchen('eat')}>Collect and eat</button>}
-    {k.oven!=='off'&&<button onClick={()=>s.useKitchen('off')}>Switch off · discard food</button>}
+   {s.room.view==='fridge'?<><button disabled={k.food} onClick={()=>s.useKitchen('food')}><ActionIcon name="food" />{k.food?'Carrying food':'Take food'}</button><button disabled={k.thirst>=100} onClick={()=>s.useKitchen('drink')}><ActionIcon name="drink" />Drink</button></>:<>
+    {k.oven==='off'&&<button disabled={!k.food} onClick={()=>s.useKitchen('cook')}><ActionIcon name="cook" />{k.food?'Start cooking · 20 seconds':'Get food from the fridge first'}</button>}
+    {k.oven==='ready'&&<button onClick={()=>s.useKitchen('eat')}><ActionIcon name="food" />Collect and eat</button>}
+    {k.oven!=='off'&&<button onClick={()=>s.useKitchen('off')}><ActionIcon name="power" />Switch off · discard food</button>}
    </>}
-   <button onClick={()=>s.roomView('explore')}>Back to room</button>
+   <button onClick={()=>s.roomView('explore')}><ActionIcon name="back" />Back to room</button>
   </div>
  </Modal>}
  </>;

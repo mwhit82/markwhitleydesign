@@ -1428,3 +1428,6 @@
 .kitchenFire { position:absolute; inset:0; z-index:50; background:#311909bb; color:white; display:flex; flex-direction:column; justify-content:center; align-items:center; pointer-events:none; }
 
 .kitchenStatus meter { width:46px; height:8px; margin-left:5px; accent-color:#e3d5b6; }
+
+.actionIcon { display:inline-block; width:20px; height:20px; flex-shrink:0; margin-right:8px; vertical-align:-4px; color:#e8e4da; pointer-events:none; }
+button:disabled .actionIcon { color:inherit; }

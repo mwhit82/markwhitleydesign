@@ -1,4 +1,5 @@
 "use client";
+import { ActionIcon } from "./action-icon";
 import { lazy, Suspense, useEffect } from "react";
 import { clockLabel } from "@/lib/deader/game";
 
@@ -53,7 +54,7 @@ export function RoomUI() {
               autoFocus
               onClick={() => s.doorEvent({ type: "leave-inspection" })}
             >
-              Answer the door
+              <ActionIcon name="admit" />Answer the door
             </button>
           </div>
         </div>
@@ -75,7 +76,7 @@ export function RoomUI() {
             <small>LIVE FEED</small>
           </div>
           <button autoFocus onClick={exit}>
-            Back to room
+            <ActionIcon name="back" />Back to room
           </button>
           <div className={styles.scanlines} />
           <div
@@ -131,10 +132,10 @@ export function RoomUI() {
                 });
               }}
             >
-              View vent camera
+              <ActionIcon name="camera" />View vent camera
             </button>
           )}
-          <button onClick={exit}>Step away</button>
+          <button onClick={exit}><ActionIcon name="back" />Step away</button>
         </Modal>
       )}
       {r.view === "explore" && (

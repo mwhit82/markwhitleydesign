@@ -1,4 +1,5 @@
 "use client";
+import { ActionIcon } from "./action-icon";
 import {VR_GUN_YAW} from "@/lib/deader/vr";
 import {useVR} from "@/lib/deader/vr-state";
 import { Component, Suspense, useEffect, useMemo, useRef, type ReactNode } from 'react';
@@ -98,7 +99,7 @@ export function WeaponUI(){
     {r.rewardToast&&<p className={styles.rewardToast} role="status">+{r.rewardToast.coins} coins · Correct!</p>}
     {r.weapon.collected&&r.view==='explore'&&<div className={styles.weaponControls}>
       <span>{r.weapon.ammo} / 6 shots</span>
-      {r.door==='OPEN'&&r.encounters.active?.phase==='waiting'&&<button onClick={()=>s.doorEvent({type:"close"})}>Close door</button>}
+      {r.door==='OPEN'&&r.encounters.active?.phase==='waiting'&&<button onClick={()=>s.doorEvent({type:"close"})}><ActionIcon name="reject" />Close door</button>}
       <button disabled={!r.weapon.ammo} onClick={()=>window.dispatchEvent(new Event('anomalous-fire'))}>Fire</button>
     </div>}
   </>;

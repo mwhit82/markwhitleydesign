@@ -1,4 +1,5 @@
 "use client";
+import { ActionIcon } from "./action-icon";
 import { useEffect, useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
@@ -75,5 +76,5 @@ export function RoomTV() {
 export function TVCaptions() {
   const s = useGame();
   if (!["tv","lounge-tv"].includes(s.room.view) || s.room.survival.phase !== "idle") return null;
-  return <aside className={styles.tvCaption} aria-label="TV subtitles"><b>ANOMALOUS NEWS</b><p>{broadcastSegment(newsForNight(s.room.night?.number ?? 1),s.room.newsSeconds).subtitle}</p><button autoFocus onClick={()=>s.roomView("explore")}>Back to room</button>{s.room.visitorId && <button onClick={()=>{s.roomView("door");useGame.getState().doorEvent({type:"inspect"});}}>Answer the door</button>}</aside>;
+  return <aside className={styles.tvCaption} aria-label="TV subtitles"><b>ANOMALOUS NEWS</b><p>{broadcastSegment(newsForNight(s.room.night?.number ?? 1),s.room.newsSeconds).subtitle}</p><button autoFocus onClick={()=>s.roomView("explore")}><ActionIcon name="back" />Back to room</button>{s.room.visitorId && <button onClick={()=>{s.roomView("door");useGame.getState().doorEvent({type:"inspect"});}}><ActionIcon name="admit" />Answer the door</button>}</aside>;
 }

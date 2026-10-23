@@ -1,4 +1,5 @@
 "use client";
+import { ActionIcon } from "./action-icon";
 import { useEffect, useRef, useState } from 'react';
 import { useGame } from '@/lib/deader/store';
 import { arcadeLevel, ARCADE_PLAYER_SIZE, arcadePlayerAngle, arcadeSpikeVertices, ARCADE_END, freshArcade, stepArcade } from '@/lib/deader/arcade';
@@ -143,7 +144,7 @@ export default function ArcadeUI() {
         else if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus();}
         else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus();}
     }}>
-    <header><div><small>CCTV ARCADE</small><h2>Impossible Shift</h2></div><button onClick={() => useGame.getState().roomView('console')}>Back to CCTV</button></header>
+    <header><div><small>CCTV ARCADE</small><h2>Impossible Shift</h2></div><button onClick={() => useGame.getState().roomView('console')}><ActionIcon name="camera" />Back to CCTV</button></header>
     <div className={styles.arcadeStats}><span>Attempt {run.current.attempt}</span><span>{progress}%</span></div>
     <canvas data-anomalous-arcade ref={canvas} aria-label="Jump over spikes and onto platforms" onPointerDown={e => { e.preventDefault(); if (ready.current) {
         held.current = true;

@@ -1,4 +1,5 @@
 "use client";
+import { REFLECTION_LAYER, setReflectionOnly } from "@/lib/deader/render-layers";
 import { feedHealth } from "@/lib/deader/vr-feed";
 import {spatial} from "./vr/spatial";
 import {useVR} from "@/lib/deader/vr-state";
@@ -15,7 +16,7 @@ import { Cone } from "./character";
 
 // Physical player pose, independent of CCTV and inspection camera positions.
 export const roomPlayerPose = { x: 0, z: 3.2, yaw: 0, walking: false };
-const REFLECTION_LAYER = 2;
+
 
 export function ReflectedPlayer() {
   const vr=useVR(s=>s.active);
@@ -29,16 +30,16 @@ export function ReflectedPlayer() {
   const paused = useGame(s => !!s.panel || !s.focused || !!s.suspension);
   useLayoutEffect(() => {
     // Never draw a duplicate body in the first-person view or CCTV.
-    group.current?.traverse(object => { object.layers.set(REFLECTION_LAYER); });
+    if(group.current)setReflectionOnly(group.current);
   }, [outfit]);
   useFrame(() => {
     if (!group.current) return;
-    group.current.traverse(object=>object.layers.set(REFLECTION_LAYER));
+    setReflectionOnly(group.current);
     group.current.position.set(roomPlayerPose.x, 0, roomPlayerPose.z);
     group.current.rotation.y = roomPlayerPose.yaw + Math.PI;
     if (walking !== roomPlayerPose.walking) setWalking(roomPlayerPose.walking);
   });
-  return <group ref={group}><pointLight position={[0,1.8,1.2]} intensity={1.5} distance={3} color="#ffe0b5"/><Cone colour={colour} outfit={outfit} walking={walking} paused={paused} armed={armed||vr}/>
+  return <group ref={group}><pointLight position={[0,1.8,1.2]} intensity={1.5} distance={3} color="#ffe0b5"/><Cone colour={colour} outfit={outfit} walking={walking} paused={paused} armed={armed||vr} hideHandItem={armed}/>
     {armed&&!vr&&<group position={[.14,.88,.40]} rotation={[0,Math.PI,0]} scale={.65} userData={{ignoreBullet:true}}>
       <GunModel/>
       <mesh position={[0,-.17,.12]} scale={[.045,.075,.055]}><sphereGeometry args={[1,12,8]}/><meshStandardMaterial color="#17191c" roughness={.65}/></mesh>

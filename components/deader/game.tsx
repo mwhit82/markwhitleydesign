@@ -1,4 +1,5 @@
 "use client";
+import { ActionIcon } from "./action-icon";
 import {
   Component,
   Suspense,
@@ -141,7 +142,7 @@ function Cosmetics({ wardrobe }: { wardrobe: boolean }) {
       <p className={styles.balance}>
         {save.coins} <span>COINS</span>
       </p>
-      {!wardrobe&&<button onClick={()=>useGame.getState().open("special")}>Hourly special · See this hour’s item</button>}
+      {!wardrobe&&<button onClick={()=>useGame.getState().open("special")}><ActionIcon name="shop" />Hourly special · See this hour’s item</button>}
       <div className={styles.categories} aria-label="Cosmetic categories">
         {(
           [
@@ -221,6 +222,7 @@ function Cosmetics({ wardrobe }: { wardrobe: boolean }) {
               }
             }}
           >
+            <ActionIcon name={owned ? "equip" : "shop"} />
             {equipped
               ? "Equipped"
               : owned
@@ -238,7 +240,7 @@ function Cosmetics({ wardrobe }: { wardrobe: boolean }) {
               select("none");
             }}
           >
-            Unequip {category}
+            <ActionIcon name="close" />Unequip {category}
           </button>
         )}
       </div>
@@ -337,7 +339,7 @@ function StartMenu() {
             </button>;
           }) : <div className={styles.infiniteCard}><p className={styles.eyebrow}>UNTIL YOUR LUCK RUNS OUT</p><h3>The endless shift.</h3><p>Judgement every five minutes. Survive with fewer than three mistakes, then start a fresh shift.</p><small>Best night: {save.infiniteRecords.night} · Best streak: {save.infiniteRecords.streak}</small></div>}
           {process.env.NODE_ENV === "development" && <label className={styles.devRun}>Local test length<select value={runSeconds} onChange={e => useGame.setState({runSeconds: Number(e.target.value) === 60 ? 60 : 300, selectedNight: Number(e.target.value) === 60 ? selectedNight : Math.min(selectedNight, unlockedNight(save))})}><option value="300">Full night · 5 minutes</option><option value="60">Development rehearsal · 60 seconds · no rewards saved</option></select></label>}
-          {process.env.NODE_ENV === "development" && runSeconds === 60 && <label className={styles.devRun}>Rehearsal scene<select value={rehearsal} onChange={e=>useGame.setState({rehearsal:e.target.value as typeof rehearsal})}><option value="kitchen">Kitchen practice</option><option value="kitchen-fire">Kitchen smoke / fire</option><option value="standard">Normal arrivals</option><option value="lounge">Full lounge · 12 residents</option><option value="scare">Anomaly at the door</option><option value="armed">Gun · open doorway</option><option value="armed-mirror">Gun · mirror check</option>{["stalker-room","stalker-follow","stalker-cam-0","stalker-cam-1","stalker-cam-2","stalker-cam-3","stalker-cam-4","stalker-cam-5","mimic","splitter","glitched","kids","pair","push","rainbow","injured"].map(id=><option key={id} value={id}>{id} · local fixture</option>)}<option value="judgement-pass">Dawn · pass</option><option value="judgement-fail">Dawn · fail</option></select></label>}
+          {process.env.NODE_ENV === "development" && runSeconds === 60 && <label className={styles.devRun}>Rehearsal scene<select value={rehearsal} onChange={e=>useGame.setState({rehearsal:e.target.value as typeof rehearsal})}><option value="kitchen">Kitchen practice</option><option value="kitchen-fire">Kitchen smoke / fire</option><option value="standard">Normal arrivals</option><option value="lounge">Full lounge · 12 residents</option><option value="scare">Anomaly at the door</option><option value="armed">Gun · open doorway</option><option value="armed-mirror">Gun · mirror check</option>{["dawn-looks","stalker-room","stalker-follow","stalker-cam-0","stalker-cam-1","stalker-cam-2","stalker-cam-3","stalker-cam-4","stalker-cam-5","mimic","splitter","glitched","kids","pair","push","rainbow","injured"].map(id=><option key={id} value={id}>{id} · local fixture</option>)}<option value="judgement-pass">Dawn · pass</option><option value="judgement-fail">Dawn · fail</option></select></label>}
         </section>
       </div>
       <footer className={styles.setupFooter}>
@@ -428,7 +430,7 @@ export default function Game() {
             {s.save.coins} <small>COINS</small>
           </span>
           <button onClick={() => s.open("pause")}>
-            Menu <kbd>ESC</kbd>
+            <ActionIcon name="settings" />Menu <kbd>ESC</kbd>
           </button>
         </div>
       </header>
@@ -514,7 +516,7 @@ export default function Game() {
           <div className={styles.modal}>
             <h2>The renderer lost connection.</h2>
             <p>Your saved cosmetics are safe. Reload to restart.</p>
-            <button onClick={() => location.reload()}>Reload game</button>
+            <button onClick={() => location.reload()}><ActionIcon name="retry" />Reload game</button>
           </div>
         </div>
       )}
@@ -548,10 +550,10 @@ export default function Game() {
               s.open(null);
               if (s.suspension === "interrupted") useGame.setState({ suspension: null, focused: true });
             }}>
-              Resume
+              <ActionIcon name="play" />Resume
             </button>
             {s.scene === "room" && (
-              <button onClick={s.lobby}>Return to lobby</button>
+              <button onClick={s.lobby}><ActionIcon name="back" />Return to lobby</button>
             )}
             <Link href="/playground">Back to Playground ↗</Link>
           </div>

@@ -1,3 +1,4 @@
+import { iconForAction, type ActionIconName } from "./action-icons";
 import { kitchenMessage, failureMessage } from "./kitchen";
 /** Explicit headset screens. No DOM scraping or synthetic clicks. */
 import type { useGame } from "./store";
@@ -32,7 +33,7 @@ export const newVRMenu = (): VRMenuState => ({
   answer: "",
   confirmation: null,
 });
-export type VRButton = { text: string; run: () => void; disabled?: boolean };
+export type VRButton = { icon?: ActionIconName; text: string; run: () => void; disabled?: boolean };
 export type VRScreen = {
   title: string;
   body: string;
@@ -66,7 +67,7 @@ export function vrScreen(s: State, m: VRMenuState, a: VRMenuActions): VRScreen {
     text: string,
     run: () => void,
     disabled = false,
-  ): VRButton => ({ text, run, disabled });
+  ): VRButton => ({ text, run, disabled, icon:iconForAction(text) });
   const close = () => {
     m.page = "home";
     m.confirmation = null;

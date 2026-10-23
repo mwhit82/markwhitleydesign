@@ -7,6 +7,7 @@ import { useGame } from '@/lib/deader/store';
 import { closeScarePose } from '@/lib/deader/presentation';
 import { createCharacterWear } from './character-wear';
 import { currentReveal, JUDGEMENT_INTRO_SECONDS, dawnScarePose } from '@/lib/deader/judgement';
+import { dawnAppearance } from '@/lib/deader/scare-appearance';
 import { visitorById } from '@/lib/deader/visitors';
 /** Camera-relative original cone face: no extra renderer, overlays or postprocessing. */
 export function ScareFace(){
@@ -41,6 +42,9 @@ export function ScareFace(){
 
 /** Dawn-only monster; camera-relative transforms never modify player aim. */
 export function DawnFace(){
+ const revealed=useGame(s=>s.room.judgement?currentReveal(s.room.judgement):null);
+ const appearance=dawnAppearance(revealed);
+ const splitLeft=useRef<THREE.Group>(null),splitRight=useRef<THREE.Group>(null),glitchArm=useRef<THREE.Group>(null);
  const vr=useVR(s=>s.active);const {scene:world}=useThree();const anchor=useRef<{p:THREE.Vector3;q:THREE.Quaternion}|null>(null);
  const ref=useRef<THREE.Group>(null);
  const overlay=useMemo(()=>new THREE.Scene(),[]);
@@ -54,6 +58,12 @@ export function DawnFace(){
   const active=!!entry&&!entry.shot&&entry.profile.kind==="anomaly";
   const pose=dawnScarePose(j.entries ? (active?JUDGEMENT_INTRO_SECONDS+j.elapsed%3:0) : j.elapsed,s.save.settings.gentleScares,s.save.settings.reducedMotion||matchMedia('(prefers-reduced-motion: reduce)').matches);
   ref.current.visible=pose.active;
+  const reduced=s.save.settings.reducedMotion||!s.save.settings.effects||matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const gap=appearance?.split?(reduced ? .10 : .10+Math.sin(j.elapsed*4)*.025):0;
+  if(splitLeft.current)splitLeft.current.position.x=-gap;
+  if(splitRight.current)splitRight.current.position.x=gap;
+  if(glitchArm.current){glitchArm.current.position.x=-.8+(reduced?-.08:Math.sin(j.elapsed*19)*.05);}
+
   if(vr){
    if(!pose.active)anchor.current=null;
    if(pose.active&&!anchor.current)anchor.current={p:camera.getWorldPosition(new THREE.Vector3()),q:camera.getWorldQuaternion(new THREE.Quaternion())};
@@ -71,12 +81,25 @@ export function DawnFace(){
   <pointLight position={[1,-.2,1.4]} color="#ad1926" intensity={3} distance={4}/>
   <ambientLight intensity={.3}/>
 
-  <mesh><coneGeometry args={[.78,1.75,28]}/><meshStandardMaterial color="#b8a53b" map={wear.map} bumpMap={wear.relief} bumpScale={.018} roughness={.6}/></mesh>
+  {appearance?.split ? <>
+   <group ref={splitLeft}><mesh rotation={[0,Math.PI,0]}><coneGeometry args={[.78,1.75,28,1,false,0,Math.PI]}/><meshStandardMaterial side={THREE.DoubleSide} color={appearance.colour} map={wear.map} bumpMap={wear.relief} bumpScale={.018} roughness={.6}/></mesh></group>
+   <group ref={splitRight}><mesh><coneGeometry args={[.78,1.75,28,1,false,0,Math.PI]}/><meshStandardMaterial side={THREE.DoubleSide} color={appearance.colour} map={wear.map} bumpMap={wear.relief} bumpScale={.018} roughness={.6}/></mesh></group>
+  </> : <mesh><coneGeometry args={[.78,1.75,28]}/><meshStandardMaterial color={appearance?.colour??'#b8a53b'} map={wear.map} bumpMap={wear.relief} bumpScale={.018} roughness={.6}/></mesh>}
+  {appearance?.thirdEye&&<group position={[0,.52,.32]}>
+   <mesh scale={[1,1.2,.6]}><sphereGeometry args={[.18,16,10]}/><meshStandardMaterial color="#211517" map={wear.map} roughness={.6}/></mesh>
+   <mesh position={[0,0,.12]} scale={[1,1,.3]}><sphereGeometry args={[.08,12,8]}/><meshStandardMaterial color="#a1141c" roughness={.5}/></mesh>
+   <mesh position={[0,0,.15]} scale={[.4,1,.2]}><sphereGeometry args={[.04,10,8]}/><meshStandardMaterial color="#170307"/></mesh>
+  </group>}
+  {appearance?.glitch&&<group ref={glitchArm} position={[-.8,-.1,0]}>
+   <mesh rotation={[0,0,-.35]}><capsuleGeometry args={[.075,.5,4,10]}/><meshStandardMaterial color="#17191b" map={wear.map}/></mesh>
+   {Array.from({length:8},(_,i)=><mesh key={i} position={[(i%3)*.08-.08,i*.08-.27,(i%2)*.08]}><boxGeometry args={[.075,.075,.075]}/><meshStandardMaterial color={i%3===0?'#b4e4ea':'#131517'} roughness={.65}/></mesh>)}
+  </group>}
   {[-1,1].map(side=><group key={side} position={[side*.27,.13,.48]} rotation={[0,0,side*-.14]}>
    <mesh scale={[1,1.15,.8]}><sphereGeometry args={[.25,20,12]}/><meshStandardMaterial color="#211517" map={wear.map} bumpMap={wear.relief} bumpScale={.018} roughness={.6}/></mesh>
    <mesh position={[-side*.025,-.015,.225]} scale={[1,1.2,.25]}><sphereGeometry args={[.105,16,10]}/><meshStandardMaterial color="#a1141c" map={wear.map} bumpMap={wear.relief} bumpScale={.018} roughness={.6}/></mesh>
    <mesh position={[-side*.025,-.015,.26]} scale={[.4,1,.25]}><sphereGeometry args={[.05,12,8]}/><meshStandardMaterial color="#170307" map={wear.map} bumpMap={wear.relief} bumpScale={.018} roughness={.6}/></mesh>
   </group>)}
+  <group scale={[appearance?.mouthWidth??1,1,1]}>
   <mesh position={[0,-.32,.54]} scale={[1,1.45,.18]}><sphereGeometry args={[.30,20,16]}/><meshStandardMaterial color="#050405" map={wear.map} bumpMap={wear.relief} bumpScale={.018} roughness={.6}/></mesh>
   {[-.19,-.065,.075,.2].map((x,i)=><mesh key={x} position={[x,-.19,.66]} rotation={[0,0,Math.PI+(i-1.5)*.09]}><coneGeometry args={[.065,.24+(i%2)*.08,5]}/><meshStandardMaterial color="#ded6b8" map={wear.map} bumpMap={wear.relief} bumpScale={.018} roughness={.6}/></mesh>)}
   {[-.16,0,.17].map(x=><mesh key={x} position={[x,-.61,.65]} rotation={[0,0,-x]}><coneGeometry args={[.05,.17,5]}/><meshStandardMaterial color="#c0b89c" map={wear.map} bumpMap={wear.relief} bumpScale={.018} roughness={.6}/></mesh>)}
@@ -85,5 +108,6 @@ export function DawnFace(){
    <mesh position={[0,-.12-i*.025,0]} rotation={[0,0,x*.4]}><capsuleGeometry args={[.014,.2+i*.05,4,8]}/><meshStandardMaterial color="#780d19" roughness={.17}/></mesh>
    <mesh position={[.012,-.25-i*.025,0]} scale={[.7,1.8,.6]}><sphereGeometry args={[.025,10,8]}/><meshStandardMaterial color="#8f1520" roughness={.15}/></mesh>
   </group>)}
+  </group>
  </group>,vr?world:overlay);
 }

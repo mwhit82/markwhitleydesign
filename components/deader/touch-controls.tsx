@@ -1,4 +1,5 @@
 "use client";
+import { ActionIcon } from "./action-icon";
 import { useEffect, useRef, useState, type CSSProperties, type PointerEvent } from "react";
 import { gameInput, joystick, touchLookScale, shouldResetTouchOnResize, requiresResume, type InterruptionEvent } from "@/lib/deader/input";
 import { useVR } from "@/lib/deader/vr-state";
@@ -146,8 +147,8 @@ export function TouchControls() {
         <button autoFocus onClick={() => {
           gameInput.reset(); roomAudio.unlock();
           useGame.setState({ suspension: null, focused: true });
-        }}>Resume game</button>
-        <button onClick={() => s.open("pause")}>Open menu</button>
+        }}><ActionIcon name="play" />Resume game</button>
+        <button onClick={() => s.open("pause")}><ActionIcon name="settings" />Open menu</button>
       </section>
     </div>}
   </>;
