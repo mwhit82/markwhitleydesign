@@ -36,7 +36,7 @@ export default function Lobby() {
           material={m.dark}
         />
         <Sign
-          text={"LEARN TO PLAY\nGUIDED PRACTICE"}
+          text={"TUTORIALS"}
           position={[0, 1.36, 0.052]}
           width={0.73}
           height={0.49}
@@ -46,7 +46,7 @@ export default function Lobby() {
       </group>
       <Sign
         aged
-        text={"THE ANOMALOUS\nAFTER HOURS CLUB"}
+        text={"THE ANOMALOUS"}
         position={[0, 3.15, -4.85]}
         width={4.7}
         height={1}
@@ -88,7 +88,7 @@ export default function Lobby() {
         />
         <Sign
           aged
-          text={"SUPPLY SHOP\nCOLOURS + SIDEKICKS"}
+          text={"SWAG STORE"}
           position={[-3.85, 2.6, -2.5]}
           width={2}
           height={0.75}
@@ -116,7 +116,7 @@ export default function Lobby() {
         />
         <Sign
           aged
-          text={"DRESSING ROOM\nMAKE IT PERSONAL"}
+          text={"WARDROBE"}
           position={[3.7, 2.6, -2.5]}
           width={2.1}
           height={0.75}
@@ -129,7 +129,7 @@ export default function Lobby() {
       </group>
       <Sign
         aged
-        text={"WELCOME, NIGHT SHIFT.\nTRY TO STAY YOURSELF."}
+        text={"WELCOME TO THE NIGHT SHIFT.\nBEWARE."}
         position={[-2.6, 1.9, -4.82]}
         width={1.8}
         height={0.85}

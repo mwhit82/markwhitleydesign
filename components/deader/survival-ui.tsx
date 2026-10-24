@@ -13,99 +13,34 @@ import styles from "./game.module.css";
 export function GameSettings() {
   const s = useGame(),
     settings = s.save.settings;
-  return (
-    <fieldset className={styles.settings}>
-      <legend>Make the night yours</legend>
-      <label>Controls
-        <select value={settings.controls} onChange={e => s.settings({ controls: e.target.value as "auto" | "touch" | "keyboard" })}>
-          <option value="auto">Auto</option><option value="touch">Touch</option><option value="keyboard">Keyboard and mouse</option>
-        </select>
-      </label>
-      <p>Touch: left joystick to move, swipe the room view to look, tap the labelled button to interact. Play upright or sideways. If play feels slow, try Low graphics below.</p>
-      <label>
-        Sound volume{" "}
-        <input
-          aria-label="Sound volume"
-          type="range"
-          min="0"
-          max="1"
-          step="0.05"
-          value={settings.volume}
-          onChange={(e) => s.settings({ volume: Number(e.target.value) })}
-        />
-      </label>
-      {(
-        [
-          ["muted", "Mute sound"],
-          ["gentleScares", "Gentle scares · quieter, no lunges"],
-          ["reducedMotion", "Reduce motion and camera shake"],
-          ["reducedFlashes", "Disable lighting flicker"],
-        ] as const
-      ).map(([key, label]) => (
-        <label key={key}>
-          <input
-            type="checkbox"
-            checked={settings[key]}
-            onChange={(e) => s.settings({ [key]: e.target.checked })}
-          />
-          {label}
-        </label>
-      ))}
-      {(
-        [
-          ["ambience", "Ambient sound", 0, 1, 0.05],
-          ["sensitivity", "Mouse sensitivity", 0.3, 2, 0.1],
-          ["touchSensitivity", "Touch sensitivity", 0.3, 2, 0.1],
-          ["resolution", "Rendering resolution", 0.75, 1.5, 0.25],
-        ] as const
-      ).map(([key, label, min, max, step]) => (
-        <label key={key}>
-          {label} · {settings[key]}
-          <input
-            aria-label={label}
-            type="range"
-            min={min}
-            max={max}
-            step={step}
-            value={settings[key]}
-            onChange={(e) => s.settings({ [key]: Number(e.target.value) })}
-          />
-        </label>
-      ))}
-      {(
-        [
-          ["shadows", "Shadows (Standard quality)"],
-          ["effects", "Atmospheric effects · dust, grain and sway"],
-        ] as const
-      ).map(([key, label]) => (
-        <label key={key}>
-          <input
-            type="checkbox"
-            checked={settings[key]}
-            onChange={(e) => s.settings({ [key]: e.target.checked })}
-          />
-          {label}
-        </label>
-      ))}
-      <label>
-        Graphics{" "}
-        <select
-          value={settings.quality}
-          onChange={(e) =>
-            s.settings({ quality: e.target.value as "low" | "standard" })
-          }
-        >
-          <option value="standard">Standard</option>
-          <option value="low">Low · lower resolution</option>
-        </select>
-      </label>
-      <small>
-        Saved on this device. System reduced-motion preferences are respected
-        too.
-      </small>
-      <small>Scream SFX by Dan Knoflicek · <a href="https://opengameart.org/content/screaming" target="_blank" rel="noreferrer">Screaming</a> · <a href="https://creativecommons.org/licenses/by/3.0/" target="_blank" rel="noreferrer">CC BY 3.0</a> · trimmed and normalized.</small>
+  const toggle = (key: "muted" | "gentleScares" | "reducedMotion" | "reducedFlashes" | "shadows" | "effects", label: string) => <label className={styles.settingToggle} key={key}><input type="checkbox" checked={settings[key]} onChange={e=>s.settings({[key]:e.target.checked})}/><span>{label}</span></label>;
+  const slider = (key: "volume" | "ambience" | "sensitivity" | "touchSensitivity" | "resolution", label: string, min: number, max: number, step: number) => <label key={key}><span>{label} · {settings[key]}</span><input aria-label={label} type="range" min={min} max={max} step={step} value={settings[key]} onChange={e=>s.settings({[key]:Number(e.target.value)})}/></label>;
+  return <div className={styles.settingsGroups}>
+    <fieldset className={styles.settings}><legend>Controls</legend>
+      <label>Input mode<select value={settings.controls} onChange={e=>s.settings({controls:e.target.value as "auto" | "touch" | "keyboard"})}><option value="auto">Auto</option><option value="touch">Touch</option><option value="keyboard">Keyboard and mouse</option></select></label>
+      <p>Touch: use the left joystick to move, swipe to look, and tap the labelled button to interact.</p>
+      {slider("sensitivity","Mouse sensitivity",.3,2,.1)}
+      {slider("touchSensitivity","Touch sensitivity",.3,2,.1)}
     </fieldset>
-  );
+    <fieldset className={styles.settings}><legend>Sound</legend>
+      {slider("volume","Sound volume",0,1,.05)}
+      {slider("ambience","Ambient sound",0,1,.05)}
+      {toggle("muted","Mute sound")}
+    </fieldset>
+    <fieldset className={styles.settings}><legend>Comfort</legend>
+      {toggle("gentleScares","Gentle scares · quieter, no lunges")}
+      {toggle("reducedMotion","Reduce motion and camera shake")}
+      {toggle("reducedFlashes","Disable lighting flicker")}
+    </fieldset>
+    <fieldset className={styles.settings}><legend>Graphics</legend>
+      <label>Quality<select value={settings.quality} onChange={e=>s.settings({quality:e.target.value as "low" | "standard"})}><option value="standard">Standard</option><option value="low">Low · lower resolution</option></select></label>
+      {slider("resolution","Rendering resolution",.75,1.5,.25)}
+      {toggle("shadows","Shadows (Standard quality)")}
+      {toggle("effects","Atmospheric effects · dust, grain and sway")}
+    </fieldset>
+    <small>Saved on this device. System reduced-motion preferences are respected too.</small>
+    <small>Scream SFX by Dan Knoflicek · <a href="https://opengameart.org/content/screaming" target="_blank" rel="noreferrer">Screaming</a> · <a href="https://creativecommons.org/licenses/by/3.0/" target="_blank" rel="noreferrer">CC BY 3.0</a> · trimmed and normalized.</small>
+  </div>;
 }
 
 export function SurvivalUI() {
@@ -177,7 +112,7 @@ export function SurvivalUI() {
             FOR NOW.
           </h2>
         )}
-        <button onClick={() => s.open("pause")}><ActionIcon name="pause" />Pause · Esc</button>
+        <button onClick={() => s.open("pause")}><ActionIcon name="settings" />Settings</button>
       </div>
     );
   }
@@ -307,7 +242,7 @@ export function SurvivalUI() {
       className={`${styles.survivalOverlay} ${seq.phase === "blackout" ? styles.blackout : ""}`}
     >
       <p role="status">{text}</p>
-      <button onClick={() => s.open("pause")}><ActionIcon name="pause" />Pause · Esc</button>
+      <button onClick={() => s.open("pause")}><ActionIcon name="settings" />Settings</button>
     </div>
   );
 }

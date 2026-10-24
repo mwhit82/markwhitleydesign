@@ -1,4 +1,5 @@
 "use client";
+import { failDoorFeedForTest } from "../door-feed";
 import { xrStore } from "./runtime";
 import { SPECIAL_IDS, type SpecialId } from "@/lib/deader/special-ids";
 import { stalkerDebug, STALKER_ROOM } from "@/lib/deader/stalker";
@@ -131,6 +132,7 @@ export default function VRDev() {
       <button
         onClick={() => {
           feedHealth.failed = true;
+          failDoorFeedForTest();
         }}
       >
         Fail camera feed
@@ -263,6 +265,7 @@ export default function VRDev() {
       <button onClick={() => useGame.getState().open("pause")}>
         Test pause
       </button>
+      <button onClick={() => useGame.getState().roomView("console")}>Test console</button>
       <button onClick={() => useGame.getState().roomView("cctv")}>
         Test CCTV
       </button>

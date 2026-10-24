@@ -1,4 +1,5 @@
 "use client";
+import { DoorFeed } from "./door-feed";
 import { ActionIcon } from "./action-icon";
 import { canConfirmDoor } from "@/lib/deader/room";
 import { useGame } from "@/lib/deader/store";
@@ -20,8 +21,9 @@ export function DoorMenu() {
   return <Modal label="Door choices" className={styles.doorModal} onClose={() => s.roomView("explore")}>
     <header className={styles.doorHeader}><h2>{waiting ? "Answer the door" : "Check the door."}</h2><DecisionCountdown /></header>
     <div className={styles.doorBody}>
+      <DoorFeed key={visitor?.id ?? "empty"} /><div className={styles.doorQuestions}>
       {waiting ? <VisitorQuestions showCountdown={false} /> : <p>{visitor?.phase === "approaching" ? "Someone is coming. Wait for the knock." : "Nobody is waiting right now."}</p>}
-    </div>
+    </div></div>
     <footer className={styles.doorActions}>
       <div className={styles.decisionButtons}>
         <button className={styles.admitButton} disabled={!canOpen} onClick={()=>decide(true)}><ActionIcon name={waiting?'admit':'door'} />{waiting?'Let in':'Open door'}</button>

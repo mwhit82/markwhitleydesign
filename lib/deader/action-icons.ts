@@ -18,7 +18,7 @@ export const actionLabels:Readonly<Record<string,ActionIconName>>={
  'View cameras':'camera','Cameras':'camera','Change camera':'camera','More cameras':'camera','View vent camera':'camera','View lounge camera':'camera','Back to CCTV':'camera',
  'Answer the door':'door','Let in':'admit','Open door':'door','Open doorway to aim · does not admit':'admit',
  'Send away':'reject','Close door':'door',
- 'Purchase':'shop','Buy':'shop','Shop':'shop','Hourly special':'clock','Hourly special · See this hour’s item':'shop',
+ 'Purchase':'shop','Buy':'shop','Shop':'shop','Special':'clock','Settings':'settings','Unequip':'close','Hourly special':'clock','Hourly special · See this hour’s item':'shop',
  'Equip':'equip','Equipped':'equip','Equip set':'equip','Confirm':'equip','Remove':'close',
  'Take food':'food','Carrying food':'food','Get food from fridge':'food','Get food from the fridge first':'food','Collect and eat':'food',
  'Drink':'drink','Start cooking · 20s':'cook','Start cooking · 20 seconds':'cook',

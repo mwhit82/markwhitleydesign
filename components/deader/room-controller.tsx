@@ -1,4 +1,5 @@
 "use client";
+import { PEEPHOLE_POSITION, PEEPHOLE_LOOK_AT, PEEPHOLE_FOV } from "@/lib/deader/peephole";
 import { useEffect, useMemo, useRef } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
@@ -310,11 +311,11 @@ export function RoomController() {
       rotation.copy(dummy.quaternion);
       fov = 62;
     } else if (r.view === "inspect") {
-      eye.set(0.25, 1.63, -3.94);
+      eye.set(...PEEPHOLE_POSITION);
       dummy.position.copy(eye);
-      dummy.lookAt(0.25, 0.85, -6);
+      dummy.lookAt(...PEEPHOLE_LOOK_AT);
       rotation.copy(dummy.quaternion);
-      fov = 40;
+      fov = PEEPHOLE_FOV;
     } else {
       eye.set(pos.current.x, 1.6, pos.current.z);
       if (

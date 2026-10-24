@@ -14,9 +14,11 @@ export function renderVRFeed(
   scene: THREE.Scene,
   camera: THREE.Camera,
   target: THREE.WebGLRenderTarget,
+  health = feedHealth,
+  afterRender?: () => void,
 ): boolean {
-  if (feedHealth.failed || feedHealth.rendering) return false;
-  feedHealth.rendering = true;
+  if (health.failed || health.rendering) return false;
+  health.rendering = true;
   const old = {
     target: gl.getRenderTarget(),
     face: gl.getActiveCubeFace(),
@@ -49,9 +51,10 @@ export function renderVRFeed(
     gl.setScissorTest(false);
     gl.clear();
     gl.render(scene, camera);
+    afterRender?.();
     return true;
   } catch (error) {
-    feedHealth.failed = true;
+    health.failed = true;
     console.error("VR camera feed stopped; close or retry the camera.", error);
     return false;
   } finally {
@@ -69,7 +72,7 @@ export function renderVRFeed(
       hidden.forEach((o) => {
         o.visible = true;
       });
-      feedHealth.rendering = false;
+      health.rendering = false;
     }
   }
 }

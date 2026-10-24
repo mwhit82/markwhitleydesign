@@ -1,4 +1,5 @@
 "use client";
+import { DoorFeedRenderer } from "../door-feed";
 import { Stalker } from "../stalker";
 import {useVR} from "@/lib/deader/vr-state";
 import { Weapon } from "../weapon";
@@ -262,7 +263,7 @@ export default function Room() {
       />
       <Donut materials={m} />
       <RoomTV />
-      <Lounge materials={m}/><KitchenRoom materials={m}/><LoungeInsetRenderer/>
+      <Lounge materials={m}/><KitchenRoom materials={m}/><LoungeInsetRenderer/><DoorFeedRenderer/>
       <ScareFace/>
       <Box
         position={[-2.1, 0.38, 1.25]}

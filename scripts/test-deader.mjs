@@ -2325,6 +2325,12 @@ test("VR feed restores renderer and object state on success and failure, and blo
   restored(); assert.equal(vrFeed.feedHealth.failed, true);
   assert.equal(vrFeed.renderVRFeed(gl, scene, {}, target), false); assert.equal(calls, 2);
   vrFeed.retryVRFeed(); assert.equal(vrFeed.feedHealth.failed, false);
+  const isolated={failed:false,rendering:false};
+  gl.render=()=>{};
+  console.error=()=>{};
+  try { assert.equal(vrFeed.renderVRFeed(gl,scene,{},target,isolated,()=>{throw new Error("readback failed");}),false); }
+  finally {console.error=log;}
+  restored(); assert.equal(isolated.failed,true);assert.equal(vrFeed.feedHealth.failed,false);
 });
 test('VR camera failure retains retry and close without a live feed',async()=>{
  const {vrScreen,newVRMenu}=await import(await moduleUrl(resolve('lib/deader/vr-menu.ts')));
@@ -2705,4 +2711,30 @@ test('VR grab lightbar highlights hover and retained drag without animated state
  assert.notEqual(grabBarColour(false,false),grabBarColour(true,false));
  assert.equal(grabBarColour(true,false),grabBarColour(false,true));
  assert.equal(grabBarColour(true,true),grabBarColour(false,true));
+});
+
+test('Locker ownership includes complete bundles and hourly items but disables empty categories', async()=>{
+ const {ownsCosmetic,ownedCategoryAvailable}=await import(await moduleUrl(resolve('lib/deader/ownership.ts')));
+ const {bundles}=await import(await moduleUrl(resolve('lib/deader/cosmetics.ts')));
+ const s=g.newSave();
+ assert.equal(ownedCategoryAvailable(s,'colour'),true);
+ assert.equal(ownedCategoryAvailable(s,'effect'),false);
+ const complete={...s,ownedAccessories:[...s.ownedAccessories,...bundles[0].items]};
+ assert.equal(ownsCosmetic(complete,bundles[0].id),true);
+ assert.equal(ownedCategoryAvailable(complete,'bundle'),true);
+ assert.equal(ownedCategoryAvailable({...s,ownedAccessories:[...s.ownedAccessories,'glitch-particles']},'effect'),true);
+ assert.equal(ownedCategoryAvailable({...s,ownedPets:[...s.ownedPets,'mini-anomaly']},'pet'),true);
+});
+
+test('Locker VR disables empty categories and falls back from a stale category',async()=>{
+ const {vrScreen,newVRMenu}=await import(await moduleUrl(resolve('lib/deader/vr-menu.ts')));
+ const {useGame}=await import(await moduleUrl(resolve('lib/deader/store.ts')));
+ const actions={patch:()=>{},resume:()=>{},recenter:()=>{},exit:()=>{},decide:()=>{}};
+ const s={...useGame.getState(),save:g.newSave(),panel:'wardrobe',suspension:null};
+ const m=newVRMenu(); const screen=vrScreen(s,m,actions);
+ assert.equal(screen.buttons.find(b=>b.text==='Colours').disabled,false);
+ assert.equal(screen.buttons.find(b=>b.text==='Bundles').disabled,true);
+ assert.equal(screen.buttons.find(b=>b.text==='Sidekicks').disabled,true);
+ m.page='shop-pet';const fallback=vrScreen(s,m,actions);
+ assert.equal(m.page,'shop-colour');assert.equal(fallback.title,'Classic Yellow');
 });

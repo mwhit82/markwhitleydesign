@@ -1,3 +1,4 @@
+import { ownsCosmetic, ownedCategoryAvailable } from "./ownership";
 import { iconForAction, type ActionIconName } from "./action-icons";
 import { kitchenMessage, failureMessage } from "./kitchen";
 /** Explicit headset screens. No DOM scraping or synthetic clicks. */
@@ -79,11 +80,11 @@ export function vrScreen(s: State, m: VRMenuState, a: VRMenuActions): VRScreen {
     buttons: VRButton[],
     back?: () => void,
   ): VRScreen => ({ title, body, buttons, back, close });
-  if (s.suspension)
+  if (s.suspension && !s.panel)
     return screen(
       "Game paused",
       "Your controllers are ready. Resume when you are comfortable.",
-      [button("Return to game", a.resume), button("Return to lobby", s.lobby)],
+      [button("Return to game", a.resume), button("Settings", () => s.open("pause")), button("Return to lobby", s.lobby)],
     );
   if (a.feedFailed && ["cctv", "inspect", "door"].includes(r.view) && !s.panel)
     return screen(
@@ -186,8 +187,8 @@ export function vrScreen(s: State, m: VRMenuState, a: VRMenuActions): VRScreen {
       owned = ownsSpecial(s.save, id),
       equipped = specialEquipped(s.save, id);
     const result = screen(
-      item.name,
-      `${s.save.coins} coins · ${item.price} coins\nChanges in ${offerCountdown(now)}\n${specialDescriptions[id]}\nMay repeat. Owned items stay yours.`,
+      "Special",
+      `${item.name}\n${s.save.coins} coins · ${item.price} coins\nChanges in ${offerCountdown(now)}\n${specialDescriptions[id]}\nMay repeat. Owned items stay yours.`,
       [
         button(
           owned ? "Owned" : "Purchase",
@@ -214,6 +215,16 @@ export function vrScreen(s: State, m: VRMenuState, a: VRMenuActions): VRScreen {
   if (s.panel === "shop" || s.panel === "wardrobe") {
     const category = m.page.replace("shop-", ""),
       wardrobe = s.panel === "wardrobe";
+    const all = [
+      ...cosmetics,
+      ...bundles,
+      ...pets.map((p) => ({ ...p, category: "pet" as const })),
+      ...accessories,
+    ];
+    const owns = (id: string) => ownsCosmetic(s.save,id);
+    if (wardrobe && m.page.startsWith("shop-") && !ownedCategoryAvailable(s.save,category)) {
+      m.page="shop-colour"; return vrScreen(s,m,a);
+    }
     if (m.page === "more-shop")
       return screen(
         "More from the shop",
@@ -226,11 +237,11 @@ export function vrScreen(s: State, m: VRMenuState, a: VRMenuActions): VRScreen {
       );
     if (!m.page.startsWith("shop-"))
       return screen(
-        wardrobe ? "Your wardrobe" : "Shop",
+        wardrobe ? "Locker" : "Shop",
         `${s.save.coins} coins · Choose a category.`,
         [
           ...(!wardrobe
-            ? [button("Hourly special", () => s.open("special"))]
+            ? [button("Special", () => s.open("special"))]
             : []),
           ...(wardrobe
             ? ["Colours", "Bundles", "Sidekicks", "Accessories"]
@@ -243,27 +254,10 @@ export function vrScreen(s: State, m: VRMenuState, a: VRMenuActions): VRScreen {
                   ? "more-shop"
                   : "shop-" + ["colour", "bundle", "pet", "accessory"][i],
               ),
+              wardrobe && !ownedCategoryAvailable(s.save,["colour","bundle","pet","accessory"][i]),
             ),
           ),
         ],
-      );
-    const all = [
-      ...cosmetics,
-      ...bundles,
-      ...pets.map((p) => ({ ...p, category: "pet" as const })),
-      ...accessories,
-    ];
-    const owns = (id: string) =>
-      [
-        ...s.save.owned,
-        ...s.save.ownedAccessories,
-        ...s.save.ownedPets,
-        ...s.save.ownedBundles,
-      ].some((x) => x === id) ||
-      !!bundles.find(
-        (b) =>
-          b.id === id &&
-          b.items.every((x) => s.save.ownedAccessories.includes(x)),
       );
     const items = all.filter(
       (i) =>
@@ -325,7 +319,7 @@ export function vrScreen(s: State, m: VRMenuState, a: VRMenuActions): VRScreen {
         button("Purchase", buy, owned || s.save.coins < item.price || wardrobe),
         button(
           equipped
-            ? "Remove"
+            ? "Unequip"
             : item.category === "bundle"
               ? "Equip set"
               : "Equip",
@@ -420,7 +414,7 @@ export function vrScreen(s: State, m: VRMenuState, a: VRMenuActions): VRScreen {
     );
   }
   if (s.panel === "pause")
-    return screen("Paused", "Take your time.", [
+    return screen("Settings", "", [
       button("Return to game", close),
       button("VR settings", nav("settings")),
       button("Progress", () => s.open("progress")),
@@ -548,6 +542,7 @@ export function vrScreen(s: State, m: VRMenuState, a: VRMenuActions): VRScreen {
   }
   if (r.view === "console")
     return screen("Security console", "Keep an eye on the house.", [
+      ...(e?.phase === "waiting" ? [button("Answer the door", () => s.roomView("door"))] : []),
       button("View cameras", () => s.roomView("cctv")),
       button(
         "Impossible Shift",

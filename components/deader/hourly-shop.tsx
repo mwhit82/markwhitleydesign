@@ -45,8 +45,12 @@ export function HourlyShop() {
   const preview = specialPreview(s.save, id);
   return (
     <Modal
-      label="Hourly special"
-      closeLabel="Back to lobby"
+      label="Special"
+      header={<header className={styles.shopHeader}><span aria-hidden="true" /><h2>Special</h2><div className={styles.shopUtilities}>
+        <div className={styles.headerBalance} aria-label={`${s.save.coins} coins`}><ActionIcon name="cash" /><b>{s.save.coins}</b><span>coins</span></div>
+        <div className={styles.headerBalance} aria-label={`Changes in ${offerCountdown(now)}`}><ActionIcon name="clock" />{offerCountdown(now)}</div>
+        <button aria-label="Close menu" title="Close menu" onClick={()=>s.open(null)}><ActionIcon name="close" /></button>
+      </div></header>}
       className={`${styles.shopModal} ${styles.hourlyModal}`}
     >
       <div className={styles.shopScroll}>
@@ -70,18 +74,8 @@ export function HourlyShop() {
             </select>
           </label>
         )}
-        <div className={styles.hourlyDetails}>
-        <h2>{item.name}</h2>
-        <p className={styles.balance}>{s.save.coins} COINS</p>
-        <p>
-          Changes in <strong>{offerCountdown(now)}</strong> · The same item may
-          stay.
-        </p>
-        <p>
-          {specialDescriptions[id]}
-        </p>
-        <p>Yours forever once purchased. Find owned specials in Customise.</p></div>
         <Preview {...preview} />
+        <div className={styles.hourlyDetails}><h3>{item.name}</h3><p>{specialDescriptions[id]}</p></div>
       </div>
       <div className={styles.purchase}>
         <button
@@ -100,7 +94,7 @@ export function HourlyShop() {
         >
           <ActionIcon name="equip" />{equipped ? "Equipped" : "Equip"}
         </button>
-        <button onClick={() => s.open("shop")}><ActionIcon name="back" />Back to shop</button>
+        <button onClick={() => s.open("shop")}><ActionIcon name="shop" />Shop</button>
       </div>
     </Modal>
   );

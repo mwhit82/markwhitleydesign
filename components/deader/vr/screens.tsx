@@ -1,4 +1,5 @@
 "use client";
+import { PEEPHOLE_POSITION, PEEPHOLE_LOOK_AT, PEEPHOLE_FOV } from "@/lib/deader/peephole";
 import { renderVRPreview, grabBarColour } from "@/lib/deader/vr-preview";
 import { needWarning, showNeeds } from "@/lib/deader/kitchen";
 import { iconForAction } from "@/lib/deader/action-icons";
@@ -523,9 +524,9 @@ export function VRFeed() {
       return;
     }
     if (view === "inspect" || view === "door") {
-      camera.position.set(0.25, 1.63, -3.94);
-      camera.lookAt(0.25, 0.85, -6);
-      camera.fov = 40;
+      camera.position.set(...PEEPHOLE_POSITION);
+      camera.lookAt(...PEEPHOLE_LOOK_AT);
+      camera.fov = PEEPHOLE_FOV;
     } else if (view === "cctv") {
       const feed = FEEDS[r.feed];
       camera.position.fromArray(feed.position);

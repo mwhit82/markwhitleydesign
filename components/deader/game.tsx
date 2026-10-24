@@ -1,4 +1,5 @@
 "use client";
+import { ownsCosmetic, ownedCategoryAvailable } from "@/lib/deader/ownership";
 import { ActionIcon } from "./action-icon";
 import {
   Component,
@@ -113,8 +114,12 @@ function Cosmetics({ wardrobe }: { wardrobe: boolean }) {
   );
   const [selected, select] = useState<string>(save.equipped);
   const catalogue = [...cosmetics, ...accessories, ...bundles, ...pets.map(p=>({...p,category:"pet" as const}))];
-  const owns = (id: string) =>
-    [...save.owned, ...save.ownedAccessories, ...save.ownedPets,...save.ownedBundles].some((v) => v === id) || !!bundles.find(b=>b.id===id&&b.items.every(piece=>save.ownedAccessories.includes(piece)));
+  const owns = (id: string) => ownsCosmetic(save,id);
+  const available = (id: string) => ownedCategoryAvailable(save,id);
+  const categoryAvailable = available(category);
+  useEffect(() => {
+    if (wardrobe && !categoryAvailable) { setCategory("colour"); select(""); }
+  }, [wardrobe, categoryAvailable]);
   const items = catalogue.filter(
     (c) => c.category === category && (!wardrobe || owns(c.id)) && (wardrobe || !isHourlySpecial(c.id)),
   );
@@ -135,11 +140,12 @@ function Cosmetics({ wardrobe }: { wardrobe: boolean }) {
   return (
     <Modal label={wardrobe ? "Character customisation" : "Cosmetics shop"} className={styles.shopModal} header={
       <header className={styles.shopHeader}>
-        <button aria-label="Back to lobby" title="Back to lobby" onClick={()=>useGame.getState().open(null)}><ActionIcon name="back" /></button>
+        <span aria-hidden="true" />
         <h2>{wardrobe?'Locker':'Shop'}</h2>
         <div className={styles.shopUtilities}>
-          {!wardrobe&&<button aria-label="Hourly special" title="Hourly special" onClick={()=>useGame.getState().open("special")}><ActionIcon name="clock" /></button>}
+          {!wardrobe&&<button aria-label="Hourly special" title="Hourly special" onClick={()=>useGame.getState().open("special")}><ActionIcon name="clock" />Special</button>}
           <div className={styles.headerBalance} aria-label={`${save.coins} coins`}><ActionIcon name="cash" /><b>{save.coins}</b><span>coins</span></div>
+          <button aria-label="Close menu" title="Close menu" onClick={()=>useGame.getState().open(null)}><ActionIcon name="close" /></button>
         </div>
       </header>
     }>
@@ -158,6 +164,7 @@ function Cosmetics({ wardrobe }: { wardrobe: boolean }) {
         ).map(([id, label]) => (
           <button
             key={id}
+            disabled={wardrobe && !available(id)}
             aria-pressed={category === id}
             onClick={() => {
               setCategory(id);
@@ -206,7 +213,8 @@ function Cosmetics({ wardrobe }: { wardrobe: boolean }) {
           <strong>{item?.name ?? "Your current outfit"}</strong>
           <p>{item?.category === "bundle" ? item.description+" Pieces can also be equipped separately." : category === "pet" ? "Barks at arrivals and points out clues you have seen. All sidekicks help equally." : "Preview only · equip to update your character."}</p>
         </div>
-        {item && (
+        <div className={styles.itemActions}>
+        {equipped && category !== "colour" && category !== "bundle" ? <span className={styles.equippedBadge}>Equipped</span> : item && (
           <button
             className={styles.primary}
             disabled={equipped || (!owned && save.coins < item.price)}
@@ -241,9 +249,10 @@ function Cosmetics({ wardrobe }: { wardrobe: boolean }) {
               select("none");
             }}
           >
-            <ActionIcon name="close" />Unequip {category}
+            <ActionIcon name="close" />Unequip
           </button>
         )}
+        </div>
       </div>
     </Modal>
   );
@@ -431,7 +440,7 @@ export default function Game() {
             {s.save.coins} <small>COINS</small>
           </span>
           <button onClick={() => s.open("pause")}>
-            <ActionIcon name="settings" />Menu <kbd>ESC</kbd>
+            <ActionIcon name="settings" />Settings
           </button>
         </div>
       </header>
@@ -503,7 +512,7 @@ export default function Game() {
                   ? "Click / drag to look"
                   : "Walk up to a station"}
               </span>
-              <small>Keyboard & mouse required</small>
+
             </div>
           </footer>
         )}
@@ -528,12 +537,9 @@ export default function Game() {
       {s.panel === "start" && <StartMenu />}
       {s.panel === "progress" && <Progress />}
       {s.panel === "pause" && (
-        <Modal label="Paused">
-
-          <h2>Paused</h2>
-          <p>
-            Your shift is paused.
-          </p>
+        <Modal label="Settings">
+          <h2>Settings</h2>
+          <div className={styles.resumeActions}>
             <button className={styles.primary} onClick={() => {
               s.open(null);
               if (s.suspension === "interrupted") useGame.setState({ suspension: null, focused: true });
@@ -550,13 +556,14 @@ export default function Game() {
               ? " · Ready to claim"
               : ""}
           </button>
+          </div>
           <GameSettings />
           <div className={styles.pauseActions}>
 
             {s.scene === "room" && (
               <button onClick={s.lobby}><ActionIcon name="back" />Return to lobby</button>
             )}
-            <Link href="/playground">Back to Playground ↗</Link>
+
           </div>
         </Modal>
       )}
