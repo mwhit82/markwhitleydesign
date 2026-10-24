@@ -1,4 +1,5 @@
 "use client";
+import { useCoop } from "@/lib/deader/multiplayer/client";
 import { simulationActive } from "@/lib/deader/simulation";
 import { useEffect, useRef, type ReactNode } from "react";
 import { XR, XROrigin, createXRStore } from "@react-three/xr";
@@ -190,7 +191,8 @@ function Rig() {
       spatial.dragging = null;
       a.targetsAt = 0;
       const kitchenFixture=process.env.NODE_ENV==="development"&&s.scene==="room"&&s.rehearsal.startsWith("kitchen");
-      rig.current.position.set(kitchenFixture?5.8:0, 0, kitchenFixture?7.2:s.scene === "lobby" ? 0.8 : 3.2);
+      const coop=useCoop.getState(),spawn=coop.room?.members.find(p=>p.id===coop.membership?.id)?.pose;
+      rig.current.position.set(spawn?.x??(kitchenFixture?5.8:0), 0, spawn?.z??(kitchenFixture?7.2:s.scene === "lobby" ? 0.8 : 3.2));
       rig.current.rotation.set(0, kitchenFixture?-Math.PI/2:0, 0);
       a.last = key;
       a.recenter = -1;
@@ -218,7 +220,9 @@ function Rig() {
       spatial.dragging = null;
       reset();
     }
+    const coop=useCoop.getState(),self=coop.room?.members.find(p=>p.id===coop.membership?.id);
     const paused =
+      (!!coop.membership && (!coop.connected || !!coop.room?.paused || !self?.alive)) ||
       !!s.panel ||
       !!s.suspension ||
       !s.focused ||

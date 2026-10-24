@@ -1,4 +1,5 @@
 "use client";
+import { CoopPlayers } from "../multiplayer/players";
 import { DoorFeedRenderer } from "../door-feed";
 import { Stalker } from "../stalker";
 import {useVR} from "@/lib/deader/vr-state";
@@ -263,7 +264,7 @@ export default function Room() {
       />
       <Donut materials={m} />
       <RoomTV />
-      <Lounge materials={m}/><KitchenRoom materials={m}/><LoungeInsetRenderer/><DoorFeedRenderer/>
+      <Lounge materials={m}/><KitchenRoom materials={m}/><LoungeInsetRenderer/><DoorFeedRenderer/><CoopPlayers/>
       <ScareFace/>
       <Box
         position={[-2.1, 0.38, 1.25]}

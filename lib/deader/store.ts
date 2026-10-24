@@ -77,7 +77,7 @@ import {
 } from "./progression";
 import { loadLocalSave, writeLocalSave } from "./persistence";
 export { SAVE_KEY } from "./persistence";
-export type Panel = "special" | "shop" | "wardrobe" | "start" | "pause" | "progress" | "tutorial" | null;
+export type Panel = "coop" | "special" | "shop" | "wardrobe" | "start" | "pause" | "progress" | "tutorial" | null;
 type State = {
   useKitchen: (action:KitchenAction)=>void;
   specialFixture: SpecialId | null;

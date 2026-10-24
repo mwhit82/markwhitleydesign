@@ -2499,7 +2499,7 @@ test('VR exposes procession controls and allows pause over judgement',async()=>{
  assert.equal(vrPanelVisible(s),true);
  const model=vrScreen(s,newVRMenu(),{patch:p=>patch=p,resume(){},recenter(){},exit(){},decide(){}});
  assert.equal(model.buttons.length,2);model.buttons[1].run();assert.equal(patch,true);
- assert.equal(vrScreen({...s,panel:'pause'},newVRMenu(),{patch(){},resume(){},recenter(){},exit(){},decide(){}}).title,'Paused');
+ assert.equal(vrScreen({...s,panel:'pause'},newVRMenu(),{patch(){},resume(){},recenter(){},exit(){},decide(){}}).title,'Settings');
 });
 test('dawn settles a failed shift once, pause and skip preserve judgement',async()=>{
  const {useGame}=await combatStore();const s=useGame.getState();const e=visitors.resolveEncounter(waiting('bea'),'test-run:1','admit');

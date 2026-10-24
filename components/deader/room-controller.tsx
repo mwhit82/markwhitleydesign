@@ -1,4 +1,5 @@
 "use client";
+import { useCoop } from "@/lib/deader/multiplayer/client";
 import { PEEPHOLE_POSITION, PEEPHOLE_LOOK_AT, PEEPHOLE_FOV } from "@/lib/deader/peephole";
 import { useEffect, useMemo, useRef } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
@@ -52,6 +53,8 @@ export function RoomController() {
   const mirrorCheck=process.env.NODE_ENV==='development'&&useGame.getState().room.night?.duration===60&&useGame.getState().rehearsal==='armed-mirror';
   const kitchenCheck=process.env.NODE_ENV==='development'&&useGame.getState().rehearsal.startsWith("kitchen");
   const pos = useRef(kitchenCheck?{x:5.8,z:7.2}:mirrorCheck?{x:-2,z:-.75}:{ x: 0, z: 3.2 });
+  const coopRun=useCoop(s=>s.room?.world.encounters.runId);
+  useEffect(()=>{const c=useCoop.getState(),p=c.room?.members.find(p=>p.id===c.membership?.id);if(p)pos.current={x:p.pose.x,z:p.pose.z};},[coopRun]);
   const angles = useRef({ yaw: kitchenCheck?-Math.PI/2:mirrorCheck?Math.PI/2:0, pitch: mirrorCheck?-.12:0 });
   const dragging = useRef(false);
   const clickStart = useRef<{x:number;y:number}|null>(null);
@@ -219,7 +222,10 @@ export function RoomController() {
       gameInput.reset();
       return;
     }
+    const coop=useCoop.getState(),self=coop.room?.members.find(p=>p.id===coop.membership?.id);
+    if(coop.membership&&!self?.alive&&!r.judgement){gameInput.reset();return;}
     const enabled =
+      (!coop.membership || (!!coop.connected && !coop.room?.paused && !!self?.alive)) &&
       !s.panel &&
       r.view === "explore" &&
       s.focused && !s.suspension &&

@@ -1,4 +1,6 @@
 "use client";
+import { coopVRScreen } from "../multiplayer/vr-menu";
+import { useCoop, remotePoses } from "@/lib/deader/multiplayer/client";
 import { PEEPHOLE_POSITION, PEEPHOLE_LOOK_AT, PEEPHOLE_FOV } from "@/lib/deader/peephole";
 import { renderVRPreview, grabBarColour } from "@/lib/deader/vr-preview";
 import { needWarning, showNeeds } from "@/lib/deader/kitchen";
@@ -166,7 +168,8 @@ export const VRPanel = memo(function VRPanel() {
     v.next -= dt;
     if (v.next > 0) return;
     v.next = 0.08;
-    const model = vrScreen(s, v.menu, {
+    const model = coopVRScreen(v.menu) ?? vrScreen(s, v.menu, {
+      multiplayer: !!useCoop.getState().membership,
       feedFailed: feedHealth.failed,
       retryFeed: retryVRFeed,
       patch: (p) => useGame.setState(p),
@@ -181,7 +184,8 @@ export const VRPanel = memo(function VRPanel() {
       decide: (id, d) => s.decideVisitorVR(id, d),
     });
     const alert = loungeAlert(r.residents);
-    spatial.feed = (visible && !!model.feed) || !!alert;
+    const co=useCoop.getState(),me=co.room?.members.find(p=>p.id===co.membership?.id);
+    spatial.feed = (visible && !!model.feed) || !!alert || (!!me&&!me.alive&&co.room?.phase==='playing'&&co.room.members.some(p=>p.alive));
     spatial.preview = visible ? (model.preview ?? null) : null;
     const rows: VRButton[] = visible ? model.buttons : [];
     const foot: VRButton[] = !visible
@@ -467,6 +471,8 @@ export function VRFeed() {
       r = s.room,
       alert = loungeAlert(r.residents),
       view = r.view;
+    const co=useCoop.getState(),me=co.room?.members.find(p=>p.id===co.membership?.id);
+    const follow=me&&!me.alive?co.room?.members.find(p=>p.alive&&p.id===co.spectating)??co.room?.members.find(p=>p.alive):undefined;
     const active =
       !s.panel && !s.suspension && s.focused && !r.judgement && spatial.feed;
     if (process.env.NODE_ENV === "development") {
@@ -481,11 +487,12 @@ export function VRFeed() {
     const inspection = view === "inspect" || view === "door";
     peephole.value = inspection ? 1 : 0;
     const activeTarget = inspection ? peepholeTarget : target;
-    const passive = view === "explore" && !!alert;
+    const passive = (view === "explore" && !!alert)||!!follow;
     mesh.current.scale.setScalar(passive ? 0.6 : inspection ? 1.25 / 1.1 : 1);
     if (passive) {
-      if (alertAnchor.current !== alert!.id) {
-        alertAnchor.current = alert!.id;
+      const anchor=follow?`spectate:${follow.id}`:alert!.id;
+      if (alertAnchor.current !== anchor) {
+        alertAnchor.current = anchor;
         head.getWorldPosition(mesh.current.position);
         head.getWorldQuaternion(mesh.current.quaternion);
         mesh.current.translateZ(-1.6);
@@ -523,7 +530,11 @@ export function VRFeed() {
       }
       return;
     }
-    if (view === "inspect" || view === "door") {
+    if(follow){
+      const p=remotePoses.get(follow.id)??follow.pose;
+      camera.position.set(p.x+Math.sin(p.yaw)*1.8,2.1,p.z+Math.cos(p.yaw)*1.8);
+      camera.lookAt(p.x,1,p.z);camera.fov=62;
+    } else if (view === "inspect" || view === "door") {
       camera.position.set(...PEEPHOLE_POSITION);
       camera.lookAt(...PEEPHOLE_LOOK_AT);
       camera.fov = PEEPHOLE_FOV;

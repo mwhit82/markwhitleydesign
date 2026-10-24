@@ -1569,3 +1569,21 @@ button:disabled .actionIcon { color:inherit; }
 
 /* Empty warnings must not leave blank rows below the needs meters. */
 .needMeter small:empty, .game .kitchenStatus strong:empty {display:none;}
+
+.coopModal {width:min(680px,calc(100vw - 32px));}
+.coopModal > label {display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin:16px 0;}
+.coopModal input[type="text"],.coopModal input:not([type]) {padding:10px;background:#101317;color:white;border:1px solid var(--line);border-radius:5px;min-height:44px;}
+.coopRoster {list-style:none;padding:0;margin:20px 0;display:grid;gap:8px;}
+.coopRoster li {display:flex;flex-wrap:wrap;gap:10px;padding:12px;border:1px solid var(--line);border-radius:6px;align-items:center;}
+.coopRoster li > span:last-child {margin-left:auto;}
+.coopSignals {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;}
+.coopHud {position:absolute;z-index:18;right:max(18px,env(safe-area-inset-right));top:80px;display:flex;flex-direction:column;gap:6px;align-items:flex-end;max-width:240px;font-size:12px;}
+.coopHud span {padding:6px 10px;background:var(--glass);border-radius:5px;}
+@media(max-width:500px){.coopSignals{grid-template-columns:repeat(2,minmax(0,1fr));}.coopHud{top:auto;bottom:210px;max-width:150px;}.coopHud button{font-size:12px;}}
+
+.coopSetup {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;padding:12px;}
+.coopSetup label {display:flex;flex-direction:column;align-items:stretch;gap:8px;}
+.coopSetup select {min-width:0;width:100%;}
+.coopVoice {margin:16px 0;}
+.coopVoice summary {cursor:pointer;min-height:44px;padding:12px;border:1px solid var(--line);border-radius:5px;}
+@media(max-width:500px){.coopSetup{grid-template-columns:1fr;}.coopSetup label{flex-direction:row;align-items:center;justify-content:space-between;}.coopSetup select{width:60%;}}

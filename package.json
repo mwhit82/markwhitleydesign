@@ -9,7 +9,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
-    "test:deader": "node scripts/test-deader.mjs"
+    "test:deader": "node scripts/test-deader.mjs",
+    "dev:coop": "node scripts/dev-anomalous-multiplayer.mjs",
+    "test:coop": "node scripts/test-anomalous-multiplayer.mjs"
   },
   "dependencies": {
     "@hugeicons/core-free-icons": "^4.1.1",

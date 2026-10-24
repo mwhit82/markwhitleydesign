@@ -44,6 +44,7 @@ export type VRScreen = {
 };
 type State = ReturnType<typeof useGame.getState>;
 export type VRMenuActions = {
+  multiplayer?: boolean;
   feedFailed?: boolean;
   retryFeed?: () => void;
   patch: (patch: Partial<State>) => void;
@@ -341,6 +342,7 @@ export function vrScreen(s: State, m: VRMenuState, a: VRMenuActions): VRScreen {
     return result;
   }
   if (s.panel === "start") {
+    if(m.page==="home")return screen("Play", "",[button("Play solo",nav("solo")),button("Play with friends",()=>s.open("coop"))]);
     if (m.page === "difficulty")
       return screen(
         "Difficulty",
@@ -417,7 +419,7 @@ export function vrScreen(s: State, m: VRMenuState, a: VRMenuActions): VRScreen {
     return screen("Settings", "", [
       button("Return to game", close),
       button("VR settings", nav("settings")),
-      button("Progress", () => s.open("progress")),
+      button(a.multiplayer?"Team room and voice":"Play with friends",()=>s.open("coop")),
       button("Return to lobby", s.lobby),
     ]);
   if(r.judgement){

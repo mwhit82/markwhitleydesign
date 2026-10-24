@@ -1,5 +1,7 @@
 "use client";
 import { ownsCosmetic, ownedCategoryAvailable } from "@/lib/deader/ownership";
+import { CoopUI } from "./multiplayer/ui";
+import { useCoop } from "@/lib/deader/multiplayer/client";
 import { ActionIcon } from "./action-icon";
 import {
   Component,
@@ -307,6 +309,7 @@ function StartMenu() {
   const deadline = { easy: 60, medium: 45, hard: 30 }[difficulty];
   return (
     <Modal label="Start game" className={styles.setupModal}>
+      <div className={styles.resumeActions}><strong>Play solo</strong><button onClick={()=>useGame.getState().open("coop")}>Play with friends</button></div>
       <header className={styles.setupHeader}>
 
         <h2>Choose your shift.</h2>
@@ -378,6 +381,7 @@ export default function Game() {
       data-anomalous-ui
       className={`${styles.game} ${s.scene === "room" && s.room.weapon.collected ? styles.armed : ""} ${s.touchActive ? styles.touchGame : ""} ${s.scene === "room" && s.room.view === "cctv" ? styles.surveillance : ""}`}
     >
+      <CoopUI />
       <GameAudio />
       <WeaponUI />
       <JudgementUI />
@@ -436,6 +440,7 @@ export default function Game() {
           </h1>
         </div>
         <div className={styles.topRight}>
+          {s.scene === "lobby" && <button onClick={()=>s.open("coop")}>Play with friends</button>}
           <span className={styles.coin}>
             {s.save.coins} <small>COINS</small>
           </span>
@@ -557,6 +562,7 @@ export default function Game() {
               : ""}
           </button>
           </div>
+          {useCoop.getState().membership&&<button onClick={()=>s.open("coop")}>Team room & voice</button>}
           <GameSettings />
           <div className={styles.pauseActions}>
 
