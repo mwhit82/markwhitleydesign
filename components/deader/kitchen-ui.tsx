@@ -13,9 +13,9 @@ export function KitchenUI(){
   {(['hunger','thirst'] as const).map(kind=><div className={styles.needMeter} key={kind} data-low={k[kind]<=50} data-urgent={k[kind]<=25}>
    <span>{kind==='hunger'?'Hunger':'Thirst'}</span><b>{Math.ceil(k[kind])}%</b>
    <meter aria-label={kind==='hunger'?'Hunger':'Thirst'} min={0} max={100} value={k[kind]}/>
-   <small role="status">{needWarning(k[kind],kind)||'\u00a0'}</small>
+   <small role="status">{needWarning(k[kind],kind)}</small>
   </div>)}
-  <strong>{k.oven!=='off'?kitchenMessage(k):'\u00a0'}</strong>
+  <strong>{k.oven!=='off'?kitchenMessage(k):''}</strong>
  </div>}
 
  {(s.room.view==='fridge'||s.room.view==='oven')&&<Modal label={s.room.view==='fridge'?'Fridge':'Oven'} onClose={()=>s.roomView('explore')}>

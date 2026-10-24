@@ -1566,3 +1566,6 @@ button:disabled .actionIcon { color:inherit; }
  .game .settingsGroups label:not(.settingToggle) {align-items:flex-start;flex-direction:column;gap:8px;}
  .settingsGroups input[type="range"],.settingsGroups select {width:100%;max-width:100%;}
 }
+
+/* Empty warnings must not leave blank rows below the needs meters. */
+.needMeter small:empty, .game .kitchenStatus strong:empty {display:none;}
