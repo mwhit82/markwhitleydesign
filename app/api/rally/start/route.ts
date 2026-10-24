@@ -15,6 +15,6 @@ export async function POST(request:Request) {
     if(!await rateLimit(id!,'start',12)) return Response.json({error:'Please wait before starting another ranked run.'},{status:429});
     const run=randomUUID();
     await redis('SET',`rally:run:${run}`,JSON.stringify({player:id,selection,car,started:Date.now()}),'EX',900);
-    return Response.json({run});
+    return Response.json({run,player:id});
   } catch { return Response.json({error:'Leaderboard connection unavailable. This run can still count as a personal best.'},{status:503}); }
 }

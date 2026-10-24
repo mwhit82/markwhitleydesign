@@ -7,6 +7,7 @@ import styles from './rally.module.css';
 import {reasonText, type Eligibility} from "./checkpoints";
 import type { Replay } from "./replay";
 import {BoardPeriodPicker,useBoardPeriod} from './board-period';
+import { identifyDriver } from './pendo';
 export type RaceResult = Eligibility & {time:number;penalty?:number;trace:number[][];replay?:Replay;run:Promise<string|null>};
 type Entry = {rank:number;name:string;time:number;car:number;mine:boolean};
 export function Leaderboard({selection,result,onClose}:{selection:StageSelection;result:RaceResult|null;onClose:()=>void}) {
@@ -34,7 +35,7 @@ export function Leaderboard({selection,result,onClose}:{selection:StageSelection
     fetch(`/api/rally/leaderboard?${query}`,{signal:abort.signal}).then(async response=>{
       const data=await response.json(); if(!response.ok) throw new Error(data.error);
       if(version!==generation.current)return;
-      setEntries(data.entries);setMe(data.me);setMore(data.more);setWindow(data.window);
+      setEntries(data.entries);setMe(data.me);setMore(data.more);setWindow(data.window);identifyDriver(data.player,data.me?.name);
     }).catch(e=>{if(!abort.signal.aborted)setError(e.message || 'Could not load leaderboard.');}).finally(()=>{if(!abort.signal.aborted)setLoading(false);});
     return ()=>{abort.abort();generation.current=version+1;};
   },[key,query,revision,rollover,setWindow]);
