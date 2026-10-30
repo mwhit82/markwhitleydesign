@@ -96,3 +96,13 @@ on the host computer; this is not a physical-phone benchmark. No runtime errors
 were observed; the existing renderer emits a Three.Clock deprecation warning.
 Targeted ESLint did not complete in this environment and was stopped; TypeScript,
 simulation tests, diff checks and production compilation completed.
+
+## Toybox UI and audio
+
+The build catalogue uses generated model portraits, inspectable unavailable cards, missing-material counts, fixed close/site actions, and a real translucent model placement preview. Resources, commands and recruitment use illustrated icons and model portraits. The catalogue scrolls internally on small landscape screens; Escape cancels the active menu/placement. Portrait orientation retains the existing rotate/settings escape route.
+
+Music and effects begin after interaction and respect saved mute/volume settings. New users start with sound enabled after pressing Play; existing mute preferences remain intact. Day/night loops crossfade over three seconds; menus duck music and silence workshop ambience, hidden tabs suspend the context. Music and SFX sliders plus nine-second track previews are in Pause. Network/decoder failures are nonfatal. Effects are throttled and capped at eight concurrent voices. Construction ambience attenuates relative to the camera's ground target.
+
+Simulation notifications use a bounded WeakMap queue. They are not serialized; resuming a v2 save cannot replay historic construction/upgrade/recruit sounds. Completion notifications appear only at the construction threshold. Save version and resource balance are unchanged.
+
+Validation: `npm run test:hallowseve26` includes campaign/save coverage and event/audio lifecycle checks; `npx tsc --noEmit --incremental false`; production build. Browser QA includes existing-save resume, phone landscape catalogue/category/close controls, desktop layout, sound controls and portrait fallback. No claim of human audio audition or a whole-repository security audit is made.

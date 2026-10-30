@@ -27,3 +27,14 @@ test('expanded defences survive all twelve waves with a complete Christmas victo
 test('starting supplies can build a workshop and two towers and survive the first night',()=>{const g=s.newGame();build(g,'workshop',3,-7);build(g,'nutcracker',-6,-2);build(g,'nutcracker',-1,7);advance(g,120);const w=g.buildings.find(b=>b.kind==='workshop');for(let i=0;i<3;i++)assert.equal(s.recruit(g,w.id,'infantry'),true);advance(g,30);s.command(g,g.troops.map(t=>t.id),'guard',{x:-4,z:1});s.startNight(g);let t=0;while(g.phase==='night'&&t<300){if(g.santa.burst===0)s.cheerBurst(g);advance(g,1);t++;}assert.equal(g.phase,'day');assert.equal(g.day,2);assert.ok(g.buildings[0].hp>0);});
 test('a saved siege resumes with matching damage, kills and wave progress',()=>{const g=s.newGame();build(g,'nutcracker',-6,-2);advance(g,30);s.startNight(g);advance(g,18);const copy=s.loadGame(s.saveGame(g));assert.ok(copy);advance(g,80);advance(copy,80);assert.equal(g.kills,copy.kills);assert.equal(g.phase,copy.phase);assert.equal(g.day,copy.day);assert.deepEqual(g.buildings,copy.buildings);assert.deepEqual(JSON.parse(JSON.stringify(g.enemies)),JSON.parse(JSON.stringify(copy.enemies)));});
 test('blocked workshop exits retain queued recruits until a friendly gate opens',()=>{const g=s.newGame();rich(g);g.elves=[];const w=complete(g,'workshop',3,-7);for(let x=2;x<=6;x++)for(let z=-8;z<=-4;z++)if((x===2||x===6||z===-8||z===-4)&&!s.buildingAt(g,x,z))complete(g,'wall',x,z);s.recruit(g,w.id,'infantry');advance(g,12);assert.equal(g.troops.length,0);assert.equal(w.queue.length,1);s.demolish(g,s.buildingAt(g,2,-7).id);complete(g,'gate',2,-7);advance(g,1);assert.equal(g.troops.length,1);assert.equal(w.queue.length,0);});
+
+test('audio events fire once, never survive saves, and rejected actions are silent',()=>{
+ const g=s.newGame();rich(g);const b=build(g,'workshop',3,-7);
+ assert.deepEqual(s.drainEvents(g).map(e=>e.type),['place']);
+ assert.equal(s.place(g,'workshop',3,-7),false);assert.deepEqual(s.drainEvents(g),[]);
+ advance(g,90);assert.equal(b.progress,1);const events=s.drainEvents(g);assert.equal(events.filter(e=>e.type==='complete').length,1);assert.ok(events.some(e=>e.type==='hammer'));
+ advance(g,20);assert.equal(s.drainEvents(g).filter(e=>e.type==='complete').length,0);
+ assert.equal(s.upgrade(g,b.id),true);assert.equal(s.upgrade(g,b.id),false);assert.deepEqual(s.drainEvents(g).map(e=>e.type),['upgrade']);
+ s.recruit(g,b.id,'infantry');advance(g,10);assert.equal(s.drainEvents(g).filter(e=>e.type==='recruit').length,1);
+ build(g,'wall',5,1);assert.deepEqual(s.drainEvents(s.loadGame(s.saveGame(g))),[]);assert.equal(s.drainEvents(g).length,1);
+});

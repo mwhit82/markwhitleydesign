@@ -1,0 +1,70 @@
+{
+  "retrieved": "2026-10-30",
+  "license": "CC0-1.0",
+  "sources": {
+    "day": "https://opengameart.org/sites/default/files/wintery%20loop.wav",
+    "night": "https://opengameart.org/sites/default/files/creepyloop-v2_0.ogg",
+    "ui": "https://github.com/Calinou/kenney-ui-audio/tree/8c3d81b9159d058c444f89d12d518276b0b09345/addons/kenney_ui_audio",
+    "hammer": "https://github.com/gdquest-demos/godot-open-rpg/blob/d59f2f71bc046ac53239a4e590861269e7100a36/assets/sfx/impactWood_light_002.ogg"
+  },
+  "signalChecks": {
+    "day.wav": {
+      "duration": 44.30662131519274,
+      "sampleRate": 44100,
+      "channels": 2,
+      "peak": 0.680572509765625,
+      "rms": 0.14431063850729378,
+      "seamDelta": 0.09991455078125
+    },
+    "night.ogg": {
+      "duration": 58.90714285714286,
+      "sampleRate": 44100,
+      "channels": 2,
+      "peak": 0.5040156841278076,
+      "rms": 0.08291215976456115,
+      "seamDelta": 0.00034587085247039795
+    }
+  },
+  "assets": [
+    {
+      "file": "click1.wav",
+      "bytes": 18254,
+      "sha256": "dd90b97f38b0ec7d52161d7c3bf8d61a66655766fd0af06439963351b4853a83"
+    },
+    {
+      "file": "click3.wav",
+      "bytes": 15694,
+      "sha256": "8d0676a5bcbfedad3e65b7b73e93a044216d7f192c99a3a05caf21e2aa4a8dda"
+    },
+    {
+      "file": "day.m4a",
+      "bytes": 729964,
+      "sha256": "22071c333635489d5c136a16e81f1d803ce3078492985c25abbf95230f9a83a9"
+    },
+    {
+      "file": "hammer.wav",
+      "bytes": 46896,
+      "sha256": "633c414234b63b9350b8775d1af93478bcee10957f472872bf7101e3d7facb40"
+    },
+    {
+      "file": "night.m4a",
+      "bytes": 765724,
+      "sha256": "b967b15b0a108b7ca1ce76164da4e86edecd4ee9982959589c54701b25ddfeb1"
+    },
+    {
+      "file": "switch10.wav",
+      "bytes": 68430,
+      "sha256": "7697bd3c227800f5625d3ba2bd82f4546310a1acd2e54b3b2ccae1ea63d73260"
+    },
+    {
+      "file": "switch15.wav",
+      "bytes": 46926,
+      "sha256": "f5a1a4e3e5af752cb937475dd88a0db8c7a53219c11162bc2a6800b0e54997e9"
+    },
+    {
+      "file": "switch5.wav",
+      "bytes": 55630,
+      "sha256": "824feeb7f534127a82dd41bffc63613b59a412940b173aad9e6165a904cb05b3"
+    }
+  ]
+}

@@ -51,3 +51,13 @@ existing Vercel dependency chain was not established by this review. npm's
 suggested remediation changes the Vercel package version; it was not applied
 blindly to unrelated multiplayer/server functionality. This remains an existing
 site-level dependency follow-up, not a clean security bill for the whole site.
+
+## Toybox/audio update — 30 October 2026
+
+Shipped music: **Wintery Loop** by Emma_MA (day), **Creepy Ambient Loop v2** by epb9000 (night), both CC0 on their OpenGameArt source pages. UI SFX Set and one wooden impact by Kenney are CC0. Public credits, exact source URLs, pinned GitHub revisions, byte sizes and SHA-256 hashes are in `public/hallowseve26/audio/credits.txt` and `manifest.json`.
+
+The official Kenney ZIP links redirected away from the downloads. Selected UI WAVs were retrieved from Calinou/kenney-ui-audio at `8c3d81b9159d058c444f89d12d518276b0b09345`; the pack's LICENSE.txt explicitly permits personal/commercial use under CC0. The impact came from gdquest-demos/godot-open-rpg at `d59f2f71bc046ac53239a4e590861269e7100a36`, with its CREDITS.md identifying Kenney Impact Sounds and CC0. Only six audio files and licence text were imported. No repository scripts, plugins, package manifests, archives or binaries were executed. This is a bounded asset/provenance review, not a security certification of those entire repositories.
+
+Music was decoded and checked for finite samples, peak/RMS and duration (44.31s day, 58.91s night). The original day seam had a 0.10 sample jump; both tracks received 25ms endpoint fades before 128kbps AAC conversion. The wooden impact was decoded to PCM WAV for broad browser support. Total shipped audio is about 1.75 MB. No human listening audit has been claimed; the settings menu offers previews for subjective soundtrack review.
+
+Original resource/action icons are local SVG JSX. All building and troop portraits are generated from the same Three.js primitive definitions that the world renders, using `scripts/render-hallowseve-previews.mjs`. Portrait generation runs offline and adds no per-card WebGL contexts. No downloaded art, font or executable dependency was introduced for this update. The X post supplied in the request could not be read reliably; no assets or claims were inferred from it.

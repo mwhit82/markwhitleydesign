@@ -1,0 +1,17 @@
+HALLOWSEVE26 — AUDIO CREDITS
+
+Wintery Loop — Emma_MA
+https://opengameart.org/content/wintery-loop
+CC0 1.0. Original WAV converted to AAC, 25 ms endpoint fades.
+
+Creepy Ambient Loop (v2) — epb9000
+https://opengameart.org/content/creepy-ambient-loop
+CC0 1.0. Original OGG converted to AAC, 25 ms endpoint fades.
+
+UI SFX Set and Impact Sounds — Kenney
+https://kenney.nl/assets/ui-audio
+https://kenney.nl/assets/impact-sounds
+CC0 1.0. Selected effects only. Wood impact converted to PCM WAV.
+UI license included alongside this file as LICENSE.txt.
+
+CC0: https://creativecommons.org/publicdomain/zero/1.0/
