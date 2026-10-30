@@ -38,6 +38,11 @@ export default function PlaygroundPage() {
         <h2 className="mt-3 text-4xl font-black">THE ANOMALOUS ↗</h2>
         <p className="mt-3">A fresh face. A very long night. Explore the lobby, find your colour and meet the night shift. Keyboard &amp; mouse, or touch controls in portrait and landscape.</p>
       </Link>
+      <Link href="/playground/hallowseve26" prefetch={false} className="block rounded-2xl border border-[#a64d29] bg-[#291b19] p-8 text-[#ffe7c5]">
+        <p className="text-xs uppercase tracking-widest">Playable experiment 04</p>
+        <h2 className="mt-3 text-4xl font-black">HallowsEve26 ↗</h2>
+        <p className="mt-3">Build a Christmas castle with your elves. Defend the Hearth against twelve nights of Halloween. Can you make it until Christmas?</p>
+      </Link>
       <div className="grid gap-6 lg:grid-cols-2">
         {experiments.map((experiment) => (
           <article

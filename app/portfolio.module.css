@@ -45,6 +45,9 @@
 .inlineArrow {display:inline-block;width:1em;height:1em;vertical-align:-.12em;flex-shrink:0;}
 
 .deader {background:#29251b;color:#f4e7c9;}
+.hallows {background:#291b19;color:#ffe7c5;}
+.hallowsArt {background:radial-gradient(ellipse at 85% 15%,#a64d29,transparent 65%),#291b19;}
+.hallowsArt strong {font-style:normal;}
 .deaderArt img {transform:scale(1.7) translateY(-24px);filter:brightness(.8);}
 .deaderArt::after {content:"";position:absolute;inset:0;background:linear-gradient(180deg,#15100855,transparent 40%,#151008aa);pointer-events:none;}
 .deaderArt .playBadge,.deaderArt strong {z-index:1;}

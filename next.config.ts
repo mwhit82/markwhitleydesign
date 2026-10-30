@@ -4,6 +4,9 @@ import { PHASE_DEVELOPMENT_SERVER } from "next/constants";
 export default function nextConfig(phase: string): NextConfig {
   return {
     reactStrictMode: true,
+    experimental: {
+      optimizePackageImports: ["@hugeicons/core-free-icons", "@react-three/drei"],
+    },
     // Preserve ws runtime optional-native fallback; bundling produces invalid bufferutil stubs.
     serverExternalPackages: ["ws", "@vercel/functions"],
     // Keep dev and production build artifacts separate so local preview

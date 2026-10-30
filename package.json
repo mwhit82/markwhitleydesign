@@ -9,6 +9,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
+    "test:hallowseve26": "node --test scripts/test-hallowseve26.mjs",
     "test:deader": "node scripts/test-deader.mjs",
     "dev:coop": "node scripts/dev-anomalous-multiplayer.mjs",
     "test:coop": "node scripts/test-anomalous-multiplayer.mjs"

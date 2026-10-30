@@ -19,6 +19,13 @@ export default function HomePage() {
         </div>
         <div className={styles.cardFooter}><div><small>03 / Playable experiment · By Fenn</small><h2>The Anomalous</h2></div><span aria-hidden="true"><Icon icon={ArrowUpRight01Icon} className={styles.inlineArrow} /></span></div>
       </Link>
+      <Link href="/playground/hallowseve26" className={`${styles.card} ${styles.hallows}`} prefetch={false}>
+        <div className={`${styles.rallyArt} ${styles.hallowsArt}`}>
+          <span className={styles.playBadge}>PLAY <Icon icon={ArrowUpRight01Icon} className={styles.inlineArrow} /></span>
+          <strong aria-hidden="true">HALLOWS<br />EVE26.</strong>
+        </div>
+        <div className={styles.cardFooter}><div><small>04 / Playable experiment</small><h2>HallowsEve26</h2></div><span aria-hidden="true"><Icon icon={ArrowUpRight01Icon} className={styles.inlineArrow} /></span></div>
+      </Link>
     </section>
     <h2 className={styles.categoryTitle}>My portfolio</h2>
     <section className={styles.grid} aria-label="My portfolio">

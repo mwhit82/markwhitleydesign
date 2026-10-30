@@ -217,3 +217,12 @@ portrait or landscape touch controls; physical mobile-device validation is still
 See [the game notes](docs/dead-deadly-deader.md) for controls, save format,
 architecture, validation and known limitations. Run `node --test scripts/test-deader.mjs`
 for the isolated game checks and `npm run build` for production verification.
+
+## HallowsEve26
+
+Santa’s isometric castle defence game is at `/playground/hallowseve26`.
+Build workshops and toy defences, recruit elves at biome shrines, and survive
+12 nights until Christmas. Supports mouse/keyboard and touch controls, with
+local device saves. See [the game notes](docs/hallowseve26.md) for controls,
+simulation rules, save behaviour, and verification. Run `npm run test:hallowseve26`
+for the gameplay regression suite.
