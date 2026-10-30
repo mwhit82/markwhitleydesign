@@ -1,74 +1,98 @@
-# HallowsEve26 — Santa’s Last Stand
+# HallowsEve26 v2 — The Northlands
 
-A single-player isometric voxel castle defence game at `/playground/hallowseve26`.
-Twelve days run from December 13 through Christmas Eve, followed by Christmas
-morning if the Hearth survives. The local campaign takes about 30–45 minutes.
+A browser-based, single-player settlement RTS at `/playground/hallowseve26`.
+The v2 release replaces the original at the same route. No account, server-side
+campaign state, multiplayer, external asset service or new runtime dependency.
 
 ## Playing
 
-Click or tap open ground to move Santa. Drag to pan, scroll/pinch to zoom, and
-use the Santa button to recenter. Build mode previews a grid footprint; tap to
-lock the site, then confirm with Build. Tap a building for its health, upgrade,
-and removal controls. Escape cancels, Space pauses, and R rotates placement.
+Begin with the Christmas Keep, a cottage, storage, lumber camp, sawmill, quarry
+and eight elves. Build workshops, recruit troops, construct fortifications and
+liberate three Halloween camps. The island has four biome regions, a river and
+two bridges. Daytime lasts until the player chooses Begin Night. Nights stop
+construction, gathering and recruitment. Win by surviving night twelve and
+clearing all three camps; destroying the keep loses the campaign. The final
+siege may be won before the last camp is liberated, leaving daytime exploration.
 
-Begin with a toy workshop and two nutcracker towers near the Hearth. Elves
-prioritise construction, repairs, workshop staffing, and then gathering. Each
-workshop uses one elf. Trees and stone deposits are represented by resource
-sites; each replenishes at dawn. All construction, repair, and gathering stop
-at night, but completed staffed workshops continue producing toy parts.
+Harvesting consumes finite deposits. Elves physically carry raw materials to
+storage, factory ingredients from storage to production buildings, and finished
+goods back. Storage is a shared settlement inventory; local storehouses shorten
+journeys. Sawmills consume 4 logs for 3 planks; workshops consume 3 planks and
+1 stone for 4 toys. Repairing consumes wood and stone. Cottages provide six
+population spaces and welcome two new elves. Shrines rescue two more, subject
+to housing capacity. Recruitment queues reserve housing immediately. Population is capped at 120
+followers for a bounded browser workload. Sealed workshops retain completed
+recruits in the queue until an exit is available.
 
-Santa restores shrines by standing nearby for four daylight seconds. Each
-shrine adds two elves and a 20% production bonus. He attacks automatically at
-night. Christmas cheer heals Santa and nearby buildings, damages and slows
-nearby enemies, and has an 18-second cooldown. Santa recovers after ten seconds
-if defeated; the Hearth’s destruction ends the campaign.
+Troops: nutcracker infantry, snowball rangers, present artillery. Select a troop,
+a type-specific squad in Army, or the entire army. Move, Attack and Guard orders
+use the bottom command bar, followed by a destination tap. Attack orders engage
+camp buildings. Guards and towers automatically engage enemies. Cleared camps
+remove their guards, award a one-time supply cache and reduce nightly reinforcements.
+Santa automatically attacks nearby enemies, heals troops with Cheer and grants
+a ten-second damage reduction with Blessing. He recovers at the keep if defeated.
 
-Nutcrackers favour single targets, snow-globes slow groups, and jack-in-the-box
-launchers deal splash damage. Towers and walls can be upgraded once. Workshops
-expand from 2×2 to 3×3, requiring adjacent clear cells. Daytime demolition refunds
-half the base and upgrade costs. Gates allow friendly passage but block raiders.
-Enemies can breach an otherwise sealed castle. The Pumpkin King joins night 12.
+## Controls and mobile
 
-## Save and settings
+Landscape gameplay; portrait pauses and offers settings/exit options. Tap to
+select, drag to pan, pinch to zoom, two fingers to pan/zoom together. Mouse wheel
+zooms. R rotates placement; Escape closes the top panel/action before opening
+pause; Space toggles pause outside native controls. Build placement requires an
+explicit confirmation. Roads/walls allow repeated placement until cancelled.
 
-Version-1 local saves use `hallowseve26-save-v1`. Saves occur at dawn, on pause,
-on leaving the game through its navigation, and when the tab becomes hidden.
-Continue restores the full campaign, including an interrupted wave. The game
-pauses while hidden and never simulates offline progress. Starting a new campaign
-asks before replacing a saved one. Invalid saves are rejected without crashing.
-Sound preference uses `hallowseve26-muted`. Audio is locally synthesised and
-starts only after user interaction. System reduced-motion preferences disable
-smoke animation and projectile arcs.
+One modal panel state prevents stacked menus. Modal headers never scroll away;
+all have a labelled close button, focus containment, Escape and backdrop exit.
+Building inspection has its own fixed close header and scrolling content.
+Menus, portrait orientation and background tabs pause the simulation. Settings
+include sound, 1×/2× speed, reduced effects and a measured frame-rate readout.
 
-## Implementation and checks
+## Implementation
 
-`components/hallowseve26/simulation.ts` owns deterministic 20 Hz game rules,
-seeded waves, grid navigation, building footprints, and save validation. Rendering
-uses the existing React Three Fiber stack, an orthographic camera, colour-batched
-instanced boxes, capped effects, bounded dynamic lights, and adaptive pixel ratio.
-No network services, external art, or backend credentials are needed.
+- `simulation.ts`: deterministic 20 Hz simulation, shared stock, per-factory
+  inventory, carrier cargo, housing, recruitment, contextual orders, camp state,
+  cooldowns, seeded waves and navigation grid. Cached occupancy; bridges cross
+  blocked river cells. Friendly units pass gates, attackers breach obstacles.
+- `world.tsx`: original code-authored instanced geometry: pitched roofs,
+  turreted keep, cottages, industrial props, animated limbs/cargo, smoke,
+  vertex-coloured terrain, flowing river surface, bridges, vegetation and camps.
+  Geometry is grouped by shape/material. Shadows and light counts reduce with
+  the effects setting. No downloaded models, textures, scripts or fonts added.
+- `game.tsx`: command-driven controls, minimap, one modal controller, workforce
+  overview, simulation scheduling, background/portrait handling and device saves.
 
-Run `npm run test:hallowseve26` for construction, economy, navigation, saves,
-combat, defeat, and a twelve-wave campaign regression. Run `npm run build` for
-production verification. Tests use the repository’s existing TypeScript loader.
-Physical-device touch and audio performance should be checked on target phones;
-desktop viewport checks do not establish physical mobile performance.
+The simulation is fixed-step; actor targets update with the UI snapshot
+at approximately 15 Hz and instance positions interpolate between snapshots.
+The renderer runs independently. This is not skeletal
+animation or a full commercial RTS engine. Campaign length depends on preparation
+and speed settings; the two-to-three-hour target is not yet playtest-validated.
 
-### Verification of this version
+## Saves
 
-- Fourteen gameplay checks pass, including an entire twelve-night campaign,
-  defeat without expansion, siege save/resume, blocked routes, and gatherers
-  returning from shelter. Gatherers finish 12-unit batches before switching
-  resources, preventing repeated travel with little collection.
-- TypeScript passes. The production build passes with `--no-lint`; the full
-  repository lint worker stalled while loading its dependencies. The local
-  verification used a temporary system-download transport for the existing
-  Google fonts because Node’s font requests stalled; no font or network
-  workaround is included in application source.
-- Browser checks covered 1280×720 desktop, 393×852 phone portrait, 844×390 phone
-  landscape, and 1024×768 tablet layouts; workshop/tower placement, shrine
-  recruitment, a night attack, dawn progression, building selection, and saved
-  progress after reload were exercised. No runtime errors were observed; the
-  installed rendering library emits a Three.Clock deprecation warning.
-- Physical phone pinch gestures, audio, and device frame rates remain manual
-  checks. The first version has no multiplayer or cloud saves.
+`hallowseve26-save-v2` is separate from `hallowseve26-save-v1`. V1 saves are never
+read as v2 or overwritten. Autosave every 15 seconds, phase transitions, menu
+opening, tab hiding and explicit return. Loading validates version, array bounds,
+finite numbers, actors, stock, building kinds and orders. Corrupt saves fail
+closed without erasing the original. Audio preference remains
+`hallowseve26-muted`. Nothing is uploaded.
+
+## Verification
+
+Run `npm run test:hallowseve26`, `npx tsc --noEmit --incremental false` and
+`npm run build -- --no-lint`. The targeted simulation tests cover resource
+conservation, delivered production, housing, recruitment, construction, river
+navigation, gate breaches, troop orders, camp rewards, abilities, saves, final
+victory and defeat. The all-wave fixture uses an explicitly provisioned late-game
+fortress; it verifies campaign progression, not organic difficulty balance.
+
+Browser QA includes desktop and landscape-phone viewports, construction,
+recruitment, menu dismissal, portrait orientation and save restoration. Physical
+iOS/Android devices and Safari are not available in this environment; do not
+represent viewport checks as device testing or a guaranteed mobile FPS result.
+See `hallowseve26-assets.md` for dependency screening and limitations.
+
+Production QA: 1280×800 desktop, 844×390 landscape phone, 393×852 portrait.
+The in-app browser reported 120fps in the opening settlement and first night
+on the host computer; this is not a physical-phone benchmark. No runtime errors
+were observed; the existing renderer emits a Three.Clock deprecation warning.
+Targeted ESLint did not complete in this environment and was stopped; TypeScript,
+simulation tests, diff checks and production compilation completed.

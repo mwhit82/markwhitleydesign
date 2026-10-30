@@ -41,7 +41,7 @@ export default function PlaygroundPage() {
       <Link href="/playground/hallowseve26" prefetch={false} className="block rounded-2xl border border-[#a64d29] bg-[#291b19] p-8 text-[#ffe7c5]">
         <p className="text-xs uppercase tracking-widest">Playable experiment 04</p>
         <h2 className="mt-3 text-4xl font-black">HallowsEve26 ↗</h2>
-        <p className="mt-3">Build a Christmas castle with your elves. Defend the Hearth against twelve nights of Halloween. Can you make it until Christmas?</p>
+        <p className="mt-3">Build a living Christmas kingdom, command a toy army and conquer the Halloween clans. Twelve nights. One Christmas to save. Play in landscape on mobile.</p>
       </Link>
       <div className="grid gap-6 lg:grid-cols-2">
         {experiments.map((experiment) => (

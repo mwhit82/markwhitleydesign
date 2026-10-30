@@ -1,93 +1,29 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { moduleUrl } from './rally-test-loader.mjs';
-import { resolve } from 'node:path';
-const s = await import(await moduleUrl(resolve('components/hallowseve26/simulation.ts')));
+import {moduleUrl} from './rally-test-loader.mjs';
+import {resolve} from 'node:path';
+const s=await import(await moduleUrl(resolve('components/hallowseve26/simulation.ts')));
 const advance=(g,seconds)=>{for(let i=0;i<seconds*20;i++)s.tick(g,.05);};
-const build=(g,kind,x,z)=>{assert.equal(s.place(g,kind,x,z),true,`${kind} at ${x},${z}: ${g.message}`);return g.buildings.at(-1);};
+const rich=g=>{g.stock={wood:10000,planks:10000,stone:10000,toys:10000};};
+const build=(g,kind,x,z)=>{assert.equal(s.place(g,kind,x,z),true,`${kind} ${x},${z}: ${g.message}`);return g.buildings.at(-1);};
+const complete=(g,kind,x,z)=>{const b=build(g,kind,x,z);b.progress=1;return b;};
 
-test('construction charges once, rejects overlaps and refunds half',()=>{
-  const g=s.newGame(),before={...g.stock};const b=build(g,'wall',3,3);
-  assert.equal(g.stock.stone,before.stone-12);assert.equal(s.place(g,'wall',3,3),false);assert.equal(g.stock.stone,before.stone-12);
-  assert.equal(s.demolish(g,b.id),true);assert.equal(g.stock.stone,before.stone-6);assert.equal(s.demolish(g,g.buildings[0].id),false);
-  assert.equal(s.place(g,'workshop',16,16),false);
-});
-test('elves construct, gather, repair and produce toys',()=>{
-  const g=s.newGame();const b=build(g,'workshop',3,0);const before=g.stock.toys;advance(g,35);
-  assert.equal(b.progress,1);assert.ok(g.stock.toys>before);assert.ok(g.stock.wood>100);
-  b.hp-=150;advance(g,20);assert.equal(b.hp,b.maxHp);
-});
-test('factory expansion requires free 3×3 footprint and charges only on success',()=>{
-  const g=s.newGame();g.stock={wood:1000,stone:1000,toys:1000};const b=build(g,'workshop',3,0);b.progress=1;
-  const wall=build(g,'wall',5,2);const before={...g.stock};assert.equal(s.upgrade(g,b.id),false);assert.deepEqual(g.stock,before);
-  s.demolish(g,wall.id);assert.equal(s.upgrade(g,b.id),true);assert.equal(s.sizeOf(b),3);assert.equal(b.progress,0);
-});
-test('Santa restores a shrine once, grows following, and walks around structures',()=>{
-  const g=s.newGame();s.restoreShrine(g,1);advance(g,25);assert.equal(g.shrines[0].restored,true);assert.equal(g.elves.length,6);
-  s.restoreShrine(g,1);advance(g,5);assert.equal(g.elves.length,6);
-  build(g,'wall',4,3);const path=s.route(g,{x:3,z:3},{x:5,z:3});assert.ok(path.length>2);assert.ok(!path.some(p=>p.x===4&&p.z===3));
-});
-test('gates admit elves and Santa but block Halloween; sealed castles have breach routes',()=>{
-  const g=s.newGame();g.stock={wood:10000,stone:10000,toys:10000};g.elves=[];g.santa.x=10;g.santa.z=10;
-  for(let x=-2;x<=3;x++)for(let z=-2;z<=3;z++)if(x===-2||x===3||z===-2||z===3)build(g,x===-2&&z===0?'gate':'wall',x,z);
-  assert.ok(s.route(g,{x:-5,z:0},{x:-1,z:0}).length);
-  assert.equal(s.route(g,{x:-5,z:0},{x:-1,z:0},0,true).length,0);
-  assert.ok(s.route(g,{x:-5,z:0},{x:-1,z:0},0,true,true).length);
-  s.startNight(g);advance(g,100);assert.ok(g.buildings.some(b=>b.hp<b.maxHp)||g.buildings.length<21);
-});
-test('night prohibits building and cheer has a cooldown',()=>{
-  const g=s.newGame();s.startNight(g);assert.equal(s.place(g,'wall',3,3),false);assert.equal(s.cheerBurst(g),true);assert.equal(s.cheerBurst(g),false);advance(g,19);assert.equal(g.santa.burst,0);
-});
-test('valid saves roundtrip and malformed or incompatible saves fail safely',()=>{
-  const g=s.newGame();build(g,'nutcracker',-3,0);advance(g,10);const saved=s.loadGame(s.saveGame(g));assert.ok(saved);assert.equal(saved.stock.wood,g.stock.wood);assert.equal(saved.buildings.length,2);
-  for(const raw of ['null','{}','bad',JSON.stringify({...g,version:2}),JSON.stringify({...g,day:55}),JSON.stringify({...g,buildings:[]}),JSON.stringify({...g,santa:{...g.santa,cooldown:'bad'}}),JSON.stringify({...g,santa:{...g.santa,shrineId:99}})])assert.equal(s.loadGame(raw),null);
-});
-test('an undefended Hearth falls and terminal states stop simulation',()=>{
-  const g=s.newGame();g.elves=[];g.santa.recovering=10000;s.startNight(g);advance(g,260);assert.equal(g.phase,'lost');const snapshot=JSON.stringify(g);advance(g,10);assert.equal(JSON.stringify(g),snapshot);
-});
-test('starting materials support first night with a workshop and two towers',()=>{
-  const g=s.newGame();build(g,'workshop',3,0);build(g,'nutcracker',-3,-2);build(g,'nutcracker',-3,4);advance(g,120);advance(g,160);
-  assert.notEqual(g.phase,'lost');assert.ok(g.day>=2);assert.ok(g.buildings.find(b=>b.kind==='hearth').hp>0);
-});
-test('all twelve waves progress to Christmas with an expanded defended settlement',()=>{
-  const g=s.newGame();build(g,'workshop',3,0);build(g,'nutcracker',-3,-2);build(g,'nutcracker',-3,4);
-  const report=[];
-  const sites=[['nutcracker',2,-3],['jackbox',2,4],['snowglobe',-4,0],['nutcracker',5,-2],['jackbox',-2,5],['snowglobe',5,3],['nutcracker',0,-4],['jackbox',-4,-4],['nutcracker',4,7]];
-  for(let day=1;day<=12;day++){
-    assert.equal(g.phase,'day');assert.equal(g.day,day);
-    if(day<=4)s.restoreShrine(g,day);
-    advance(g,60);
-    if(day>=2){const site=sites.shift();if(site){for(let wait=0;wait<40&&s.placementError(g,...site)==='Santa or an elf is standing here.';wait++)advance(g,.25);build(g,...site);}}
-    if(day>=5){const b=g.buildings.find(b=>['nutcracker','jackbox','snowglobe'].includes(b.kind)&&b.level===1&&b.progress===1);if(b&&s.canAfford(g,s.upgradeCost(b)))s.upgrade(g,b.id);}
-    s.moveSanta(g,{x:-1,z:2});advance(g,60);s.startNight(g);
-    let duration=0;
-    while(g.phase==='night'&&duration<240){if(g.santa.burst===0)s.cheerBurst(g);advance(g,1);duration++;}
-    report.push({day,duration,hearth:Math.ceil(g.buildings[0].hp),towers:g.buildings.length-2});
-    assert.notEqual(g.phase,'lost',JSON.stringify(report));assert.ok(duration<240,JSON.stringify(report));
-  }
-  assert.equal(g.phase,'won');assert.equal(g.elves.length,12);console.log('Campaign balance:',JSON.stringify(report));
-});
+test('daytime waits for the player; finite deposits never replenish at dawn',()=>{const g=s.newGame();advance(g,300);assert.equal(g.phase,'day');assert.equal(g.day,1);const d=g.deposits[0];assert.ok(d.amount<900);const n=d.amount;g.phase='night';g.pending=[];g.enemies=g.enemies.filter(e=>e.campId);advance(g,.05);assert.equal(g.day,2);assert.ok(d.amount<=n);});
+test('construction pays once, rejects overlap, water, camp territory; removal refunds half',()=>{const g=s.newGame();const before=g.stock.stone;const b=build(g,'wall',5,1);assert.equal(g.stock.stone,before-8);assert.equal(s.place(g,'wall',5,1),false);assert.equal(s.place(g,'wall',Math.round(s.riverX(0)),0),false);assert.equal(s.place(g,'wall',23,-5),false);assert.equal(s.demolish(g,b.id),true);assert.equal(g.stock.stone,before-4);assert.equal(s.demolish(g,g.buildings[0].id),false);});
+test('physical harvesting and delivery conserve raw materials',()=>{const g=s.newGame();g.buildings=g.buildings.filter(b=>!['sawmill','workshop'].includes(b.kind));const total=()=>g.stock.wood+g.stock.stone+g.deposits.reduce((n,d)=>n+d.amount,0)+g.elves.reduce((n,e)=>n+e.cargo.wood+e.cargo.stone,0);const before=total();advance(g,90);assert.ok(Math.abs(total()-before)<.00001);assert.ok(g.stock.wood>100);assert.ok(g.stock.stone>160);assert.ok(g.elves.some(e=>Object.values(e.cargo).some(n=>n>0)));});
+test('elves construct and run delivered-log to plank to toy chain',()=>{const g=s.newGame();const b=build(g,'workshop',3,-7);const toys=g.stock.toys;advance(g,240);assert.equal(b.progress,1);assert.ok(g.stock.toys>toys,JSON.stringify({stock:g.stock,jobs:g.elves.map(e=>e.job),inv:b.inventory}));assert.ok(g.deposits.some(d=>d.amount<900));});
+test('recruitment reserves capacity, spends supplies, and pauses at night',()=>{const g=s.newGame();rich(g);const b=complete(g,'workshop',3,-7);assert.equal(s.recruit(g,b.id,'infantry'),true);assert.equal(g.stock.toys,9992);g.phase='night';g.pending=['king'];g.spawnTimer=10000;advance(g,10);assert.equal(g.troops.length,0);g.phase='day';advance(g,10);assert.equal(g.troops.length,1);assert.equal(b.queue.length,0);for(let i=0;i<30;i++)s.recruit(g,b.id,'ranger');assert.ok(s.population(g)<=s.capacity(g));assert.ok(b.queue.length<=5);});
+test('homes welcome workers; shrines restore once and respect housing',()=>{const g=s.newGame();rich(g);const b=build(g,'home',-8,5);advance(g,50);assert.equal(b.progress,1);assert.equal(g.elves.length,10);g.enemies=[];s.restoreShrine(g,1);advance(g,40);assert.equal(g.shrines[0].restored,true);assert.equal(g.elves.length,12);s.restoreShrine(g,1);advance(g,2);assert.equal(g.elves.length,12);});
+test('bridges are traversable and river water is not',()=>{const g=s.newGame();const path=s.route(g,{x:5,z:0},{x:18,z:0});assert.ok(path.length>15);assert.ok(path.every(p=>!s.water(p.x,p.z)));assert.ok(path.some(p=>s.bridge(p.x,p.z)));});
+test('gates admit followers but sealed castles require enemy breach routes',()=>{const g=s.newGame();rich(g);g.elves=[];for(let x=-3;x<=3;x++)for(let z=-3;z<=3;z++)if(x===-3||x===3||z===-3||z===3){const b=s.buildingAt(g,x,z);if(b&&b.kind!=='hearth')s.demolish(g,b.id);if(!s.buildingAt(g,x,z))complete(g,x===-3&&z===0?'gate':'wall',x,z);}assert.ok(s.route(g,{x:-10,z:0},{x:-3,z:0}).length);assert.equal(s.route(g,{x:-10,z:0},{x:-3,z:0},0,true).length,0);assert.ok(s.route(g,{x:-10,z:0},{x:0,z:1},0,true,true).length);});
+test('camp destruction suppresses reinforcements and cannot replay rewards',()=>{const g=s.newGame();const baseline=s.wave(6).length;g.day=6;g.camps[0].hp=0;advance(g,.05);assert.equal(g.camps[0].cleared,true);const toys=g.stock.toys;advance(g,.05);assert.equal(g.stock.toys,toys);assert.ok(!g.enemies.some(e=>e.campId===1));s.startNight(g);assert.ok(g.pending.length<baseline);});
+test('attack orders clear camps, while move and guard orders retain their destinations',()=>{const g=s.newGame();rich(g);const b=complete(g,'workshop',3,-7);for(let i=0;i<5;i++)s.recruit(g,b.id,'artillery');advance(g,100);const c=g.camps[0];g.enemies=[];for(const t of g.troops){t.x=c.x-6;t.z=c.z;}s.command(g,g.troops.map(t=>t.id),'attack',c);advance(g,40);assert.equal(c.cleared,true);s.command(g,g.troops.map(t=>t.id),'guard',{x:20,z:0});advance(g,15);assert.ok(g.troops.every(t=>t.order.type==='guard'&&s.distance(t,t.order.target)<1));});
+test('cheer heals and blessing reduces nearby incoming damage with cooldowns',()=>{const g=s.newGame();g.santa.hp=100;assert.equal(s.cheerBurst(g),true);assert.equal(g.santa.hp,190);assert.equal(s.cheerBurst(g),false);assert.equal(s.blessing(g),true);assert.equal(s.blessing(g),false);assert.equal(g.santa.shield,10);advance(g,11);assert.equal(g.santa.shield,0);});
+test('v2 saves resume deterministically; v1, malformed orders and missing stock fail safely',()=>{const g=s.newGame();build(g,'workshop',3,-7);advance(g,30);const copy=s.loadGame(s.saveGame(g));assert.ok(copy);advance(g,40);advance(copy,40);assert.deepEqual(copy.stock,g.stock);assert.deepEqual(JSON.parse(JSON.stringify(copy.elves)),JSON.parse(JSON.stringify(g.elves)));assert.deepEqual(copy.buildings,g.buildings);for(const raw of ['null','bad','{}',JSON.stringify({...g,version:1}),JSON.stringify({...g,stock:{wood:1}}),JSON.stringify({...g,santa:{...g.santa,shield:'bad'}})])assert.equal(s.loadGame(raw),null);});
+test('final siege alone does not win: all three camps must be cleared',()=>{const g=s.newGame();g.day=12;g.phase='night';g.pending=[];advance(g,.05);assert.equal(g.finalSiegeWon,true);assert.equal(g.phase,'day');for(const c of g.camps)c.hp=0;advance(g,.05);assert.equal(g.phase,'won');const before=s.saveGame(g);advance(g,10);assert.equal(s.saveGame(g),before);});
+test('undefended keep falls; terminal state stops the simulation',()=>{const g=s.newGame();g.elves=[];g.santa.recovering=10000;g.day=8;s.startNight(g);advance(g,400);assert.equal(g.phase,'lost');const before=s.saveGame(g);advance(g,2);assert.equal(s.saveGame(g),before);});
+test('expanded defences survive all twelve waves with a complete Christmas victory',()=>{const g=s.newGame();rich(g);g.elves=[];g.santa.recovering=10000;for(const c of g.camps)c.hp=0;advance(g,.05);const sites=[[-6,-2],[-6,5],[4,1],[3,-5],[-3,-7],[5,5],[-8,0],[-1,7]];for(const [x,z]of sites){const b=complete(g,'nutcracker',x,z);s.upgrade(g,b.id);}const report=[];for(let day=1;day<=12;day++){assert.equal(g.day,day);for(const b of g.buildings)b.hp=b.maxHp;s.startNight(g);let t=0;while(g.phase==='night'&&t<400){advance(g,1);t++;}report.push({day,t,hp:g.buildings[0].hp});assert.notEqual(g.phase,'lost',JSON.stringify(report));assert.ok(t<400,JSON.stringify(report));}assert.equal(g.phase,'won');console.log('Campaign validation:',JSON.stringify(report));});
 
-test('a saved active siege resumes deterministically without replaying rewards',()=>{
-  const g=s.newGame();build(g,'workshop',3,0);build(g,'nutcracker',-3,-2);advance(g,35);s.startNight(g);advance(g,12);
-  const resumed=s.loadGame(s.saveGame(g));assert.ok(resumed);advance(g,60);advance(resumed,60);
-  assert.equal(resumed.kills,g.kills);assert.equal(resumed.day,g.day);assert.equal(resumed.phase,g.phase);assert.deepEqual(resumed.stock,g.stock);
-  assert.deepEqual(resumed.enemies,g.enemies);assert.deepEqual(resumed.buildings,g.buildings);
-});
-test('a dense late-game siege stays bounded and can damage and destroy defences',()=>{
-  const g=s.newGame();g.day=12;g.stock={wood:4000,stone:4000,toys:4000};g.santa.x=8;g.santa.z=0;
-  for(let x=-7;x<=7;x+=2)for(const z of [-7,7]){const b=build(g,'wall',x,z);b.progress=1;}
-  const original=g.buildings.length;g.elves=[];s.startNight(g);advance(g,200);
-  assert.ok(g.enemies.length<=30);assert.ok(g.effects.length<=80);assert.ok(g.buildings.length<original||g.buildings.some(b=>b.hp<b.maxHp));
-});
-
-test('the opening defences alone cannot survive the whole campaign',()=>{
-  const g=s.newGame();build(g,'workshop',3,0);build(g,'nutcracker',-3,-2);build(g,'nutcracker',-3,4);
-  for(let i=0;i<12*400*20&&!['won','lost'].includes(g.phase);i++)s.tick(g,.05);
-  assert.equal(g.phase,'lost');assert.ok(g.day>1&&g.day<12);
-});
-
-test('gatherers leaving the night shelter finish batches instead of oscillating between resources',()=>{
-  const g=s.newGame();g.stock={wood:135,stone:100,toys:0};for(const e of g.elves)Object.assign(e,{x:-1,z:2});advance(g,60);
-  assert.ok(g.stock.wood+g.stock.stone>335,JSON.stringify(g.stock));assert.ok(g.stock.wood>135);assert.ok(g.stock.stone>100);
-});
+test('starting supplies can build a workshop and two towers and survive the first night',()=>{const g=s.newGame();build(g,'workshop',3,-7);build(g,'nutcracker',-6,-2);build(g,'nutcracker',-1,7);advance(g,120);const w=g.buildings.find(b=>b.kind==='workshop');for(let i=0;i<3;i++)assert.equal(s.recruit(g,w.id,'infantry'),true);advance(g,30);s.command(g,g.troops.map(t=>t.id),'guard',{x:-4,z:1});s.startNight(g);let t=0;while(g.phase==='night'&&t<300){if(g.santa.burst===0)s.cheerBurst(g);advance(g,1);t++;}assert.equal(g.phase,'day');assert.equal(g.day,2);assert.ok(g.buildings[0].hp>0);});
+test('a saved siege resumes with matching damage, kills and wave progress',()=>{const g=s.newGame();build(g,'nutcracker',-6,-2);advance(g,30);s.startNight(g);advance(g,18);const copy=s.loadGame(s.saveGame(g));assert.ok(copy);advance(g,80);advance(copy,80);assert.equal(g.kills,copy.kills);assert.equal(g.phase,copy.phase);assert.equal(g.day,copy.day);assert.deepEqual(g.buildings,copy.buildings);assert.deepEqual(JSON.parse(JSON.stringify(g.enemies)),JSON.parse(JSON.stringify(copy.enemies)));});
+test('blocked workshop exits retain queued recruits until a friendly gate opens',()=>{const g=s.newGame();rich(g);g.elves=[];const w=complete(g,'workshop',3,-7);for(let x=2;x<=6;x++)for(let z=-8;z<=-4;z++)if((x===2||x===6||z===-8||z===-4)&&!s.buildingAt(g,x,z))complete(g,'wall',x,z);s.recruit(g,w.id,'infantry');advance(g,12);assert.equal(g.troops.length,0);assert.equal(w.queue.length,1);s.demolish(g,s.buildingAt(g,2,-7).id);complete(g,'gate',2,-7);advance(g,1);assert.equal(g.troops.length,1);assert.equal(w.queue.length,0);});
