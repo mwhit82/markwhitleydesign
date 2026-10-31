@@ -15,3 +15,9 @@ CC0 1.0. Selected effects only. Wood impact converted to PCM WAV.
 UI license included alongside this file as LICENSE.txt.
 
 CC0: https://creativecommons.org/publicdomain/zero/1.0/
+
+V3 WORLD FOLEY — original procedural sound design for this project
+River, chopping, mining, sawing, toy crafting, footsteps, clashes,
+cannon impacts and magic were authored with deterministic synthesis.
+Source: scripts/render-hallowseve-foley.py in the project repository.
+These original project assets are separate from the CC0 third-party packs above.

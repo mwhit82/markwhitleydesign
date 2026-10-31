@@ -1,3 +1,4 @@
+import {characterParts} from './character-model';
 import {BufferGeometry,Float32BufferAttribute} from 'three';
 import {centre,sizeOf,heightAt,type Game,type Building} from './simulation';
 export type Shape='box'|'cone'|'cylinder'|'sphere'|'rock'|'roof';
@@ -7,7 +8,17 @@ export function roofGeometry(){const g=new BufferGeometry();g.setAttribute('posi
 export function buildingParts(b:Building,clock:number){const v:Part[]=[],c=centre(b),s=sizeOf(b),base=heightAt(c.x,c.z),angle=b.rotation*Math.PI/2;const put=(shape:Shape,col:string,x:number,y:number,z:number,w:number,h:number,d:number,ry=0,rz=0)=>{const co=Math.cos(angle),si=Math.sin(angle);add(v,shape,col,c.x+x*co+z*si,base+y,c.z+z*co-x*si,w,h,d,ry+angle,rz);};
  if(b.kind==='road'){put('box','#a6a79a',0,.035,0,.98,.07,.98);for(const z of [-.25,.25])for(const x of [-.25,.25])put('box','#c3c2ae',x,.08,z,.44,.05,.43);return v;}
  put('box','#8d9b99',0,.15,0,s+.1,.3,s+.1);
- if(b.progress<1){for(const dx of [-1,1])for(const dz of [-1,1])put('cylinder','#a58055',dx*s*.45,1,dz*s*.45,.12,2,.12);for(const y of [.6,1.5]){put('box','#aa875e',0,y,-s*.45,s,.12,.12);put('box','#aa875e',0,y,s*.45,s,.12,.12);}put('box','#b9aaa0',0,.3+b.progress*.5,0,s*.8,.6*b.progress+.1,s*.8);return v;}
+ if(b.progress<1){
+  const stage=Math.min(4,Math.floor(b.progress*5)),full=buildingParts({...b,progress:1},0),highest=Math.max(...full.map(p=>p.y+p.h/2))-base;
+  const limit=base+highest*([.12,.3,.6,.88,1][stage]);
+  for(const p of full)if(p.y+p.h/2<=limit&&p.color!=='#bac6c0')v.push(p);
+  for(const dx of [-1,1])for(const dz of [-1,1])put('cylinder','#a98050',dx*s*.52,highest*.45,dz*s*.52,.1,highest*.9,.1);
+  for(const y of [.6,1.4,2.2].filter(y=>y<highest))for(const z of [-s*.52,s*.52]){put('box','#c1a06b',0,y,z,s+.3,.1,.18);put('box','#956d44',0,y+.35,z,s+.3,.07,.08);}
+  if(stage>=1)for(const x of [-s*.4,s*.4])put('box','#805b3e',x,highest*.35,0,.15,highest*.6,s*.8);
+  for(let i=0;i<3;i++)put('box','#c59657',s*.6,.22+i*.12,0,.4,.1,.8);
+  if(stage===4)for(let i=0;i<4;i++){const t=(clock+i*.2)%1;put('sphere','#ffe6a6',Math.sin(i*1.7)*s*.5,highest*.7+t*.6,Math.cos(i*1.7)*s*.5,.07,.07,.07);}
+  return v;
+ }
  if(b.kind==='wall'||b.kind==='gate'){
   if(b.kind==='wall'){put('box','#a8b4b0',0,.9,0,.96,1.6,.88);for(let i=0;i<4;i++)put('box','#7c918e',i%2?.1:-.1,.35+i*.35,.446,.7,.035,.015);}
   else{for(const x of [-.38,.38])put('box','#a8b4b0',x,.9,0,.22,1.7,.9);put('box','#a8b4b0',0,1.6,0,.9,.35,.9);for(const x of [-.2,0,.2])put('box','#98754e',x,.85,0,.13,1.35,.15);}
@@ -44,16 +55,4 @@ export function buildingParts(b:Building,clock:number){const v:Part[]=[],c=centr
  return v;
 }
 
-export function actors(g:Game){const v:Part[]=[];
- const person=(x:number,z:number,col:string,hat:string,phase:number,walking:boolean,santa=false,carrying=false)=>{const y=heightAt(x,z),bob=walking?Math.sin(phase)*.04:0;const p=(shape:Shape,c:string,dx:number,dy:number,dz:number,w:number,h:number,d:number,rz=0)=>add(v,shape,c,x+dx,y+dy+bob,z+dz,w,h,d,0,rz);
- for(const side of [-1,1]){p('cylinder','#344f48',side*.12,.23,walking?Math.sin(phase+side)*.1:0,.13,.4,.14,walking?Math.sin(phase)*side*.2:0);p('box','#41433e',side*.12,.08,.08,.17,.13,.26);p('cylinder',col,side*.25,.64,0,.14,.42,.14,side*.22);p('sphere','#e4bd95',side*.29,.45,0,.14,.14,.14);}
- p('cone',col,0,.65,0,.58,.65,.47);p('sphere','#e4bd95',0,1.05,0,.36,.38,.35);p('cone',hat,0,1.39,0,.48,.44,.48);p('sphere','#f0eee1',0,1.62,0,.13,.13,.13);p('cylinder','#e8dfba',0,.47,0,.5,.07,.43);p('sphere','#263f38',-.07,1.08,.17,.04,.04,.04);p('sphere','#263f38',.07,1.08,.17,.04,.04,.04);
- if(santa){p('sphere','#f2eee0',0,.94,.17,.35,.3,.25);p('cylinder','#e1ca83',.43,.8,0,.07,1.45,.07);p('sphere','#ffcf78',.43,1.55,0,.2,.2,.2);}if(carrying)p('box','#a98250',0,.75,.4,.45,.4,.4);
- };
- for(const e of g.elves)person(e.x,e.z,'#438d72','#477d56',g.elapsed*9+e.id,e.path.length>0,false,Object.values(e.cargo).some(n=>n>0));
- if(g.santa.recovering<=0)person(g.santa.x,g.santa.z,'#af4146','#b64f46',g.elapsed*8,g.santa.path.length>0,true);
- for(const t of g.troops){if(t.kind==='artillery'){const y=heightAt(t.x,t.z);add(v,'box','#a54e47',t.x,y+.5,t.z,.8,.5,1.1);for(const dx of [-.5,.5])for(const dz of [-.35,.35])add(v,'cylinder','#54594b',t.x+dx,y+.3,t.z+dz,.45,.15,.45,0,Math.PI/2);add(v,'cylinder','#d0b475',t.x,y+.95,t.z,.3,1,.3,0,-.5);}else person(t.x,t.z,t.kind==='infantry'?'#ad4d42':'#6a99a5',t.kind==='infantry'?'#294c45':'#d7e5dc',g.elapsed*9+t.id,t.path.length>0);}
- for(const e of g.enemies){const y=heightAt(e.x,e.z),king=e.clan==='king',scale=king?1.8:1;add(v,'cone',e.clan==='witch'?'#61466f':'#645144',e.x,y+.5*scale,e.z,.7*scale,1*scale,.65*scale);add(v,'sphere',e.clan==='pumpkin'||king?'#cd7a32':e.clan==='witch'?'#a0b58b':'#d1cab0',e.x,y+1.1*scale,e.z,.65*scale,.6*scale,.6*scale);for(const dx of [-.14,.14])add(v,'box','#ffcf78',e.x+dx*scale,y+1.15*scale,e.z+.29*scale,.12*scale,.1*scale,.03);if(e.clan==='witch'){add(v,'cylinder','#383347',e.x,y+1.43,e.z,.95,.1,.95);add(v,'cone','#44394f',e.x,y+1.78,e.z,.6,.7,.6);}if(king)for(let i=0;i<5;i++)add(v,'cone','#d3b260',e.x+Math.sin(i*1.25)*.45,y+2.6,e.z+Math.cos(i*1.25)*.45,.25,.7,.25);}
- for(const a of [...g.troops,...g.enemies])if(a.hp<a.maxHp){const y=heightAt(a.x,a.z)+(('clan'in a&&a.clan==='king')?3.2:1.95),fraction=Math.max(0,a.hp/a.maxHp);add(v,'box','#324f4a',a.x,y,a.z,.8,.065,.1,Math.PI/4);add(v,'box',('clan'in a)?'#d7a078':'#b3d7aa',a.x-(1-fraction)*.28,y+.012,a.z+(1-fraction)*.28,.8*fraction,.067,.11,Math.PI/4);}
- return v;
-}
+export function actors(g:Game){const v:Part[]=[];for(const a of [...g.troops,...g.enemies.map(e=>({...e,kind:e.clan})),...g.elves.map(e=>({...e,kind:'elf' as const})),...(g.santa.recovering<=0?[{...g.santa,kind:'santa' as const}]:[])])for(const p of characterParts(a.kind)){if(p.joint==='cargo')continue;v.push({...p,x:p.x+a.x,y:p.y+heightAt(a.x,a.z),z:p.z+a.z});}return v;}
