@@ -26,7 +26,7 @@ export async function GET(request:Request) {
       const [info,score]=await Promise.all([redis<string|null>('HGET',`${board}:info`,id),redis<string>('ZSCORE',board,id)]);
       me={...JSON.parse(info||'{}'),rank:rank+1,time:Number(score)/1000,mine:true};
     }
-    return Response.json({entries,total,me,more:offset+20<total,window},{headers:{'Cache-Control':'no-store'}});
+    return Response.json({entries,total,me,more:offset+20<total,window,player:id},{headers:{'Cache-Control':'no-store'}});
   } catch {return Response.json({error:'Leaderboard temporarily unavailable. Try again shortly.'},{status:503});}
 }
 const saveScript=`

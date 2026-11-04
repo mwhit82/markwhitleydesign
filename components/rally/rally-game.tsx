@@ -16,6 +16,7 @@ import { cars, formatTime, type Mode } from "./data";
 import styles from "./rally.module.css";
 import { boardKey, isCircuit, lapCount, routeLength, stages, initialStage, stageDefinition, trackName, trackNames, trackNumber, weatherNames, stageTimes, timeNames, timeOfDay, type TimeOfDay, type StageSelection, type Weather } from "./stages";
 import { Leaderboard, type RaceResult } from "./leaderboard";
+import { identifyDriver } from "./pendo";
 import { HudIcon } from "./ui";
 import { reasonText, type CheckpointNotice, type RunReason } from "./checkpoints";
 import type { GhostSource } from "./replay";
@@ -108,7 +109,7 @@ export function RallyGame({immersive=false}:{immersive?:boolean}={}) {
           start: () => {
             setLeaderboard(false);setResult(null);
             const world=api.current;
-            run.current=fetch('/api/rally/start',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({selection:world?.selection,car:world?.selected})}).then(async response=>response.ok?(await response.json()).run:null).catch(()=>null);
+            run.current=fetch('/api/rally/start',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({selection:world?.selection,car:world?.selected})}).then(async response=>{if(!response.ok)return null;const data=await response.json();identifyDriver(data.player);return data.run;}).catch(()=>null);
           },
           finish: (time,trace,replay,eligibility) => setResult({time,trace,replay,...eligibility,penalty:api.current?.recoveryPenalty??0,run:run.current}),
           checkpoints:setCheckpointNotices,
