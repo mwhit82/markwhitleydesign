@@ -119,3 +119,9 @@ a {
     transform: translateY(0);
   }
 }
+
+.editorialNav {display:flex;flex-wrap:wrap;gap:4px 24px;border-bottom:1px solid #25262126;padding:12px 0;font-size:12px;}
+.editorialNav a {display:inline-flex;align-items:center;min-height:44px;}
+.editorialNav a[aria-current="page"] {text-decoration:underline;text-underline-offset:7px;}
+a:focus-visible,button:focus-visible {outline:2px solid currentColor;outline-offset:5px;}
+@media(prefers-reduced-motion:reduce) {html {scroll-behavior:auto;} .fade-up,.fade-up-delay-1,.fade-up-delay-2,.fade-up-delay-3 {animation:none;}}

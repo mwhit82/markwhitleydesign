@@ -1,3 +1,5 @@
+import { PortfolioTile } from "@/components/portfolio-tile";
+import { portfolioTiles } from "@/data/portfolio";
 import { ProjectCard } from "@/components/project-card";
 import { SectionHeading } from "@/components/section-heading";
 import { projects } from "@/data/projects";
@@ -14,6 +16,8 @@ export default function WorkPage() {
         title="Case studies built around product outcomes, design systems, and AI-powered workflows."
         description="Each project card is ready to link through to a deeper case study page as the portfolio evolves."
       />
+      <div className="grid gap-6 md:grid-cols-2">{portfolioTiles.map((project,index) => <PortfolioTile key={project.slug} project={project} index={index}/>)}</div>
+      <h2 className="text-2xl">More projects</h2>
       <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
         {projects.map((project, index) => (
           <ProjectCard key={project.slug} project={project} priority={index < 2} />

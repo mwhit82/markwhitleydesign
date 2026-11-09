@@ -4,6 +4,7 @@ import { PHASE_DEVELOPMENT_SERVER } from "next/constants";
 export default function nextConfig(phase: string): NextConfig {
   return {
     reactStrictMode: true,
+    images: { remotePatterns: [{ protocol: "https", hostname: "images.unsplash.com", pathname: "/photo-*" }] },
     experimental: {
       optimizePackageImports: ["@hugeicons/core-free-icons", "@react-three/drei"],
     },

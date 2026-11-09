@@ -1,4 +1,5 @@
-import Link from "next/link";
+import { GameCard } from "@/components/game-card";
+import { games } from "@/data/games";
 import { BadgeList } from "@/components/badge-list";
 import { SectionHeading } from "@/components/section-heading";
 import { experiments } from "@/data/experiments";
@@ -15,34 +16,7 @@ export default function PlaygroundPage() {
         title="A home for experiments, speculative concepts, and AI-native design ideas."
         description="This section is intentionally lighter and faster than a formal case study. It is where new interaction patterns can be tested before they become product decisions."
       />
-      <Link
-        href="/playground/rally"
-        className="block rounded-2xl bg-[#d95131] p-8 text-[#fff3de]"
-      >
-        <p className="text-xs uppercase tracking-widest">
-          Playable experiment 01
-        </p>
-        <h2 className="mt-3 text-4xl font-black italic">POCKET RALLY ↗</h2>
-        <p className="mt-3">
-          Four clay rally cars. One forest stage. Keyboard or controller. Chase
-          your best time.
-        </p>
-      </Link>
-      <Link href="/playground/soccer98" className="block rounded-2xl bg-[#213c31] p-8 text-[#fff3de]">
-        <p className="text-xs uppercase tracking-widest">Playable experiment 02</p>
-        <h2 className="mt-3 text-4xl font-black italic">SOCCER98 ↗</h2>
-        <p className="mt-3">Retro football meets Snake. Every ball adds a defender. How long can you keep running?</p>
-      </Link>
-      <Link href="/playground/the-anomalous" className="block rounded-2xl border border-[#68704c] bg-[#24291c] p-8 text-[#ede8d4]">
-        <p className="text-xs uppercase tracking-widest text-[#c8dc8c]">Playable experiment 03 · By Fenn</p>
-        <h2 className="mt-3 text-4xl font-black">THE ANOMALOUS ↗</h2>
-        <p className="mt-3">A fresh face. A very long night. Explore the lobby, find your colour and meet the night shift. Keyboard &amp; mouse, or touch controls in portrait and landscape.</p>
-      </Link>
-      <Link href="/playground/hallowseve26" prefetch={false} className="block rounded-2xl border border-[#a64d29] bg-[#291b19] p-8 text-[#ffe7c5]">
-        <p className="text-xs uppercase tracking-widest">Playable experiment 04</p>
-        <h2 className="mt-3 text-4xl font-black">HallowsEve26 ↗</h2>
-        <p className="mt-3">Build a living Christmas kingdom, command a toy army and conquer the Halloween clans. Twelve nights. One Christmas to save. Play in landscape on mobile.</p>
-      </Link>
+      <div className="grid gap-6 md:grid-cols-2">{games.map((game,index) => <GameCard key={game.slug} game={game} index={index} showDescription/>)}</div>
       <div className="grid gap-6 lg:grid-cols-2">
         {experiments.map((experiment) => (
           <article

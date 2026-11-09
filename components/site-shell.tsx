@@ -1,4 +1,6 @@
 "use client";
+import { navigation } from "@/components/site-navigation";
+import { portfolioStudies } from "@/data/portfolio";
 import {usePathname} from "next/navigation";
 import Link from "next/link";
 import type { ReactNode } from "react";
@@ -11,27 +13,22 @@ import { Icon } from "@/components/icon";
 import { LogoMark } from "@/components/logo-mark";
 import { ThemeToggle } from "@/components/theme-toggle";
 
-const navigation = [
-  { href: "/", label: "Home" },
-  { href: "/work", label: "Work" },
-  { href: "/playground", label: "Playground" },
-  { href: "/contact", label: "Contact" },
-];
 
 export function SiteShell({ children }: { children: ReactNode }) {
   const pathname=usePathname();
-  if(pathname==='/playground/hallowseve26'||pathname==='/playground/the-anomalous'||pathname==='/playground/dead-deadly-deader'||pathname==='/playground/rally'||pathname==='/playground/soccer98'||['pendo-for-agents','salecycle-design-system','leo','pendo-listen'].some(slug=>pathname===`/work/${slug}`))return <main>{children}</main>;
+  if(pathname==='/playground/hallowseve26'||pathname==='/playground/the-anomalous'||pathname==='/playground/dead-deadly-deader'||pathname==='/playground/rally'||pathname==='/playground/soccer98'||portfolioStudies.some(study=>pathname===`/work/${study.slug}`)||pathname==='/photography'||pathname==='/playground/pocket-racers-vr')return <main>{children}</main>;
   if(pathname==='/')return <div style={{minHeight:'100dvh',background:'#f2f0e9',color:'#252621'}}><main>{children}</main></div>;
   return (
     <div className="relative z-10 mx-auto min-h-screen max-w-7xl px-4 pb-8 sm:px-6 lg:px-8">
       <header className="sticky top-0 z-50 mx-auto mb-6 mt-4 max-w-7xl rounded-[1.75rem] border border-[color:var(--border)] bg-[color:var(--surface)] px-3 py-3 shadow-[var(--shadow)] backdrop-blur">
         <div className="flex items-center justify-between gap-6">
           <LogoMark />
-          <nav className="hidden items-center gap-1 md:flex">
+          <nav aria-label="Main navigation" className="hidden items-center gap-1 md:flex">
             {navigation.map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
+                aria-current={pathname === item.href ? "page" : undefined}
                 className="rounded-full px-3 py-2 text-sm text-[color:var(--muted)] hover:text-[color:var(--foreground)]"
               >
                 {item.label}
@@ -49,7 +46,7 @@ export function SiteShell({ children }: { children: ReactNode }) {
             <ThemeToggle />
           </div>
         </div>
-        <nav className="mt-3 flex gap-2 overflow-x-auto pb-1 md:hidden">
+        <nav aria-label="Main navigation" className="mt-3 flex gap-2 overflow-x-auto pb-1 md:hidden">
           {navigation.map((item) => (
             <Link
               key={item.href}

@@ -52,3 +52,23 @@
 .deaderArt::after {content:"";position:absolute;inset:0;background:linear-gradient(180deg,#15100855,transparent 40%,#151008aa);pointer-events:none;}
 .deaderArt .playBadge,.deaderArt strong {z-index:1;}
 .deaderArt strong {font-size:clamp(34px,4.2vw,58px);font-style:normal;letter-spacing:-.045em;line-height:.95;text-shadow:0 2px 18px #0008;}
+
+.homeSection {margin-top:64px;}
+.cardFooter h3 {font-size:clamp(18px,2vw,24px);font-weight:600;letter-spacing:-.04em;margin:8px 0 0;}
+.cardFooter p {font-size:13px;line-height:1.65;max-width:42em;margin:10px 0 0;opacity:.85;}
+.cardFooter>svg {flex-shrink:0;}
+.toolkit {background:#e1e9e2;color:#243e36;}.analytics {background:#e5e5f0;color:#373750;}.frontend {background:#efe4d3;color:#493d2d;}
+.toolkitArt {background:#d7e3d8;}.analyticsArt {background:#d9dce9;}.frontendArt {background:#e6dbc7;}
+.conceptLabel {position:absolute;bottom:12px;left:24px;font:10px ui-monospace,monospace;color:#454b48;}
+.rallyArt strong {white-space:pre-line;}
+.racers {background:#e5cfae;color:#332d24;}.racersArt {background:#e5cfae;}
+.racersArt img {filter:none;}.racersArt strong {font-size:clamp(30px,3.7vw,54px);text-shadow:0 2px 15px #f4e9d9;}
+.racersArt .playBadge {background:#fff9;border-color:#332d2450;}
+.studyFocus {max-width:700px;margin-bottom:48px;font-size:18px;line-height:1.7;}
+.studyFocus h2 {font-size:14px;text-transform:uppercase;letter-spacing:.12em;}
+.screenshotPlaceholder {min-height:240px;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;padding:32px;border:1px dashed #888b80;background:#e9e7df;margin-bottom:48px;}
+.screenshotPlaceholder span {font:11px ui-monospace,monospace;text-transform:uppercase;letter-spacing:.1em;}
+.screenshotPlaceholder p {font-size:14px;}
+.gameConcept {margin:0 0 64px;}.gameConcept img {width:100%;height:auto;max-height:660px;object-fit:contain;background:#e5cfae;}.gameConcept figcaption{font:11px ui-monospace,monospace;margin-top:12px;color:#616359;}
+
+.pendo,.leo,.listen,.captures {color:#252621;}
