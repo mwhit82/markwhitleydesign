@@ -9,3 +9,7 @@ coverage
 
 .env*
 !.env.example
+
+# Private photo masters, drafts, contact sheet and processing cache
+/photography-originals/
+/.photography-work/

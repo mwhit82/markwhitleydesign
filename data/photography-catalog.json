@@ -1,0 +1,212 @@
+{
+  "version": 1,
+  "includePlaceholders": false,
+  "featuredIds": [
+    "nyc-may-day-3-96",
+    "hamsterley-autumn-fox-6",
+    "kefalonia-2025-737",
+    "raleigh-wilmington-76",
+    "toon-oct-26-42",
+    "toon-oct-26-47"
+  ],
+  "photos": [
+    {
+      "id": "hamsterley-autumn-fox-4",
+      "source": "Hamsterley-Autumn-Fox-4.jpg",
+      "title": "Through the pines",
+      "description": "",
+      "alt": "A winding woodland path between tall pine trunks and green undergrowth",
+      "order": 2,
+      "published": true
+    },
+    {
+      "id": "hamsterley-autumn-fox-6",
+      "source": "Hamsterley-Autumn-Fox-6.jpg",
+      "title": "Autumn canopy",
+      "description": "",
+      "alt": "Layers of green, gold and orange leaves around branching woodland trees",
+      "order": 3,
+      "published": true
+    },
+    {
+      "id": "kefalonia-2025-737",
+      "source": "Kefalonia-2025-737.jpg",
+      "title": "Terrace afternoon",
+      "description": "",
+      "alt": "People sitting at a leafy cafe terrace with ornate metal chairs and green doors",
+      "order": 4,
+      "published": true
+    },
+    {
+      "id": "newcastle-streets-1",
+      "source": "Newcastle-Streets-1.jpg",
+      "title": "After dark",
+      "description": "",
+      "alt": "A figure at the top of an outdoor staircase lit by warm yellow light at night",
+      "order": 22,
+      "published": true
+    },
+    {
+      "id": "peak-district-dxr-uk-28",
+      "source": "Peak-District-DXR-UK-28.jpg",
+      "title": "Across the valley",
+      "description": "",
+      "alt": "Sunlight breaks through clouds over a patchwork valley of fields, trees and villages",
+      "order": 14,
+      "published": true
+    },
+    {
+      "id": "quayside-9",
+      "source": "Quayside-9.jpg",
+      "title": "River lights",
+      "description": "",
+      "alt": "An illuminated steel arch bridge above a river reflecting purple and gold lights at night",
+      "order": 15,
+      "published": true
+    },
+    {
+      "id": "ldn-oct-26-13",
+      "source": "ldn-oct-26-13.jpg",
+      "title": "Behind the glass",
+      "description": "",
+      "alt": "An ornate framed painting seen through pale vertical reflections in gallery glass",
+      "order": 10,
+      "published": true
+    },
+    {
+      "id": "ldn-oct-26-37",
+      "source": "ldn-oct-26-37.jpg",
+      "title": "A moment with a painting",
+      "description": "",
+      "alt": "A silhouetted visitor stands before a painting, framed by a dark gallery doorway",
+      "order": 11,
+      "published": true
+    },
+    {
+      "id": "ldn-oct-26-48",
+      "source": "ldn-oct-26-48.jpg",
+      "title": "Beneath the bridge",
+      "description": "",
+      "alt": "Pedestrians pass a colourful wall mural beneath the diagonal steel beams of a bridge",
+      "order": 12,
+      "published": true
+    },
+    {
+      "id": "littletown-fenn-5",
+      "source": "littletown-fenn-5.jpg",
+      "title": "Looking up",
+      "description": "",
+      "alt": "A child in dark clothing looks up into tall trees on a woodland path",
+      "order": 13,
+      "published": true
+    },
+    {
+      "id": "nyc-may-day-3-96",
+      "source": "nyc-may-day-3-96.jpg",
+      "title": "Skyline at dusk",
+      "description": "",
+      "alt": "Dark clouds gather above the Manhattan skyline as warm evening light glows along the horizon",
+      "order": 1,
+      "published": true
+    },
+    {
+      "id": "raleigh-wilmington-1",
+      "source": "raleigh-wilmington-1.jpg",
+      "title": "Light and shade",
+      "description": "",
+      "alt": "Sunlit white walls and an outdoor staircase beside a shaded street beneath a blue sky",
+      "order": 5,
+      "published": true
+    },
+    {
+      "id": "raleigh-wilmington-76",
+      "source": "raleigh-wilmington-76.jpg",
+      "title": "At the beach",
+      "description": "",
+      "alt": "An empty wooden lifeguard tower and white water tower beyond pale sand and dune grass",
+      "order": 6,
+      "published": true
+    },
+    {
+      "id": "raleigh-wilmington-91",
+      "source": "raleigh-wilmington-91.jpg",
+      "title": "Street closed",
+      "description": "",
+      "alt": "An orange and white striped road barrier in front of a brick street lined with parked cars",
+      "order": 7,
+      "published": true
+    },
+    {
+      "id": "raleigh-wilmington-94",
+      "source": "raleigh-wilmington-94.jpg",
+      "title": "Brick and ivy",
+      "description": "",
+      "alt": "Sunlight catches a brick fire escape beside a pale wall covered with trailing ivy",
+      "order": 8,
+      "published": true
+    },
+    {
+      "id": "raleigh-wilmington-96",
+      "source": "raleigh-wilmington-96.jpg",
+      "title": "Fire escape",
+      "description": "",
+      "alt": "Zigzag metal fire escapes between tall brick buildings, with sunlight on the upper walls",
+      "order": 9,
+      "published": true
+    },
+    {
+      "id": "toon-oct-26-13",
+      "source": "toon-oct-26-13.jpg",
+      "title": "Across the water",
+      "description": "",
+      "alt": "A curved pedestrian bridge and its cables reflected in still river water beside waterfront buildings",
+      "order": 16,
+      "published": true
+    },
+    {
+      "id": "toon-oct-26-38",
+      "source": "toon-oct-26-38.jpg",
+      "title": "Street corner",
+      "description": "",
+      "alt": "Warm sunlight falls across the ornate windows of a stone corner building above a shaded street",
+      "order": 17,
+      "published": true
+    },
+    {
+      "id": "toon-oct-26-42",
+      "source": "toon-oct-26-42.jpg",
+      "title": "Under the arch",
+      "description": "",
+      "alt": "Pedestrians walk along a narrow street between stone buildings toward a high steel arch bridge",
+      "order": 18,
+      "published": true
+    },
+    {
+      "id": "toon-oct-26-46",
+      "source": "toon-oct-26-46.jpg",
+      "title": "The Pearl",
+      "description": "",
+      "alt": "Sunlit stone facades and curved street lamps beneath a blue sky beside a building marked The Pearl",
+      "order": 19,
+      "published": true
+    },
+    {
+      "id": "toon-oct-26-47",
+      "source": "toon-oct-26-47.jpg",
+      "title": "Milkshake break",
+      "description": "",
+      "alt": "A child drinks through a straw from a paper cup while sitting in a sunlit red diner booth",
+      "order": 20,
+      "published": true
+    },
+    {
+      "id": "toon-oct-26-9",
+      "source": "toon-oct-26-9.jpg",
+      "title": "Through the window",
+      "description": "",
+      "alt": "A silhouetted figure looks through reflective glass toward river bridges and waterfront buildings",
+      "order": 21,
+      "published": true
+    }
+  ]
+}

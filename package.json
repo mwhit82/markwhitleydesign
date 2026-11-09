@@ -6,13 +6,16 @@
     "dev": "node scripts/dev.mjs",
     "dev:webpack": "next dev",
     "dev:reset": "node scripts/dev.mjs --reset",
-    "build": "next build",
+    "build": "npm run photos:check && next build",
     "start": "next start",
     "lint": "eslint .",
     "test:hallowseve26": "node --test scripts/test-hallowseve26.mjs scripts/test-hallowseve-audio.mjs",
     "test:deader": "node scripts/test-deader.mjs",
     "dev:coop": "node scripts/dev-anomalous-multiplayer.mjs",
-    "test:coop": "node scripts/test-anomalous-multiplayer.mjs"
+    "test:coop": "node scripts/test-anomalous-multiplayer.mjs",
+    "photos:prepare": "node scripts/prepare-photography.mjs",
+    "test:photography": "node --test scripts/test-photography.mjs",
+    "photos:check": "node scripts/check-photography.mjs"
   },
   "dependencies": {
     "@hugeicons/core-free-icons": "^4.1.1",
@@ -40,6 +43,7 @@
     "eslint": "^9.17.0",
     "eslint-config-next": "^15.5.28",
     "iwer": "^2.6.0",
+    "sharp": "^0.35.5",
     "tailwindcss": "^4.1.0",
     "typescript": "^5.7.0"
   },

@@ -1,0 +1,1862 @@
+{
+  "version": 1,
+  "includePlaceholders": false,
+  "featuredIds": [
+    "nyc-may-day-3-96",
+    "hamsterley-autumn-fox-6",
+    "kefalonia-2025-737",
+    "raleigh-wilmington-76",
+    "toon-oct-26-42",
+    "toon-oct-26-47"
+  ],
+  "photos": [
+    {
+      "id": "hamsterley-autumn-fox-4",
+      "title": "Through the pines",
+      "description": "",
+      "alt": "A winding woodland path between tall pine trunks and green undergrowth",
+      "order": 2,
+      "featured": false,
+      "placeholder": false,
+      "width": 3840,
+      "height": 2560,
+      "src": "/images/photography/generated/ecd42e26b634ef3e11763474/3840.webp",
+      "variants": [
+        {
+          "format": "avif",
+          "width": 480,
+          "height": 319,
+          "bytes": 35789,
+          "src": "/images/photography/generated/ecd42e26b634ef3e11763474/480.avif"
+        },
+        {
+          "format": "webp",
+          "width": 480,
+          "height": 319,
+          "bytes": 52482,
+          "src": "/images/photography/generated/ecd42e26b634ef3e11763474/480.webp"
+        },
+        {
+          "format": "avif",
+          "width": 960,
+          "height": 640,
+          "bytes": 121115,
+          "src": "/images/photography/generated/ecd42e26b634ef3e11763474/960.avif"
+        },
+        {
+          "format": "webp",
+          "width": 960,
+          "height": 640,
+          "bytes": 185592,
+          "src": "/images/photography/generated/ecd42e26b634ef3e11763474/960.webp"
+        },
+        {
+          "format": "avif",
+          "width": 1600,
+          "height": 1066,
+          "bytes": 289125,
+          "src": "/images/photography/generated/ecd42e26b634ef3e11763474/1600.avif"
+        },
+        {
+          "format": "webp",
+          "width": 1600,
+          "height": 1066,
+          "bytes": 447498,
+          "src": "/images/photography/generated/ecd42e26b634ef3e11763474/1600.webp"
+        },
+        {
+          "format": "avif",
+          "width": 2400,
+          "height": 1600,
+          "bytes": 555411,
+          "src": "/images/photography/generated/ecd42e26b634ef3e11763474/2400.avif"
+        },
+        {
+          "format": "webp",
+          "width": 2400,
+          "height": 1600,
+          "bytes": 890184,
+          "src": "/images/photography/generated/ecd42e26b634ef3e11763474/2400.webp"
+        },
+        {
+          "format": "avif",
+          "width": 3840,
+          "height": 2560,
+          "bytes": 1173303,
+          "src": "/images/photography/generated/ecd42e26b634ef3e11763474/3840.avif"
+        },
+        {
+          "format": "webp",
+          "width": 3840,
+          "height": 2560,
+          "bytes": 1800018,
+          "src": "/images/photography/generated/ecd42e26b634ef3e11763474/3840.webp"
+        }
+      ]
+    },
+    {
+      "id": "hamsterley-autumn-fox-6",
+      "title": "Autumn canopy",
+      "description": "",
+      "alt": "Layers of green, gold and orange leaves around branching woodland trees",
+      "order": 3,
+      "featured": true,
+      "placeholder": false,
+      "width": 2560,
+      "height": 3840,
+      "src": "/images/photography/generated/0175aa733040cfc05dd378ee/2560.webp",
+      "variants": [
+        {
+          "format": "avif",
+          "width": 480,
+          "height": 720,
+          "bytes": 108870,
+          "src": "/images/photography/generated/0175aa733040cfc05dd378ee/480.avif"
+        },
+        {
+          "format": "webp",
+          "width": 480,
+          "height": 720,
+          "bytes": 167392,
+          "src": "/images/photography/generated/0175aa733040cfc05dd378ee/480.webp"
+        },
+        {
+          "format": "avif",
+          "width": 960,
+          "height": 1440,
+          "bytes": 355681,
+          "src": "/images/photography/generated/0175aa733040cfc05dd378ee/960.avif"
+        },
+        {
+          "format": "webp",
+          "width": 960,
+          "height": 1440,
+          "bytes": 578342,
+          "src": "/images/photography/generated/0175aa733040cfc05dd378ee/960.webp"
+        },
+        {
+          "format": "avif",
+          "width": 1600,
+          "height": 2400,
+          "bytes": 780327,
+          "src": "/images/photography/generated/0175aa733040cfc05dd378ee/1600.avif"
+        },
+        {
+          "format": "webp",
+          "width": 1600,
+          "height": 2400,
+          "bytes": 1271240,
+          "src": "/images/photography/generated/0175aa733040cfc05dd378ee/1600.webp"
+        },
+        {
+          "format": "avif",
+          "width": 2400,
+          "height": 3600,
+          "bytes": 1341775,
+          "src": "/images/photography/generated/0175aa733040cfc05dd378ee/2400.avif"
+        },
+        {
+          "format": "webp",
+          "width": 2400,
+          "height": 3600,
+          "bytes": 2188142,
+          "src": "/images/photography/generated/0175aa733040cfc05dd378ee/2400.webp"
+        },
+        {
+          "format": "avif",
+          "width": 2560,
+          "height": 3840,
+          "bytes": 1468889,
+          "src": "/images/photography/generated/0175aa733040cfc05dd378ee/2560.avif"
+        },
+        {
+          "format": "webp",
+          "width": 2560,
+          "height": 3840,
+          "bytes": 2377626,
+          "src": "/images/photography/generated/0175aa733040cfc05dd378ee/2560.webp"
+        }
+      ]
+    },
+    {
+      "id": "kefalonia-2025-737",
+      "title": "Terrace afternoon",
+      "description": "",
+      "alt": "People sitting at a leafy cafe terrace with ornate metal chairs and green doors",
+      "order": 4,
+      "featured": true,
+      "placeholder": false,
+      "width": 3840,
+      "height": 2560,
+      "src": "/images/photography/generated/ea93b3589b27d55c8aec71db/3840.webp",
+      "variants": [
+        {
+          "format": "avif",
+          "width": 480,
+          "height": 320,
+          "bytes": 34236,
+          "src": "/images/photography/generated/ea93b3589b27d55c8aec71db/480.avif"
+        },
+        {
+          "format": "webp",
+          "width": 480,
+          "height": 320,
+          "bytes": 49616,
+          "src": "/images/photography/generated/ea93b3589b27d55c8aec71db/480.webp"
+        },
+        {
+          "format": "avif",
+          "width": 960,
+          "height": 640,
+          "bytes": 103105,
+          "src": "/images/photography/generated/ea93b3589b27d55c8aec71db/960.avif"
+        },
+        {
+          "format": "webp",
+          "width": 960,
+          "height": 640,
+          "bytes": 150496,
+          "src": "/images/photography/generated/ea93b3589b27d55c8aec71db/960.webp"
+        },
+        {
+          "format": "avif",
+          "width": 1600,
+          "height": 1067,
+          "bytes": 220194,
+          "src": "/images/photography/generated/ea93b3589b27d55c8aec71db/1600.avif"
+        },
+        {
+          "format": "webp",
+          "width": 1600,
+          "height": 1067,
+          "bytes": 338012,
+          "src": "/images/photography/generated/ea93b3589b27d55c8aec71db/1600.webp"
+        },
+        {
+          "format": "avif",
+          "width": 2400,
+          "height": 1600,
+          "bytes": 400358,
+          "src": "/images/photography/generated/ea93b3589b27d55c8aec71db/2400.avif"
+        },
+        {
+          "format": "webp",
+          "width": 2400,
+          "height": 1600,
+          "bytes": 601722,
+          "src": "/images/photography/generated/ea93b3589b27d55c8aec71db/2400.webp"
+        },
+        {
+          "format": "avif",
+          "width": 3840,
+          "height": 2560,
+          "bytes": 786895,
+          "src": "/images/photography/generated/ea93b3589b27d55c8aec71db/3840.avif"
+        },
+        {
+          "format": "webp",
+          "width": 3840,
+          "height": 2560,
+          "bytes": 1184884,
+          "src": "/images/photography/generated/ea93b3589b27d55c8aec71db/3840.webp"
+        }
+      ]
+    },
+    {
+      "id": "newcastle-streets-1",
+      "title": "After dark",
+      "description": "",
+      "alt": "A figure at the top of an outdoor staircase lit by warm yellow light at night",
+      "order": 22,
+      "featured": false,
+      "placeholder": false,
+      "width": 3840,
+      "height": 2560,
+      "src": "/images/photography/generated/9724c9b42260da0fb5fce495/3840.webp",
+      "variants": [
+        {
+          "format": "avif",
+          "width": 480,
+          "height": 320,
+          "bytes": 14817,
+          "src": "/images/photography/generated/9724c9b42260da0fb5fce495/480.avif"
+        },
+        {
+          "format": "webp",
+          "width": 480,
+          "height": 320,
+          "bytes": 22884,
+          "src": "/images/photography/generated/9724c9b42260da0fb5fce495/480.webp"
+        },
+        {
+          "format": "avif",
+          "width": 960,
+          "height": 640,
+          "bytes": 39234,
+          "src": "/images/photography/generated/9724c9b42260da0fb5fce495/960.avif"
+        },
+        {
+          "format": "webp",
+          "width": 960,
+          "height": 640,
+          "bytes": 65082,
+          "src": "/images/photography/generated/9724c9b42260da0fb5fce495/960.webp"
+        },
+        {
+          "format": "avif",
+          "width": 1600,
+          "height": 1067,
+          "bytes": 93927,
+          "src": "/images/photography/generated/9724c9b42260da0fb5fce495/1600.avif"
+        },
+        {
+          "format": "webp",
+          "width": 1600,
+          "height": 1067,
+          "bytes": 150410,
+          "src": "/images/photography/generated/9724c9b42260da0fb5fce495/1600.webp"
+        },
+        {
+          "format": "avif",
+          "width": 2400,
+          "height": 1600,
+          "bytes": 225875,
+          "src": "/images/photography/generated/9724c9b42260da0fb5fce495/2400.avif"
+        },
+        {
+          "format": "webp",
+          "width": 2400,
+          "height": 1600,
+          "bytes": 347448,
+          "src": "/images/photography/generated/9724c9b42260da0fb5fce495/2400.webp"
+        },
+        {
+          "format": "avif",
+          "width": 3840,
+          "height": 2560,
+          "bytes": 661147,
+          "src": "/images/photography/generated/9724c9b42260da0fb5fce495/3840.avif"
+        },
+        {
+          "format": "webp",
+          "width": 3840,
+          "height": 2560,
+          "bytes": 951188,
+          "src": "/images/photography/generated/9724c9b42260da0fb5fce495/3840.webp"
+        }
+      ]
+    },
+    {
+      "id": "peak-district-dxr-uk-28",
+      "title": "Across the valley",
+      "description": "",
+      "alt": "Sunlight breaks through clouds over a patchwork valley of fields, trees and villages",
+      "order": 14,
+      "featured": false,
+      "placeholder": false,
+      "width": 3840,
+      "height": 2560,
+      "src": "/images/photography/generated/44a5af603b9a2803c17d7f7f/3840.webp",
+      "variants": [
+        {
+          "format": "avif",
+          "width": 480,
+          "height": 320,
+          "bytes": 16789,
+          "src": "/images/photography/generated/44a5af603b9a2803c17d7f7f/480.avif"
+        },
+        {
+          "format": "webp",
+          "width": 480,
+          "height": 320,
+          "bytes": 22366,
+          "src": "/images/photography/generated/44a5af603b9a2803c17d7f7f/480.webp"
+        },
+        {
+          "format": "avif",
+          "width": 960,
+          "height": 640,
+          "bytes": 54549,
+          "src": "/images/photography/generated/44a5af603b9a2803c17d7f7f/960.avif"
+        },
+        {
+          "format": "webp",
+          "width": 960,
+          "height": 640,
+          "bytes": 73634,
+          "src": "/images/photography/generated/44a5af603b9a2803c17d7f7f/960.webp"
+        },
+        {
+          "format": "avif",
+          "width": 1600,
+          "height": 1067,
+          "bytes": 134153,
+          "src": "/images/photography/generated/44a5af603b9a2803c17d7f7f/1600.avif"
+        },
+        {
+          "format": "webp",
+          "width": 1600,
+          "height": 1067,
+          "bytes": 180368,
+          "src": "/images/photography/generated/44a5af603b9a2803c17d7f7f/1600.webp"
+        },
+        {
+          "format": "avif",
+          "width": 2400,
+          "height": 1600,
+          "bytes": 267441,
+          "src": "/images/photography/generated/44a5af603b9a2803c17d7f7f/2400.avif"
+        },
+        {
+          "format": "webp",
+          "width": 2400,
+          "height": 1600,
+          "bytes": 346002,
+          "src": "/images/photography/generated/44a5af603b9a2803c17d7f7f/2400.webp"
+        },
+        {
+          "format": "avif",
+          "width": 3840,
+          "height": 2560,
+          "bytes": 563143,
+          "src": "/images/photography/generated/44a5af603b9a2803c17d7f7f/3840.avif"
+        },
+        {
+          "format": "webp",
+          "width": 3840,
+          "height": 2560,
+          "bytes": 722420,
+          "src": "/images/photography/generated/44a5af603b9a2803c17d7f7f/3840.webp"
+        }
+      ]
+    },
+    {
+      "id": "quayside-9",
+      "title": "River lights",
+      "description": "",
+      "alt": "An illuminated steel arch bridge above a river reflecting purple and gold lights at night",
+      "order": 15,
+      "featured": false,
+      "placeholder": false,
+      "width": 3840,
+      "height": 2560,
+      "src": "/images/photography/generated/590fb65f22c33e26f2987306/3840.webp",
+      "variants": [
+        {
+          "format": "avif",
+          "width": 480,
+          "height": 320,
+          "bytes": 21472,
+          "src": "/images/photography/generated/590fb65f22c33e26f2987306/480.avif"
+        },
+        {
+          "format": "webp",
+          "width": 480,
+          "height": 320,
+          "bytes": 28860,
+          "src": "/images/photography/generated/590fb65f22c33e26f2987306/480.webp"
+        },
+        {
+          "format": "avif",
+          "width": 960,
+          "height": 640,
+          "bytes": 66207,
+          "src": "/images/photography/generated/590fb65f22c33e26f2987306/960.avif"
+        },
+        {
+          "format": "webp",
+          "width": 960,
+          "height": 640,
+          "bytes": 90342,
+          "src": "/images/photography/generated/590fb65f22c33e26f2987306/960.webp"
+        },
+        {
+          "format": "avif",
+          "width": 1600,
+          "height": 1067,
+          "bytes": 149070,
+          "src": "/images/photography/generated/590fb65f22c33e26f2987306/1600.avif"
+        },
+        {
+          "format": "webp",
+          "width": 1600,
+          "height": 1067,
+          "bytes": 210972,
+          "src": "/images/photography/generated/590fb65f22c33e26f2987306/1600.webp"
+        },
+        {
+          "format": "avif",
+          "width": 2400,
+          "height": 1600,
+          "bytes": 277279,
+          "src": "/images/photography/generated/590fb65f22c33e26f2987306/2400.avif"
+        },
+        {
+          "format": "webp",
+          "width": 2400,
+          "height": 1600,
+          "bytes": 395766,
+          "src": "/images/photography/generated/590fb65f22c33e26f2987306/2400.webp"
+        },
+        {
+          "format": "avif",
+          "width": 3840,
+          "height": 2560,
+          "bytes": 539476,
+          "src": "/images/photography/generated/590fb65f22c33e26f2987306/3840.avif"
+        },
+        {
+          "format": "webp",
+          "width": 3840,
+          "height": 2560,
+          "bytes": 756874,
+          "src": "/images/photography/generated/590fb65f22c33e26f2987306/3840.webp"
+        }
+      ]
+    },
+    {
+      "id": "ldn-oct-26-13",
+      "title": "Behind the glass",
+      "description": "",
+      "alt": "An ornate framed painting seen through pale vertical reflections in gallery glass",
+      "order": 10,
+      "featured": false,
+      "placeholder": false,
+      "width": 3840,
+      "height": 2560,
+      "src": "/images/photography/generated/c30a4680452030afeefd79cf/3840.webp",
+      "variants": [
+        {
+          "format": "avif",
+          "width": 480,
+          "height": 320,
+          "bytes": 11977,
+          "src": "/images/photography/generated/c30a4680452030afeefd79cf/480.avif"
+        },
+        {
+          "format": "webp",
+          "width": 480,
+          "height": 320,
+          "bytes": 16472,
+          "src": "/images/photography/generated/c30a4680452030afeefd79cf/480.webp"
+        },
+        {
+          "format": "avif",
+          "width": 960,
+          "height": 640,
+          "bytes": 34915,
+          "src": "/images/photography/generated/c30a4680452030afeefd79cf/960.avif"
+        },
+        {
+          "format": "webp",
+          "width": 960,
+          "height": 640,
+          "bytes": 49206,
+          "src": "/images/photography/generated/c30a4680452030afeefd79cf/960.webp"
+        },
+        {
+          "format": "avif",
+          "width": 1600,
+          "height": 1067,
+          "bytes": 103444,
+          "src": "/images/photography/generated/c30a4680452030afeefd79cf/1600.avif"
+        },
+        {
+          "format": "webp",
+          "width": 1600,
+          "height": 1067,
+          "bytes": 165790,
+          "src": "/images/photography/generated/c30a4680452030afeefd79cf/1600.webp"
+        },
+        {
+          "format": "avif",
+          "width": 2400,
+          "height": 1600,
+          "bytes": 294908,
+          "src": "/images/photography/generated/c30a4680452030afeefd79cf/2400.avif"
+        },
+        {
+          "format": "webp",
+          "width": 2400,
+          "height": 1600,
+          "bytes": 462836,
+          "src": "/images/photography/generated/c30a4680452030afeefd79cf/2400.webp"
+        },
+        {
+          "format": "avif",
+          "width": 3840,
+          "height": 2560,
+          "bytes": 859022,
+          "src": "/images/photography/generated/c30a4680452030afeefd79cf/3840.avif"
+        },
+        {
+          "format": "webp",
+          "width": 3840,
+          "height": 2560,
+          "bytes": 1201026,
+          "src": "/images/photography/generated/c30a4680452030afeefd79cf/3840.webp"
+        }
+      ]
+    },
+    {
+      "id": "ldn-oct-26-37",
+      "title": "A moment with a painting",
+      "description": "",
+      "alt": "A silhouetted visitor stands before a painting, framed by a dark gallery doorway",
+      "order": 11,
+      "featured": false,
+      "placeholder": false,
+      "width": 3840,
+      "height": 2560,
+      "src": "/images/photography/generated/6f5ee50d90ecf73191ea9449/3840.webp",
+      "variants": [
+        {
+          "format": "avif",
+          "width": 480,
+          "height": 320,
+          "bytes": 6925,
+          "src": "/images/photography/generated/6f5ee50d90ecf73191ea9449/480.avif"
+        },
+        {
+          "format": "webp",
+          "width": 480,
+          "height": 320,
+          "bytes": 8930,
+          "src": "/images/photography/generated/6f5ee50d90ecf73191ea9449/480.webp"
+        },
+        {
+          "format": "avif",
+          "width": 960,
+          "height": 640,
+          "bytes": 22962,
+          "src": "/images/photography/generated/6f5ee50d90ecf73191ea9449/960.avif"
+        },
+        {
+          "format": "webp",
+          "width": 960,
+          "height": 640,
+          "bytes": 38406,
+          "src": "/images/photography/generated/6f5ee50d90ecf73191ea9449/960.webp"
+        },
+        {
+          "format": "avif",
+          "width": 1600,
+          "height": 1067,
+          "bytes": 96655,
+          "src": "/images/photography/generated/6f5ee50d90ecf73191ea9449/1600.avif"
+        },
+        {
+          "format": "webp",
+          "width": 1600,
+          "height": 1067,
+          "bytes": 166050,
+          "src": "/images/photography/generated/6f5ee50d90ecf73191ea9449/1600.webp"
+        },
+        {
+          "format": "avif",
+          "width": 2400,
+          "height": 1600,
+          "bytes": 346229,
+          "src": "/images/photography/generated/6f5ee50d90ecf73191ea9449/2400.avif"
+        },
+        {
+          "format": "webp",
+          "width": 2400,
+          "height": 1600,
+          "bytes": 541568,
+          "src": "/images/photography/generated/6f5ee50d90ecf73191ea9449/2400.webp"
+        },
+        {
+          "format": "avif",
+          "width": 3840,
+          "height": 2560,
+          "bytes": 1125114,
+          "src": "/images/photography/generated/6f5ee50d90ecf73191ea9449/3840.avif"
+        },
+        {
+          "format": "webp",
+          "width": 3840,
+          "height": 2560,
+          "bytes": 1686526,
+          "src": "/images/photography/generated/6f5ee50d90ecf73191ea9449/3840.webp"
+        }
+      ]
+    },
+    {
+      "id": "ldn-oct-26-48",
+      "title": "Beneath the bridge",
+      "description": "",
+      "alt": "Pedestrians pass a colourful wall mural beneath the diagonal steel beams of a bridge",
+      "order": 12,
+      "featured": false,
+      "placeholder": false,
+      "width": 3840,
+      "height": 2560,
+      "src": "/images/photography/generated/bda607fe06bf4f98b0f5d132/3840.webp",
+      "variants": [
+        {
+          "format": "avif",
+          "width": 480,
+          "height": 320,
+          "bytes": 21019,
+          "src": "/images/photography/generated/bda607fe06bf4f98b0f5d132/480.avif"
+        },
+        {
+          "format": "webp",
+          "width": 480,
+          "height": 320,
+          "bytes": 29472,
+          "src": "/images/photography/generated/bda607fe06bf4f98b0f5d132/480.webp"
+        },
+        {
+          "format": "avif",
+          "width": 960,
+          "height": 640,
+          "bytes": 67542,
+          "src": "/images/photography/generated/bda607fe06bf4f98b0f5d132/960.avif"
+        },
+        {
+          "format": "webp",
+          "width": 960,
+          "height": 640,
+          "bytes": 102260,
+          "src": "/images/photography/generated/bda607fe06bf4f98b0f5d132/960.webp"
+        },
+        {
+          "format": "avif",
+          "width": 1600,
+          "height": 1067,
+          "bytes": 182990,
+          "src": "/images/photography/generated/bda607fe06bf4f98b0f5d132/1600.avif"
+        },
+        {
+          "format": "webp",
+          "width": 1600,
+          "height": 1067,
+          "bytes": 294346,
+          "src": "/images/photography/generated/bda607fe06bf4f98b0f5d132/1600.webp"
+        },
+        {
+          "format": "avif",
+          "width": 2400,
+          "height": 1600,
+          "bytes": 468768,
+          "src": "/images/photography/generated/bda607fe06bf4f98b0f5d132/2400.avif"
+        },
+        {
+          "format": "webp",
+          "width": 2400,
+          "height": 1600,
+          "bytes": 768434,
+          "src": "/images/photography/generated/bda607fe06bf4f98b0f5d132/2400.webp"
+        },
+        {
+          "format": "avif",
+          "width": 3840,
+          "height": 2560,
+          "bytes": 1245672,
+          "src": "/images/photography/generated/bda607fe06bf4f98b0f5d132/3840.avif"
+        },
+        {
+          "format": "webp",
+          "width": 3840,
+          "height": 2560,
+          "bytes": 1904978,
+          "src": "/images/photography/generated/bda607fe06bf4f98b0f5d132/3840.webp"
+        }
+      ]
+    },
+    {
+      "id": "littletown-fenn-5",
+      "title": "Looking up",
+      "description": "",
+      "alt": "A child in dark clothing looks up into tall trees on a woodland path",
+      "order": 13,
+      "featured": false,
+      "placeholder": false,
+      "width": 2559,
+      "height": 3839,
+      "src": "/images/photography/generated/7b3c805f9cab7875d5f44cde/2559.webp",
+      "variants": [
+        {
+          "format": "avif",
+          "width": 480,
+          "height": 720,
+          "bytes": 57139,
+          "src": "/images/photography/generated/7b3c805f9cab7875d5f44cde/480.avif"
+        },
+        {
+          "format": "webp",
+          "width": 480,
+          "height": 720,
+          "bytes": 89434,
+          "src": "/images/photography/generated/7b3c805f9cab7875d5f44cde/480.webp"
+        },
+        {
+          "format": "avif",
+          "width": 960,
+          "height": 1441,
+          "bytes": 151074,
+          "src": "/images/photography/generated/7b3c805f9cab7875d5f44cde/960.avif"
+        },
+        {
+          "format": "webp",
+          "width": 960,
+          "height": 1441,
+          "bytes": 233162,
+          "src": "/images/photography/generated/7b3c805f9cab7875d5f44cde/960.webp"
+        },
+        {
+          "format": "avif",
+          "width": 1600,
+          "height": 2400,
+          "bytes": 305898,
+          "src": "/images/photography/generated/7b3c805f9cab7875d5f44cde/1600.avif"
+        },
+        {
+          "format": "webp",
+          "width": 1600,
+          "height": 2400,
+          "bytes": 451714,
+          "src": "/images/photography/generated/7b3c805f9cab7875d5f44cde/1600.webp"
+        },
+        {
+          "format": "avif",
+          "width": 2400,
+          "height": 3600,
+          "bytes": 536183,
+          "src": "/images/photography/generated/7b3c805f9cab7875d5f44cde/2400.avif"
+        },
+        {
+          "format": "webp",
+          "width": 2400,
+          "height": 3600,
+          "bytes": 736996,
+          "src": "/images/photography/generated/7b3c805f9cab7875d5f44cde/2400.webp"
+        },
+        {
+          "format": "avif",
+          "width": 2559,
+          "height": 3839,
+          "bytes": 586155,
+          "src": "/images/photography/generated/7b3c805f9cab7875d5f44cde/2559.avif"
+        },
+        {
+          "format": "webp",
+          "width": 2559,
+          "height": 3839,
+          "bytes": 828758,
+          "src": "/images/photography/generated/7b3c805f9cab7875d5f44cde/2559.webp"
+        }
+      ]
+    },
+    {
+      "id": "nyc-may-day-3-96",
+      "title": "Skyline at dusk",
+      "description": "",
+      "alt": "Dark clouds gather above the Manhattan skyline as warm evening light glows along the horizon",
+      "order": 1,
+      "featured": true,
+      "placeholder": false,
+      "width": 3840,
+      "height": 2560,
+      "src": "/images/photography/generated/1a53afcb897b707c46742961/3840.webp",
+      "variants": [
+        {
+          "format": "avif",
+          "width": 480,
+          "height": 320,
+          "bytes": 18967,
+          "src": "/images/photography/generated/1a53afcb897b707c46742961/480.avif"
+        },
+        {
+          "format": "webp",
+          "width": 480,
+          "height": 320,
+          "bytes": 23874,
+          "src": "/images/photography/generated/1a53afcb897b707c46742961/480.webp"
+        },
+        {
+          "format": "avif",
+          "width": 960,
+          "height": 639,
+          "bytes": 54973,
+          "src": "/images/photography/generated/1a53afcb897b707c46742961/960.avif"
+        },
+        {
+          "format": "webp",
+          "width": 960,
+          "height": 639,
+          "bytes": 70130,
+          "src": "/images/photography/generated/1a53afcb897b707c46742961/960.webp"
+        },
+        {
+          "format": "avif",
+          "width": 1600,
+          "height": 1066,
+          "bytes": 122492,
+          "src": "/images/photography/generated/1a53afcb897b707c46742961/1600.avif"
+        },
+        {
+          "format": "webp",
+          "width": 1600,
+          "height": 1066,
+          "bytes": 155898,
+          "src": "/images/photography/generated/1a53afcb897b707c46742961/1600.webp"
+        },
+        {
+          "format": "avif",
+          "width": 2400,
+          "height": 1600,
+          "bytes": 236257,
+          "src": "/images/photography/generated/1a53afcb897b707c46742961/2400.avif"
+        },
+        {
+          "format": "webp",
+          "width": 2400,
+          "height": 1600,
+          "bytes": 314232,
+          "src": "/images/photography/generated/1a53afcb897b707c46742961/2400.webp"
+        },
+        {
+          "format": "avif",
+          "width": 3840,
+          "height": 2560,
+          "bytes": 613172,
+          "src": "/images/photography/generated/1a53afcb897b707c46742961/3840.avif"
+        },
+        {
+          "format": "webp",
+          "width": 3840,
+          "height": 2560,
+          "bytes": 822952,
+          "src": "/images/photography/generated/1a53afcb897b707c46742961/3840.webp"
+        }
+      ]
+    },
+    {
+      "id": "raleigh-wilmington-1",
+      "title": "Light and shade",
+      "description": "",
+      "alt": "Sunlit white walls and an outdoor staircase beside a shaded street beneath a blue sky",
+      "order": 5,
+      "featured": false,
+      "placeholder": false,
+      "width": 2560,
+      "height": 3840,
+      "src": "/images/photography/generated/60cbb90978a978006deafa45/2560.webp",
+      "variants": [
+        {
+          "format": "avif",
+          "width": 480,
+          "height": 720,
+          "bytes": 18591,
+          "src": "/images/photography/generated/60cbb90978a978006deafa45/480.avif"
+        },
+        {
+          "format": "webp",
+          "width": 480,
+          "height": 720,
+          "bytes": 24246,
+          "src": "/images/photography/generated/60cbb90978a978006deafa45/480.webp"
+        },
+        {
+          "format": "avif",
+          "width": 960,
+          "height": 1440,
+          "bytes": 57225,
+          "src": "/images/photography/generated/60cbb90978a978006deafa45/960.avif"
+        },
+        {
+          "format": "webp",
+          "width": 960,
+          "height": 1440,
+          "bytes": 78878,
+          "src": "/images/photography/generated/60cbb90978a978006deafa45/960.webp"
+        },
+        {
+          "format": "avif",
+          "width": 1600,
+          "height": 2400,
+          "bytes": 134941,
+          "src": "/images/photography/generated/60cbb90978a978006deafa45/1600.avif"
+        },
+        {
+          "format": "webp",
+          "width": 1600,
+          "height": 2400,
+          "bytes": 189944,
+          "src": "/images/photography/generated/60cbb90978a978006deafa45/1600.webp"
+        },
+        {
+          "format": "avif",
+          "width": 2400,
+          "height": 3600,
+          "bytes": 265228,
+          "src": "/images/photography/generated/60cbb90978a978006deafa45/2400.avif"
+        },
+        {
+          "format": "webp",
+          "width": 2400,
+          "height": 3600,
+          "bytes": 361666,
+          "src": "/images/photography/generated/60cbb90978a978006deafa45/2400.webp"
+        },
+        {
+          "format": "avif",
+          "width": 2560,
+          "height": 3840,
+          "bytes": 295687,
+          "src": "/images/photography/generated/60cbb90978a978006deafa45/2560.avif"
+        },
+        {
+          "format": "webp",
+          "width": 2560,
+          "height": 3840,
+          "bytes": 399980,
+          "src": "/images/photography/generated/60cbb90978a978006deafa45/2560.webp"
+        }
+      ]
+    },
+    {
+      "id": "raleigh-wilmington-76",
+      "title": "At the beach",
+      "description": "",
+      "alt": "An empty wooden lifeguard tower and white water tower beyond pale sand and dune grass",
+      "order": 6,
+      "featured": true,
+      "placeholder": false,
+      "width": 3840,
+      "height": 2560,
+      "src": "/images/photography/generated/d318bbfb9fdb6d43eda7999b/3840.webp",
+      "variants": [
+        {
+          "format": "avif",
+          "width": 480,
+          "height": 320,
+          "bytes": 12427,
+          "src": "/images/photography/generated/d318bbfb9fdb6d43eda7999b/480.avif"
+        },
+        {
+          "format": "webp",
+          "width": 480,
+          "height": 320,
+          "bytes": 15238,
+          "src": "/images/photography/generated/d318bbfb9fdb6d43eda7999b/480.webp"
+        },
+        {
+          "format": "avif",
+          "width": 960,
+          "height": 640,
+          "bytes": 40549,
+          "src": "/images/photography/generated/d318bbfb9fdb6d43eda7999b/960.avif"
+        },
+        {
+          "format": "webp",
+          "width": 960,
+          "height": 640,
+          "bytes": 50792,
+          "src": "/images/photography/generated/d318bbfb9fdb6d43eda7999b/960.webp"
+        },
+        {
+          "format": "avif",
+          "width": 1600,
+          "height": 1067,
+          "bytes": 96952,
+          "src": "/images/photography/generated/d318bbfb9fdb6d43eda7999b/1600.avif"
+        },
+        {
+          "format": "webp",
+          "width": 1600,
+          "height": 1067,
+          "bytes": 125538,
+          "src": "/images/photography/generated/d318bbfb9fdb6d43eda7999b/1600.webp"
+        },
+        {
+          "format": "avif",
+          "width": 2400,
+          "height": 1600,
+          "bytes": 186269,
+          "src": "/images/photography/generated/d318bbfb9fdb6d43eda7999b/2400.avif"
+        },
+        {
+          "format": "webp",
+          "width": 2400,
+          "height": 1600,
+          "bytes": 244454,
+          "src": "/images/photography/generated/d318bbfb9fdb6d43eda7999b/2400.webp"
+        },
+        {
+          "format": "avif",
+          "width": 3840,
+          "height": 2560,
+          "bytes": 393372,
+          "src": "/images/photography/generated/d318bbfb9fdb6d43eda7999b/3840.avif"
+        },
+        {
+          "format": "webp",
+          "width": 3840,
+          "height": 2560,
+          "bytes": 523158,
+          "src": "/images/photography/generated/d318bbfb9fdb6d43eda7999b/3840.webp"
+        }
+      ]
+    },
+    {
+      "id": "raleigh-wilmington-91",
+      "title": "Street closed",
+      "description": "",
+      "alt": "An orange and white striped road barrier in front of a brick street lined with parked cars",
+      "order": 7,
+      "featured": false,
+      "placeholder": false,
+      "width": 3840,
+      "height": 2560,
+      "src": "/images/photography/generated/140e92aa747d7608bf5186b2/3840.webp",
+      "variants": [
+        {
+          "format": "avif",
+          "width": 480,
+          "height": 320,
+          "bytes": 15802,
+          "src": "/images/photography/generated/140e92aa747d7608bf5186b2/480.avif"
+        },
+        {
+          "format": "webp",
+          "width": 480,
+          "height": 320,
+          "bytes": 21122,
+          "src": "/images/photography/generated/140e92aa747d7608bf5186b2/480.webp"
+        },
+        {
+          "format": "avif",
+          "width": 960,
+          "height": 640,
+          "bytes": 41593,
+          "src": "/images/photography/generated/140e92aa747d7608bf5186b2/960.avif"
+        },
+        {
+          "format": "webp",
+          "width": 960,
+          "height": 640,
+          "bytes": 53638,
+          "src": "/images/photography/generated/140e92aa747d7608bf5186b2/960.webp"
+        },
+        {
+          "format": "avif",
+          "width": 1600,
+          "height": 1067,
+          "bytes": 85798,
+          "src": "/images/photography/generated/140e92aa747d7608bf5186b2/1600.avif"
+        },
+        {
+          "format": "webp",
+          "width": 1600,
+          "height": 1067,
+          "bytes": 110380,
+          "src": "/images/photography/generated/140e92aa747d7608bf5186b2/1600.webp"
+        },
+        {
+          "format": "avif",
+          "width": 2400,
+          "height": 1600,
+          "bytes": 153761,
+          "src": "/images/photography/generated/140e92aa747d7608bf5186b2/2400.avif"
+        },
+        {
+          "format": "webp",
+          "width": 2400,
+          "height": 1600,
+          "bytes": 196634,
+          "src": "/images/photography/generated/140e92aa747d7608bf5186b2/2400.webp"
+        },
+        {
+          "format": "avif",
+          "width": 3840,
+          "height": 2560,
+          "bytes": 325522,
+          "src": "/images/photography/generated/140e92aa747d7608bf5186b2/3840.avif"
+        },
+        {
+          "format": "webp",
+          "width": 3840,
+          "height": 2560,
+          "bytes": 427368,
+          "src": "/images/photography/generated/140e92aa747d7608bf5186b2/3840.webp"
+        }
+      ]
+    },
+    {
+      "id": "raleigh-wilmington-94",
+      "title": "Brick and ivy",
+      "description": "",
+      "alt": "Sunlight catches a brick fire escape beside a pale wall covered with trailing ivy",
+      "order": 8,
+      "featured": false,
+      "placeholder": false,
+      "width": 3840,
+      "height": 2560,
+      "src": "/images/photography/generated/368b49920c49e39ea886e542/3840.webp",
+      "variants": [
+        {
+          "format": "avif",
+          "width": 480,
+          "height": 320,
+          "bytes": 28434,
+          "src": "/images/photography/generated/368b49920c49e39ea886e542/480.avif"
+        },
+        {
+          "format": "webp",
+          "width": 480,
+          "height": 320,
+          "bytes": 42066,
+          "src": "/images/photography/generated/368b49920c49e39ea886e542/480.webp"
+        },
+        {
+          "format": "avif",
+          "width": 960,
+          "height": 640,
+          "bytes": 103916,
+          "src": "/images/photography/generated/368b49920c49e39ea886e542/960.avif"
+        },
+        {
+          "format": "webp",
+          "width": 960,
+          "height": 640,
+          "bytes": 158564,
+          "src": "/images/photography/generated/368b49920c49e39ea886e542/960.webp"
+        },
+        {
+          "format": "avif",
+          "width": 1600,
+          "height": 1067,
+          "bytes": 255535,
+          "src": "/images/photography/generated/368b49920c49e39ea886e542/1600.avif"
+        },
+        {
+          "format": "webp",
+          "width": 1600,
+          "height": 1067,
+          "bytes": 403104,
+          "src": "/images/photography/generated/368b49920c49e39ea886e542/1600.webp"
+        },
+        {
+          "format": "avif",
+          "width": 2400,
+          "height": 1600,
+          "bytes": 490154,
+          "src": "/images/photography/generated/368b49920c49e39ea886e542/2400.avif"
+        },
+        {
+          "format": "webp",
+          "width": 2400,
+          "height": 1600,
+          "bytes": 761982,
+          "src": "/images/photography/generated/368b49920c49e39ea886e542/2400.webp"
+        },
+        {
+          "format": "avif",
+          "width": 3840,
+          "height": 2560,
+          "bytes": 945584,
+          "src": "/images/photography/generated/368b49920c49e39ea886e542/3840.avif"
+        },
+        {
+          "format": "webp",
+          "width": 3840,
+          "height": 2560,
+          "bytes": 1452708,
+          "src": "/images/photography/generated/368b49920c49e39ea886e542/3840.webp"
+        }
+      ]
+    },
+    {
+      "id": "raleigh-wilmington-96",
+      "title": "Fire escape",
+      "description": "",
+      "alt": "Zigzag metal fire escapes between tall brick buildings, with sunlight on the upper walls",
+      "order": 9,
+      "featured": false,
+      "placeholder": false,
+      "width": 2560,
+      "height": 3840,
+      "src": "/images/photography/generated/8948e52850e92b3c50ce5d00/2560.webp",
+      "variants": [
+        {
+          "format": "avif",
+          "width": 480,
+          "height": 720,
+          "bytes": 69571,
+          "src": "/images/photography/generated/8948e52850e92b3c50ce5d00/480.avif"
+        },
+        {
+          "format": "webp",
+          "width": 480,
+          "height": 720,
+          "bytes": 111200,
+          "src": "/images/photography/generated/8948e52850e92b3c50ce5d00/480.webp"
+        },
+        {
+          "format": "avif",
+          "width": 960,
+          "height": 1440,
+          "bytes": 231026,
+          "src": "/images/photography/generated/8948e52850e92b3c50ce5d00/960.avif"
+        },
+        {
+          "format": "webp",
+          "width": 960,
+          "height": 1440,
+          "bytes": 370544,
+          "src": "/images/photography/generated/8948e52850e92b3c50ce5d00/960.webp"
+        },
+        {
+          "format": "avif",
+          "width": 1600,
+          "height": 2400,
+          "bytes": 502823,
+          "src": "/images/photography/generated/8948e52850e92b3c50ce5d00/1600.avif"
+        },
+        {
+          "format": "webp",
+          "width": 1600,
+          "height": 2400,
+          "bytes": 823202,
+          "src": "/images/photography/generated/8948e52850e92b3c50ce5d00/1600.webp"
+        },
+        {
+          "format": "avif",
+          "width": 2400,
+          "height": 3600,
+          "bytes": 862437,
+          "src": "/images/photography/generated/8948e52850e92b3c50ce5d00/2400.avif"
+        },
+        {
+          "format": "webp",
+          "width": 2400,
+          "height": 3600,
+          "bytes": 1411708,
+          "src": "/images/photography/generated/8948e52850e92b3c50ce5d00/2400.webp"
+        },
+        {
+          "format": "avif",
+          "width": 2560,
+          "height": 3840,
+          "bytes": 938697,
+          "src": "/images/photography/generated/8948e52850e92b3c50ce5d00/2560.avif"
+        },
+        {
+          "format": "webp",
+          "width": 2560,
+          "height": 3840,
+          "bytes": 1535356,
+          "src": "/images/photography/generated/8948e52850e92b3c50ce5d00/2560.webp"
+        }
+      ]
+    },
+    {
+      "id": "toon-oct-26-13",
+      "title": "Across the water",
+      "description": "",
+      "alt": "A curved pedestrian bridge and its cables reflected in still river water beside waterfront buildings",
+      "order": 16,
+      "featured": false,
+      "placeholder": false,
+      "width": 3840,
+      "height": 2560,
+      "src": "/images/photography/generated/f826530658251851035b885d/3840.webp",
+      "variants": [
+        {
+          "format": "avif",
+          "width": 480,
+          "height": 320,
+          "bytes": 26337,
+          "src": "/images/photography/generated/f826530658251851035b885d/480.avif"
+        },
+        {
+          "format": "webp",
+          "width": 480,
+          "height": 320,
+          "bytes": 38934,
+          "src": "/images/photography/generated/f826530658251851035b885d/480.webp"
+        },
+        {
+          "format": "avif",
+          "width": 960,
+          "height": 640,
+          "bytes": 84189,
+          "src": "/images/photography/generated/f826530658251851035b885d/960.avif"
+        },
+        {
+          "format": "webp",
+          "width": 960,
+          "height": 640,
+          "bytes": 130046,
+          "src": "/images/photography/generated/f826530658251851035b885d/960.webp"
+        },
+        {
+          "format": "avif",
+          "width": 1600,
+          "height": 1067,
+          "bytes": 196928,
+          "src": "/images/photography/generated/f826530658251851035b885d/1600.avif"
+        },
+        {
+          "format": "webp",
+          "width": 1600,
+          "height": 1067,
+          "bytes": 309302,
+          "src": "/images/photography/generated/f826530658251851035b885d/1600.webp"
+        },
+        {
+          "format": "avif",
+          "width": 2400,
+          "height": 1600,
+          "bytes": 383586,
+          "src": "/images/photography/generated/f826530658251851035b885d/2400.avif"
+        },
+        {
+          "format": "webp",
+          "width": 2400,
+          "height": 1600,
+          "bytes": 608734,
+          "src": "/images/photography/generated/f826530658251851035b885d/2400.webp"
+        },
+        {
+          "format": "avif",
+          "width": 3840,
+          "height": 2560,
+          "bytes": 780743,
+          "src": "/images/photography/generated/f826530658251851035b885d/3840.avif"
+        },
+        {
+          "format": "webp",
+          "width": 3840,
+          "height": 2560,
+          "bytes": 1246528,
+          "src": "/images/photography/generated/f826530658251851035b885d/3840.webp"
+        }
+      ]
+    },
+    {
+      "id": "toon-oct-26-38",
+      "title": "Street corner",
+      "description": "",
+      "alt": "Warm sunlight falls across the ornate windows of a stone corner building above a shaded street",
+      "order": 17,
+      "featured": false,
+      "placeholder": false,
+      "width": 2560,
+      "height": 3840,
+      "src": "/images/photography/generated/b53cca3deeba4aaeb20540bb/2560.webp",
+      "variants": [
+        {
+          "format": "avif",
+          "width": 480,
+          "height": 721,
+          "bytes": 30296,
+          "src": "/images/photography/generated/b53cca3deeba4aaeb20540bb/480.avif"
+        },
+        {
+          "format": "webp",
+          "width": 480,
+          "height": 721,
+          "bytes": 42554,
+          "src": "/images/photography/generated/b53cca3deeba4aaeb20540bb/480.webp"
+        },
+        {
+          "format": "avif",
+          "width": 960,
+          "height": 1440,
+          "bytes": 84889,
+          "src": "/images/photography/generated/b53cca3deeba4aaeb20540bb/960.avif"
+        },
+        {
+          "format": "webp",
+          "width": 960,
+          "height": 1440,
+          "bytes": 124406,
+          "src": "/images/photography/generated/b53cca3deeba4aaeb20540bb/960.webp"
+        },
+        {
+          "format": "avif",
+          "width": 1600,
+          "height": 2400,
+          "bytes": 177319,
+          "src": "/images/photography/generated/b53cca3deeba4aaeb20540bb/1600.avif"
+        },
+        {
+          "format": "webp",
+          "width": 1600,
+          "height": 2400,
+          "bytes": 254202,
+          "src": "/images/photography/generated/b53cca3deeba4aaeb20540bb/1600.webp"
+        },
+        {
+          "format": "avif",
+          "width": 2400,
+          "height": 3600,
+          "bytes": 317396,
+          "src": "/images/photography/generated/b53cca3deeba4aaeb20540bb/2400.avif"
+        },
+        {
+          "format": "webp",
+          "width": 2400,
+          "height": 3600,
+          "bytes": 439958,
+          "src": "/images/photography/generated/b53cca3deeba4aaeb20540bb/2400.webp"
+        },
+        {
+          "format": "avif",
+          "width": 2560,
+          "height": 3840,
+          "bytes": 349861,
+          "src": "/images/photography/generated/b53cca3deeba4aaeb20540bb/2560.avif"
+        },
+        {
+          "format": "webp",
+          "width": 2560,
+          "height": 3840,
+          "bytes": 479936,
+          "src": "/images/photography/generated/b53cca3deeba4aaeb20540bb/2560.webp"
+        }
+      ]
+    },
+    {
+      "id": "toon-oct-26-42",
+      "title": "Under the arch",
+      "description": "",
+      "alt": "Pedestrians walk along a narrow street between stone buildings toward a high steel arch bridge",
+      "order": 18,
+      "featured": true,
+      "placeholder": false,
+      "width": 2560,
+      "height": 3840,
+      "src": "/images/photography/generated/3e97dfad517d33117e68744b/2560.webp",
+      "variants": [
+        {
+          "format": "avif",
+          "width": 480,
+          "height": 720,
+          "bytes": 38981,
+          "src": "/images/photography/generated/3e97dfad517d33117e68744b/480.avif"
+        },
+        {
+          "format": "webp",
+          "width": 480,
+          "height": 720,
+          "bytes": 58690,
+          "src": "/images/photography/generated/3e97dfad517d33117e68744b/480.webp"
+        },
+        {
+          "format": "avif",
+          "width": 960,
+          "height": 1440,
+          "bytes": 116802,
+          "src": "/images/photography/generated/3e97dfad517d33117e68744b/960.avif"
+        },
+        {
+          "format": "webp",
+          "width": 960,
+          "height": 1440,
+          "bytes": 185206,
+          "src": "/images/photography/generated/3e97dfad517d33117e68744b/960.webp"
+        },
+        {
+          "format": "avif",
+          "width": 1600,
+          "height": 2400,
+          "bytes": 267589,
+          "src": "/images/photography/generated/3e97dfad517d33117e68744b/1600.avif"
+        },
+        {
+          "format": "webp",
+          "width": 1600,
+          "height": 2400,
+          "bytes": 439058,
+          "src": "/images/photography/generated/3e97dfad517d33117e68744b/1600.webp"
+        },
+        {
+          "format": "avif",
+          "width": 2400,
+          "height": 3600,
+          "bytes": 502595,
+          "src": "/images/photography/generated/3e97dfad517d33117e68744b/2400.avif"
+        },
+        {
+          "format": "webp",
+          "width": 2400,
+          "height": 3600,
+          "bytes": 797020,
+          "src": "/images/photography/generated/3e97dfad517d33117e68744b/2400.webp"
+        },
+        {
+          "format": "avif",
+          "width": 2560,
+          "height": 3840,
+          "bytes": 548741,
+          "src": "/images/photography/generated/3e97dfad517d33117e68744b/2560.avif"
+        },
+        {
+          "format": "webp",
+          "width": 2560,
+          "height": 3840,
+          "bytes": 851188,
+          "src": "/images/photography/generated/3e97dfad517d33117e68744b/2560.webp"
+        }
+      ]
+    },
+    {
+      "id": "toon-oct-26-46",
+      "title": "The Pearl",
+      "description": "",
+      "alt": "Sunlit stone facades and curved street lamps beneath a blue sky beside a building marked The Pearl",
+      "order": 19,
+      "featured": false,
+      "placeholder": false,
+      "width": 3766,
+      "height": 2511,
+      "src": "/images/photography/generated/9626835d5f8f97ce005ac119/3766.webp",
+      "variants": [
+        {
+          "format": "avif",
+          "width": 480,
+          "height": 320,
+          "bytes": 21260,
+          "src": "/images/photography/generated/9626835d5f8f97ce005ac119/480.avif"
+        },
+        {
+          "format": "webp",
+          "width": 480,
+          "height": 320,
+          "bytes": 32534,
+          "src": "/images/photography/generated/9626835d5f8f97ce005ac119/480.webp"
+        },
+        {
+          "format": "avif",
+          "width": 960,
+          "height": 640,
+          "bytes": 60441,
+          "src": "/images/photography/generated/9626835d5f8f97ce005ac119/960.avif"
+        },
+        {
+          "format": "webp",
+          "width": 960,
+          "height": 640,
+          "bytes": 99058,
+          "src": "/images/photography/generated/9626835d5f8f97ce005ac119/960.webp"
+        },
+        {
+          "format": "avif",
+          "width": 1600,
+          "height": 1067,
+          "bytes": 142913,
+          "src": "/images/photography/generated/9626835d5f8f97ce005ac119/1600.avif"
+        },
+        {
+          "format": "webp",
+          "width": 1600,
+          "height": 1067,
+          "bytes": 226518,
+          "src": "/images/photography/generated/9626835d5f8f97ce005ac119/1600.webp"
+        },
+        {
+          "format": "avif",
+          "width": 2400,
+          "height": 1600,
+          "bytes": 273759,
+          "src": "/images/photography/generated/9626835d5f8f97ce005ac119/2400.avif"
+        },
+        {
+          "format": "webp",
+          "width": 2400,
+          "height": 1600,
+          "bytes": 429040,
+          "src": "/images/photography/generated/9626835d5f8f97ce005ac119/2400.webp"
+        },
+        {
+          "format": "avif",
+          "width": 3766,
+          "height": 2511,
+          "bytes": 601825,
+          "src": "/images/photography/generated/9626835d5f8f97ce005ac119/3766.avif"
+        },
+        {
+          "format": "webp",
+          "width": 3766,
+          "height": 2511,
+          "bytes": 802490,
+          "src": "/images/photography/generated/9626835d5f8f97ce005ac119/3766.webp"
+        }
+      ]
+    },
+    {
+      "id": "toon-oct-26-47",
+      "title": "Milkshake break",
+      "description": "",
+      "alt": "A child drinks through a straw from a paper cup while sitting in a sunlit red diner booth",
+      "order": 20,
+      "featured": true,
+      "placeholder": false,
+      "width": 3840,
+      "height": 2560,
+      "src": "/images/photography/generated/0910995aebfbf2f2b9346cdb/3840.webp",
+      "variants": [
+        {
+          "format": "avif",
+          "width": 480,
+          "height": 320,
+          "bytes": 12319,
+          "src": "/images/photography/generated/0910995aebfbf2f2b9346cdb/480.avif"
+        },
+        {
+          "format": "webp",
+          "width": 480,
+          "height": 320,
+          "bytes": 16208,
+          "src": "/images/photography/generated/0910995aebfbf2f2b9346cdb/480.webp"
+        },
+        {
+          "format": "avif",
+          "width": 960,
+          "height": 640,
+          "bytes": 26692,
+          "src": "/images/photography/generated/0910995aebfbf2f2b9346cdb/960.avif"
+        },
+        {
+          "format": "webp",
+          "width": 960,
+          "height": 640,
+          "bytes": 35284,
+          "src": "/images/photography/generated/0910995aebfbf2f2b9346cdb/960.webp"
+        },
+        {
+          "format": "avif",
+          "width": 1600,
+          "height": 1067,
+          "bytes": 48608,
+          "src": "/images/photography/generated/0910995aebfbf2f2b9346cdb/1600.avif"
+        },
+        {
+          "format": "webp",
+          "width": 1600,
+          "height": 1067,
+          "bytes": 66554,
+          "src": "/images/photography/generated/0910995aebfbf2f2b9346cdb/1600.webp"
+        },
+        {
+          "format": "avif",
+          "width": 2400,
+          "height": 1600,
+          "bytes": 85633,
+          "src": "/images/photography/generated/0910995aebfbf2f2b9346cdb/2400.avif"
+        },
+        {
+          "format": "webp",
+          "width": 2400,
+          "height": 1600,
+          "bytes": 121828,
+          "src": "/images/photography/generated/0910995aebfbf2f2b9346cdb/2400.webp"
+        },
+        {
+          "format": "avif",
+          "width": 3840,
+          "height": 2560,
+          "bytes": 185272,
+          "src": "/images/photography/generated/0910995aebfbf2f2b9346cdb/3840.avif"
+        },
+        {
+          "format": "webp",
+          "width": 3840,
+          "height": 2560,
+          "bytes": 274892,
+          "src": "/images/photography/generated/0910995aebfbf2f2b9346cdb/3840.webp"
+        }
+      ]
+    },
+    {
+      "id": "toon-oct-26-9",
+      "title": "Through the window",
+      "description": "",
+      "alt": "A silhouetted figure looks through reflective glass toward river bridges and waterfront buildings",
+      "order": 21,
+      "featured": false,
+      "placeholder": false,
+      "width": 3840,
+      "height": 2560,
+      "src": "/images/photography/generated/4e7101fdf99cb9f4c1d8a6d4/3840.webp",
+      "variants": [
+        {
+          "format": "avif",
+          "width": 480,
+          "height": 320,
+          "bytes": 13877,
+          "src": "/images/photography/generated/4e7101fdf99cb9f4c1d8a6d4/480.avif"
+        },
+        {
+          "format": "webp",
+          "width": 480,
+          "height": 320,
+          "bytes": 18254,
+          "src": "/images/photography/generated/4e7101fdf99cb9f4c1d8a6d4/480.webp"
+        },
+        {
+          "format": "avif",
+          "width": 960,
+          "height": 640,
+          "bytes": 38549,
+          "src": "/images/photography/generated/4e7101fdf99cb9f4c1d8a6d4/960.avif"
+        },
+        {
+          "format": "webp",
+          "width": 960,
+          "height": 640,
+          "bytes": 51402,
+          "src": "/images/photography/generated/4e7101fdf99cb9f4c1d8a6d4/960.webp"
+        },
+        {
+          "format": "avif",
+          "width": 1600,
+          "height": 1067,
+          "bytes": 85620,
+          "src": "/images/photography/generated/4e7101fdf99cb9f4c1d8a6d4/1600.avif"
+        },
+        {
+          "format": "webp",
+          "width": 1600,
+          "height": 1067,
+          "bytes": 115356,
+          "src": "/images/photography/generated/4e7101fdf99cb9f4c1d8a6d4/1600.webp"
+        },
+        {
+          "format": "avif",
+          "width": 2400,
+          "height": 1600,
+          "bytes": 162145,
+          "src": "/images/photography/generated/4e7101fdf99cb9f4c1d8a6d4/2400.avif"
+        },
+        {
+          "format": "webp",
+          "width": 2400,
+          "height": 1600,
+          "bytes": 224224,
+          "src": "/images/photography/generated/4e7101fdf99cb9f4c1d8a6d4/2400.webp"
+        },
+        {
+          "format": "avif",
+          "width": 3840,
+          "height": 2560,
+          "bytes": 339284,
+          "src": "/images/photography/generated/4e7101fdf99cb9f4c1d8a6d4/3840.avif"
+        },
+        {
+          "format": "webp",
+          "width": 3840,
+          "height": 2560,
+          "bytes": 475400,
+          "src": "/images/photography/generated/4e7101fdf99cb9f4c1d8a6d4/3840.webp"
+        }
+      ]
+    }
+  ]
+}

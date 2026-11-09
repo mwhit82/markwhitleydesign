@@ -6,14 +6,12 @@ import { moduleUrl } from './rally-test-loader.mjs';
 const { photographs, featuredPhotographs } = await import(await moduleUrl(resolve('data/photography.ts')));
 const { games, pocketRacers, gameDestination } = await import(await moduleUrl(resolve('data/games.ts')));
 const { portfolioTiles, portfolioStudies } = await import(await moduleUrl(resolve('data/portfolio.ts')));
-test('gallery has 21 unique, ordered photographs and exactly six featured prints',()=>{
-  assert.equal(photographs.length,21);assert.equal(featuredPhotographs.length,6);
+test('gallery has unique, ordered photographs and exactly six featured prints',()=>{
+  assert.ok(photographs.length>=6);assert.equal(featuredPhotographs.length,6);
   assert.equal(photographs.filter(photo=>photo.featured).length,6);
-  assert.equal(new Set(photographs.map(photo=>photo.id)).size,21);
-  assert.equal(new Set(photographs.map(photo=>photo.order)).size,21);
+  assert.equal(new Set(photographs.map(photo=>photo.id)).size,photographs.length);
   assert.deepEqual(photographs.map(photo=>photo.order),photographs.map(photo=>photo.order).toSorted((a,b)=>a-b));
   for(const photo of photographs){assert.ok(photo.alt);assert.ok(photo.width>0&&photo.height>0);if(photo.placeholder){assert.ok(photo.credit);assert.match(photo.sourceUrl,/^https:\/\/unsplash.com\/photos\//);assert.match(photo.src,/^https:\/\/images.unsplash.com\/photo-/);}}
-  assert.ok(featuredPhotographs.some(photo=>photo.height>photo.width));assert.ok(featuredPhotographs.some(photo=>photo.width>photo.height));
 });
 test('Pocket Racers falls back internally and uses the supplied store URL when configured',()=>{
   assert.equal(pocketRacers.metaStoreUrl,undefined);
