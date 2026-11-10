@@ -14,6 +14,7 @@ export function Icon({
 }) {
   return (
     <HugeiconsIcon
+      aria-hidden="true"
       icon={icon}
       size={size}
       strokeWidth={strokeWidth}

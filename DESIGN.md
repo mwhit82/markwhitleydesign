@@ -17,11 +17,12 @@ interpretation, not an endorsement. This file defines our site-specific rules.
   1px borders. Hierarchy comes from surfaces, not shadows.
 
 ## Composition and components
-- Shared header: MW + profile trigger, Design/Games/Photography, collaborator avatars,
+- Shared header: MW + home link, Design/Games/Photography, collaborator avatars,
   Dark/Light/System. Only these three primary navigation destinations.
 - The homepage is full width. Card grid: 4 columns at 1280+, 3 at 1024+, 2 at 640+,
   1 below. Matching 16:10 artwork, title, description. No numbered/category eyebrows.
-- Preserve genuine screenshots and photographs. Conceptual illustrations must be
+- Use original wireframe SVG artwork on every Design card; retain genuine screenshots
+  as source assets and preserve photographs. Illustrations must be
   labelled, neutral and consistent; never fabricate product evidence or results.
 - Photography is natural-proportion columns (4 at 1440+, 3 at 1024+, 2 at 640+).
   Phones: every image spans the available width, 16px page padding and entry gaps.
@@ -32,11 +33,11 @@ interpretation, not an endorsement. This file defines our site-specific rules.
   restore the opener and close with Escape. Never depend on hover alone.
 
 ## Motion and behaviour
-- Codex/Claude cursors are decorative, not connected agents. Build sequence is 1.2s
-  on initial arrival or filter change only. Content stays interactive. Cancel on rapid
-  switches; no idle loops. Reduced motion shows the finished layout immediately.
+- Codex/Claude cursors are decorative, not connected agents. Three-agent build sequence is 5.5s
+  on initial arrival or filter change only, with readable names and task labels. Content stays interactive. Cancel on rapid
+  switches, scrolling, resizing or modal opening; no idle loops. Reduced motion shows the finished layout immediately.
 - Filters use ?view=design|games|photography; default Design. Preserve Back/Forward,
-  legacy routes and photo anchors. Profile is a drawer, also reachable with ?profile=open.
+  legacy routes and photo anchors. Name and MW return to Design. The portrait opens the profile drawer, also reachable with ?profile=open.
 - Actual game screens retain their artwork and layouts. Do not restyle gameplay.
 - Original photography and .photography-work remain private. Preserve responsive
   variants, alt text, full-collection lightbox and the four approved camera settings.
@@ -50,3 +51,13 @@ interpretation, not an endorsement. This file defines our site-specific rules.
 - Native CSS/React and browser animation APIs suffice; no UI or motion runtime added.
 - Before publishing: production build, lint, content/photography/game checks, keyboard,
   light/dark/system, reduced motion, 390/820/1440px layouts, redirects and live verification.
+
+## Shared motion, avatars and icons
+- Use the existing Hugeicons SVG wrapper for interface icons, never Unicode arrows
+  or emoji controls. Brand logos and illustrative SVGs retain their own artwork.
+- Avatars share fixed circular geometry; Mark’s portrait opens the résumé.
+- Cards respond to nearby pointer velocity and scroll impulses with damped springs.
+  Cap Design/Games at 3 degrees and 4px; Photography at 1.5 degrees and 2px.
+- One collection scheduler sleeps when settled; only visible cards animate.
+  Touch uses scroll only. Reduced motion, hidden tabs and dialogs disable motion.
+- Build overlays never block content, change layout or compete with card transforms.

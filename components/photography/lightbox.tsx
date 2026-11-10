@@ -1,4 +1,6 @@
 "use client";
+import {Icon} from '@/components/icon';
+import {Cancel01Icon,ArrowLeft01Icon,ArrowRight01Icon} from '@hugeicons/core-free-icons';
 import { useEffect, useRef } from "react";
 import type { Photograph } from "@/data/photography";
 import { PhotoImage } from "./photo-image";
@@ -31,7 +33,7 @@ export function Lightbox({photos,index,onChange,onClose}: {photos:Photograph[];i
     if(event.key==='ArrowLeft'){event.preventDefault();move(-1);}
     if(event.key==='ArrowRight'){event.preventDefault();move(1);}
   }}>
-    <header className={styles.lightboxHeader}><span>MARK WHITLEY / {photos.some(item=>item.placeholder) ? 'GALLERY PREVIEW' : 'PHOTOGRAPHY'}</span><button ref={closeButton} onClick={onClose} aria-label="Close photograph viewer">Close <span aria-hidden="true">×</span></button></header>
+    <header className={styles.lightboxHeader}><span>MARK WHITLEY / {photos.some(item=>item.placeholder) ? 'GALLERY PREVIEW' : 'PHOTOGRAPHY'}</span><button ref={closeButton} onClick={onClose} aria-label="Close photograph viewer">Close <span aria-hidden="true"><Icon icon={Cancel01Icon} size={18}/></span></button></header>
     <div className={styles.lightboxStage} onTouchStart={event=>{if(event.touches.length===1)touch.current={x:event.touches[0].clientX,y:event.touches[0].clientY};else touch.current=null;}} onTouchEnd={event=>{
       const start=touch.current;touch.current=null;if(!start || event.changedTouches.length!==1)return;
       const dx=event.changedTouches[0].clientX-start.x,dy=event.changedTouches[0].clientY-start.y;
@@ -39,7 +41,7 @@ export function Lightbox({photos,index,onChange,onClose}: {photos:Photograph[];i
     }}>
       <PhotoImage key={photo.id} photo={photo} lightbox sizes={`min(94vw, ${Math.round(photo.width/photo.height*78)}vh)`}/>
     </div>
-    <footer className={styles.lightboxFooter}><div><p aria-live="polite" aria-atomic="true">{String(index+1).padStart(2,'0')} / {photos.length} <span>— {photo.title || 'Untitled'}</span></p><CameraSettings photo={photo}/><PhotoCredit photo={photo}/></div><div className={styles.viewerControls}><button onClick={()=>move(-1)} aria-label="Previous photograph">←</button><button onClick={()=>move(1)} aria-label="Next photograph">→</button></div></footer>
+    <footer className={styles.lightboxFooter}><div><p aria-live="polite" aria-atomic="true">{String(index+1).padStart(2,'0')} / {photos.length} <span>— {photo.title || 'Untitled'}</span></p><CameraSettings photo={photo}/><PhotoCredit photo={photo}/></div><div className={styles.viewerControls}><button onClick={()=>move(-1)} aria-label="Previous photograph"><Icon icon={ArrowLeft01Icon} size={18}/></button><button onClick={()=>move(1)} aria-label="Next photograph"><Icon icon={ArrowRight01Icon} size={18}/></button></div></footer>
     {photo.placeholder && <p className={styles.viewerNotice}>Gallery preview — original photography coming soon</p>}
   </dialog>;
 }

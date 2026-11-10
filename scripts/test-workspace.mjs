@@ -19,6 +19,8 @@ for (const [path, destination] of Object.entries({
 console.log('✓ Legacy listing and contact routes redirect to the shared homepage');
 const design = await page('/');
 assert.match(design, /Selected design/);
+assert.equal((design.match(/class="wireframeArt"/g) || []).length, 12, 'Every Design card has wireframe artwork');
+assert.match(design, /<a[^>]*href="\/\?view=design"[^>]*>Mark Whitley<\/a>/, 'Name returns to Design');
 assert.equal((design.match(/data-build-card=/g) || []).length, 12);
 const projectLinks = [...new Set([...design.matchAll(/href="(\/work\/[^"?]+)"/g)].map(match => match[1]))];
 assert.equal(projectLinks.length, 11);

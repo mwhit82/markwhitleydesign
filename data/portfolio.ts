@@ -1,3 +1,4 @@
+import type {WireframeKind} from '@/components/wireframe-art';
 /** Deliberately brief: detailed case-study narratives will be supplied by Mark. */
 export type PortfolioStudy = {
   slug: string; title: string; category: string; description: string;
@@ -15,6 +16,7 @@ export const portfolioStudies: PortfolioStudy[] = [
 ];
 
 export type PortfolioTile = {
+  wireframe?: WireframeKind;
   slug: string; title: string; category: string; href: string; tone: string;
   image?: string; alt?: string; conceptual?: boolean; description?: string; external?: boolean;
 };
