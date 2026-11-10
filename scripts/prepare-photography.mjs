@@ -3,6 +3,7 @@ import path from 'node:path';
 import { createHash, randomUUID } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import sharp from 'sharp';
+import { cameraSettingsFromExif } from './photo-camera-settings.mjs';
 
 const WIDTHS = [480, 960, 1600, 2400, 3840];
 const PIPELINE = `photography-v1-sharp-${sharp.versions.sharp}`;
@@ -103,6 +104,8 @@ export async function preparePhotography({root=process.cwd()}={}) {
         if(!files.includes(entry.source))throw new Error('Source missing; restore it or remove its catalogue entry. Existing published files are retained.');
         const buffer=await fs.readFile(path.join(input,entry.source));
         if(buffer.length===0)throw new Error('Source is empty or unavailable locally. Download the original from cloud storage first.');
+        const sourceMetadata=await sharp(buffer,{failOn:'warning',limitInputPixels:120000000}).metadata();
+        const cameraSettings=cameraSettingsFromExif(sourceMetadata.exif);
         const quality={avif:entry.quality?.avif ?? 65,webp:entry.quality?.webp ?? 85};
         const contentHash=hash(Buffer.concat([buffer,Buffer.from(json({pipeline:PIPELINE,quality}))])).slice(0,24);
         const folder=path.join(work,'images',contentHash);
@@ -116,7 +119,7 @@ export async function preparePhotography({root=process.cwd()}={}) {
         }
         if(result)report.unchanged.push(entry.id);
         else {
-          const meta=await sharp(buffer,{failOn:'warning',limitInputPixels:120000000}).metadata();
+          const meta=sourceMetadata;
           if(!['jpeg','png','tiff'].includes(meta.format))throw new Error('Only JPEG, PNG and TIFF image contents are accepted.');
           if((meta.pages ?? 1)>1)throw new Error('Export a single still image instead of a multi-page file.');
           const rotated=(meta.orientation ?? 1)>4;
@@ -143,7 +146,7 @@ export async function preparePhotography({root=process.cwd()}={}) {
         }
         cache.photos[entry.id]=result;
         report.generatedBytes+=result.variants.reduce((total,variant)=>total+variant.bytes,0);
-        processed.push({entry,result});
+        processed.push({entry,result,cameraSettings});
       } catch(error) {report.errors.push(`${entry.id}: ${error.message}`);}
     }
     await writeAtomic(path.join(work,'cache.json'),json(cache));
@@ -155,7 +158,7 @@ export async function preparePhotography({root=process.cwd()}={}) {
     // No live assets or manifest change until the entire batch has succeeded.
     if(!report.errors.length) {
       const photos=[];
-      for(const {entry,result} of processed.filter(photo=>photo.entry.published)) {
+      for(const {entry,result,cameraSettings} of processed.filter(photo=>photo.entry.published)) {
         const destination=path.join(output,result.hash);
         await fs.mkdir(destination,{recursive:true});
         for(const variant of result.variants) {
@@ -168,7 +171,7 @@ export async function preparePhotography({root=process.cwd()}={}) {
         const variants=result.variants.map(({file,...variant})=>({...variant,src:`/images/photography/generated/${result.hash}/${file}`}));
         const fallback=variants.filter(variant=>variant.format==='webp').at(-1);
         const id=entry.replacesId || entry.id;
-        photos.push({id,title:entry.title || '',description:entry.description || '',alt:entry.alt.trim(),...(entry.location?{location:entry.location}:{}),order:entry.order,featured:catalog.featuredIds.includes(id),placeholder:false,width:result.width,height:result.height,src:fallback.src,variants});
+        photos.push({id,title:entry.title || '',description:entry.description || '',alt:entry.alt.trim(),...(entry.location?{location:entry.location}:{}),order:entry.order,featured:catalog.featuredIds.includes(id),placeholder:false,...(cameraSettings?{cameraSettings}:{}),width:result.width,height:result.height,src:fallback.src,variants});
       }
       await writeAtomic(manifestPath,json({version:1,includePlaceholders:catalog.includePlaceholders,featuredIds:catalog.featuredIds,photos}));
       report.published=photos.length;

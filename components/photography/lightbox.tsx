@@ -2,6 +2,7 @@
 import { useEffect, useRef } from "react";
 import type { Photograph } from "@/data/photography";
 import { PhotoImage } from "./photo-image";
+import { CameraSettings } from "./camera-settings";
 import { PhotoCredit } from "./credit";
 import styles from "./photography.module.css";
 export function Lightbox({photos,index,onChange,onClose}: {photos:Photograph[];index:number;onChange:(index:number)=>void;onClose:()=>void}) {
@@ -38,7 +39,7 @@ export function Lightbox({photos,index,onChange,onClose}: {photos:Photograph[];i
     }}>
       <PhotoImage key={photo.id} photo={photo} lightbox sizes={`min(94vw, ${Math.round(photo.width/photo.height*78)}vh)`}/>
     </div>
-    <footer className={styles.lightboxFooter}><div><p aria-live="polite" aria-atomic="true">{String(index+1).padStart(2,'0')} / {photos.length} <span>— {photo.title || 'Untitled'}</span></p><PhotoCredit photo={photo}/></div><div className={styles.viewerControls}><button onClick={()=>move(-1)} aria-label="Previous photograph">←</button><button onClick={()=>move(1)} aria-label="Next photograph">→</button></div></footer>
+    <footer className={styles.lightboxFooter}><div><p aria-live="polite" aria-atomic="true">{String(index+1).padStart(2,'0')} / {photos.length} <span>— {photo.title || 'Untitled'}</span></p><CameraSettings photo={photo}/><PhotoCredit photo={photo}/></div><div className={styles.viewerControls}><button onClick={()=>move(-1)} aria-label="Previous photograph">←</button><button onClick={()=>move(1)} aria-label="Next photograph">→</button></div></footer>
     {photo.placeholder && <p className={styles.viewerNotice}>Gallery preview — original photography coming soon</p>}
   </dialog>;
 }

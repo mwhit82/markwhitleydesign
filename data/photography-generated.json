@@ -18,6 +18,11 @@
       "order": 2,
       "featured": false,
       "placeholder": false,
+      "cameraSettings": {
+        "aperture": 2,
+        "shutterSeconds": 0.003125,
+        "iso": 2000
+      },
       "width": 3840,
       "height": 2560,
       "src": "/images/photography/generated/ecd42e26b634ef3e11763474/3840.webp",
@@ -102,6 +107,11 @@
       "order": 3,
       "featured": true,
       "placeholder": false,
+      "cameraSettings": {
+        "aperture": 2,
+        "shutterSeconds": 0.003125,
+        "iso": 640
+      },
       "width": 2560,
       "height": 3840,
       "src": "/images/photography/generated/0175aa733040cfc05dd378ee/2560.webp",
@@ -186,6 +196,11 @@
       "order": 4,
       "featured": true,
       "placeholder": false,
+      "cameraSettings": {
+        "aperture": 2,
+        "shutterSeconds": 0.0016666666666666668,
+        "iso": 320
+      },
       "width": 3840,
       "height": 2560,
       "src": "/images/photography/generated/ea93b3589b27d55c8aec71db/3840.webp",
@@ -270,6 +285,11 @@
       "order": 22,
       "featured": false,
       "placeholder": false,
+      "cameraSettings": {
+        "aperture": 1.4,
+        "shutterSeconds": 0.008333333333333333,
+        "iso": 6400
+      },
       "width": 3840,
       "height": 2560,
       "src": "/images/photography/generated/9724c9b42260da0fb5fce495/3840.webp",
@@ -354,6 +374,11 @@
       "order": 14,
       "featured": false,
       "placeholder": false,
+      "cameraSettings": {
+        "aperture": 2,
+        "shutterSeconds": 0.00022727272727272727,
+        "iso": 160
+      },
       "width": 3840,
       "height": 2560,
       "src": "/images/photography/generated/44a5af603b9a2803c17d7f7f/3840.webp",
@@ -438,6 +463,11 @@
       "order": 15,
       "featured": false,
       "placeholder": false,
+      "cameraSettings": {
+        "aperture": 5,
+        "shutterSeconds": 5,
+        "iso": 400
+      },
       "width": 3840,
       "height": 2560,
       "src": "/images/photography/generated/590fb65f22c33e26f2987306/3840.webp",
@@ -522,6 +552,11 @@
       "order": 10,
       "featured": false,
       "placeholder": false,
+      "cameraSettings": {
+        "aperture": 2,
+        "shutterSeconds": 0.003125,
+        "iso": 2500
+      },
       "width": 3840,
       "height": 2560,
       "src": "/images/photography/generated/c30a4680452030afeefd79cf/3840.webp",
@@ -606,6 +641,11 @@
       "order": 11,
       "featured": false,
       "placeholder": false,
+      "cameraSettings": {
+        "aperture": 2,
+        "shutterSeconds": 0.003125,
+        "iso": 2500
+      },
       "width": 3840,
       "height": 2560,
       "src": "/images/photography/generated/6f5ee50d90ecf73191ea9449/3840.webp",
@@ -690,6 +730,11 @@
       "order": 12,
       "featured": false,
       "placeholder": false,
+      "cameraSettings": {
+        "aperture": 2,
+        "shutterSeconds": 0.006666666666666667,
+        "iso": 6400
+      },
       "width": 3840,
       "height": 2560,
       "src": "/images/photography/generated/bda607fe06bf4f98b0f5d132/3840.webp",
@@ -774,6 +819,11 @@
       "order": 13,
       "featured": false,
       "placeholder": false,
+      "cameraSettings": {
+        "aperture": 2,
+        "shutterSeconds": 0.003125,
+        "iso": 640
+      },
       "width": 2559,
       "height": 3839,
       "src": "/images/photography/generated/7b3c805f9cab7875d5f44cde/2559.webp",
@@ -858,6 +908,11 @@
       "order": 1,
       "featured": true,
       "placeholder": false,
+      "cameraSettings": {
+        "aperture": 2,
+        "shutterSeconds": 0.003125,
+        "iso": 800
+      },
       "width": 3840,
       "height": 2560,
       "src": "/images/photography/generated/1a53afcb897b707c46742961/3840.webp",
@@ -942,6 +997,11 @@
       "order": 5,
       "featured": false,
       "placeholder": false,
+      "cameraSettings": {
+        "aperture": 2,
+        "shutterSeconds": 0.0002127659574468085,
+        "iso": 160
+      },
       "width": 2560,
       "height": 3840,
       "src": "/images/photography/generated/60cbb90978a978006deafa45/2560.webp",
@@ -1026,6 +1086,11 @@
       "order": 6,
       "featured": true,
       "placeholder": false,
+      "cameraSettings": {
+        "aperture": 2,
+        "shutterSeconds": 0.000125,
+        "iso": 160
+      },
       "width": 3840,
       "height": 2560,
       "src": "/images/photography/generated/d318bbfb9fdb6d43eda7999b/3840.webp",
@@ -1110,6 +1175,11 @@
       "order": 7,
       "featured": false,
       "placeholder": false,
+      "cameraSettings": {
+        "aperture": 2,
+        "shutterSeconds": 0.000125,
+        "iso": 160
+      },
       "width": 3840,
       "height": 2560,
       "src": "/images/photography/generated/140e92aa747d7608bf5186b2/3840.webp",
@@ -1194,6 +1264,11 @@
       "order": 8,
       "featured": false,
       "placeholder": false,
+      "cameraSettings": {
+        "aperture": 2,
+        "shutterSeconds": 0.00037037037037037035,
+        "iso": 320
+      },
       "width": 3840,
       "height": 2560,
       "src": "/images/photography/generated/368b49920c49e39ea886e542/3840.webp",
@@ -1278,6 +1353,11 @@
       "order": 9,
       "featured": false,
       "placeholder": false,
+      "cameraSettings": {
+        "aperture": 2,
+        "shutterSeconds": 0.0016666666666666668,
+        "iso": 160
+      },
       "width": 2560,
       "height": 3840,
       "src": "/images/photography/generated/8948e52850e92b3c50ce5d00/2560.webp",
@@ -1362,6 +1442,11 @@
       "order": 16,
       "featured": false,
       "placeholder": false,
+      "cameraSettings": {
+        "aperture": 2,
+        "shutterSeconds": 0.0002127659574468085,
+        "iso": 320
+      },
       "width": 3840,
       "height": 2560,
       "src": "/images/photography/generated/f826530658251851035b885d/3840.webp",
@@ -1446,6 +1531,11 @@
       "order": 17,
       "featured": false,
       "placeholder": false,
+      "cameraSettings": {
+        "aperture": 2,
+        "shutterSeconds": 0.0003125,
+        "iso": 320
+      },
       "width": 2560,
       "height": 3840,
       "src": "/images/photography/generated/b53cca3deeba4aaeb20540bb/2560.webp",
@@ -1530,6 +1620,11 @@
       "order": 18,
       "featured": true,
       "placeholder": false,
+      "cameraSettings": {
+        "aperture": 2,
+        "shutterSeconds": 0.00022727272727272727,
+        "iso": 160
+      },
       "width": 2560,
       "height": 3840,
       "src": "/images/photography/generated/3e97dfad517d33117e68744b/2560.webp",
@@ -1614,6 +1709,11 @@
       "order": 19,
       "featured": false,
       "placeholder": false,
+      "cameraSettings": {
+        "aperture": 2,
+        "shutterSeconds": 0.000125,
+        "iso": 160
+      },
       "width": 3766,
       "height": 2511,
       "src": "/images/photography/generated/9626835d5f8f97ce005ac119/3766.webp",
@@ -1698,6 +1798,11 @@
       "order": 20,
       "featured": true,
       "placeholder": false,
+      "cameraSettings": {
+        "aperture": 2,
+        "shutterSeconds": 0.00015625,
+        "iso": 160
+      },
       "width": 3840,
       "height": 2560,
       "src": "/images/photography/generated/0910995aebfbf2f2b9346cdb/3840.webp",
@@ -1782,6 +1887,11 @@
       "order": 21,
       "featured": false,
       "placeholder": false,
+      "cameraSettings": {
+        "aperture": 2,
+        "shutterSeconds": 0.0002631578947368421,
+        "iso": 320
+      },
       "width": 3840,
       "height": 2560,
       "src": "/images/photography/generated/4e7101fdf99cb9f4c1d8a6d4/3840.webp",

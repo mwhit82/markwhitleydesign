@@ -11,6 +11,14 @@ export async function checkPhotography(root=process.cwd()) {
   for(const photo of manifest.photos) {
     if(originalIds.has(photo.id))throw new Error(`Duplicate generated photo: ${photo.id}`);
     originalIds.add(photo.id);
+    if(photo.cameraSettings !== undefined) {
+      const settings=photo.cameraSettings;
+      if(!settings || typeof settings!=='object' || Array.isArray(settings))throw new Error(`Invalid camera settings: ${photo.id}`);
+      const limits={aperture:128,shutterSeconds:86400,iso:65534};
+      for(const [key,value] of Object.entries(settings)) {
+        if(!(key in limits) || !Number.isFinite(value) || value<=0 || value>limits[key] || (key==='iso' && !Number.isInteger(value)))throw new Error(`Unexpected camera setting ${key}: ${photo.id}`);
+      }
+    }
     if(!photo.alt?.trim() || photo.placeholder!==false || !photo.variants?.length)throw new Error(`Incomplete published photo: ${photo.id}`);
     if(!Number.isFinite(photo.order) || photo.width<=0 || photo.height<=0)throw new Error(`Invalid dimensions or order: ${photo.id}`);
     for(const format of ['avif','webp']) {

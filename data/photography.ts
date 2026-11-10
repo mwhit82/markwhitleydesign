@@ -5,6 +5,7 @@ export type PhotoVariant = { src: string; width: number; height: number; bytes: 
 export type Photograph = {
   id: string; src: string; alt: string; title?: string; description?: string; location?: string;
   width: number; height: number; featured: boolean; order: number;
+  cameraSettings?: { aperture?: number; shutterSeconds?: number; iso?: number };
   placeholder: boolean; credit?: string; sourceUrl?: string; variants?: PhotoVariant[];
 };
 // Only the published manifest is imported by the site. Private originals and drafts never enter the bundle.

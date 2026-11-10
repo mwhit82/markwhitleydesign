@@ -84,3 +84,7 @@
 .loadMore {display:flex;flex-direction:column;align-items:center;gap:16px;margin-top:64px;font:11px ui-monospace,monospace;}
 .loadMore button {background:transparent;color:inherit;border:1px solid #282b2555;padding:16px 24px;min-height:48px;cursor:pointer;font:13px var(--font-body),sans-serif;}
 .loadMore button:hover {background:#e8e6de;}.loadMore button span {margin-left:24px;}
+
+.cameraSettings { display: block; margin-top: 0.45rem; font-family: ui-monospace, monospace; font-size: 0.7rem; line-height: 1.6; font-weight: 400; letter-spacing: 0.02em; opacity: 0.8; }
+
+.heroFigure figcaption > .cameraSettings, .galleryFigure figcaption > .cameraSettings { flex-basis: 100%; margin-top: 0; }

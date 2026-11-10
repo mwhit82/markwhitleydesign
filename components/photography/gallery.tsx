@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import type { Photograph } from "@/data/photography";
 import { PhotoImage } from "./photo-image";
+import { CameraSettings } from "./camera-settings";
 import { PhotoCredit } from "./credit";
 import { Reveal } from "./reveal";
 import styles from "./photography.module.css";
@@ -39,7 +40,7 @@ export function PhotographyGallery({photos}: {photos:Photograph[]}) {
   const renderPhoto=(photo:Photograph,index:number,hero=false)=><figure id={`photo-${photo.id}`} className={hero?styles.heroFigure:styles.galleryFigure}>
     <button className={styles.photoButton} onClick={()=>setActive(index)} aria-label={`View photograph ${index+1}: ${photo.title || photo.alt}`} style={{aspectRatio:hero?'16 / 9':`${photo.width} / ${photo.height}`}}>
       <PhotoImage photo={photo} priority={hero} sizes={hero?'90vw':`(max-width:700px) calc(100vw - 40px), ${[75,50,32,24,41,41,32][(index-1)%7]}vw`}/><span className={styles.openHint} aria-hidden="true">View photograph ↗</span>
-    </button><figcaption><span>{String(index+1).padStart(2,'0')} / {photo.title || 'Untitled'}{photo.location && ` — ${photo.location}`}</span>{photo.description && <p className={styles.description}>{photo.description}</p>}<PhotoCredit photo={photo}/></figcaption>
+    </button><figcaption><span>{String(index+1).padStart(2,'0')} / {photo.title || 'Untitled'}{photo.location && ` — ${photo.location}`}</span>{photo.description && <p className={styles.description}>{photo.description}</p>}<CameraSettings photo={photo}/><PhotoCredit photo={photo}/></figcaption>
   </figure>;
   return <>
     {photos[0] && renderPhoto(photos[0],0,true)}

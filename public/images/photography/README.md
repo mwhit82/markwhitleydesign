@@ -119,3 +119,16 @@ Run `npm run test:photography` for the isolated processor regression tests.
 ## Pocket Racers VR
 
 Set the official Meta listing URL in `metaStoreUrl` in `data/games.ts` when ready.
+
+## Camera settings in captions
+
+Preparation reads aperture (f-stop), shutter speed and ISO from the original's
+EXIF data and adds only these three values to the published manifest. Labels show
+these settings below the title on homepage prints, in the gallery and in the
+viewer—for example `f/2.8 · 1/125 s · ISO 800`.
+
+Settings missing from an export are simply omitted; nothing is guessed. Export
+with exposure metadata retained if you want these labels. Run preparation again
+to update captions for existing photos; unchanged web images are not re-encoded.
+GPS, camera serial numbers, owner details and other EXIF fields are not published.
+The web image files themselves still contain no EXIF metadata.
