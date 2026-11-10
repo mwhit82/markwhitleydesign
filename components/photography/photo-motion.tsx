@@ -1,7 +1,7 @@
 "use client";
 import {relativePhotoTilt} from '@/lib/photo-orientation';
 import {createContext,useContext,useEffect,useRef,useState,type ReactNode} from 'react';
-export type PhotoMotionValue={x:number;y:number;active:boolean;onFrame?:()=>void;wake?:()=>void};
+export type PhotoMotionValue={x:number;y:number;active:boolean;tilting?:boolean;onFrame?:()=>void;wake?:()=>void};
 type Entry={element:HTMLElement;motion:PhotoMotionValue;visible:boolean};
 type MotionContext={allowed:boolean;reduced:boolean;register:(element:HTMLElement,motion:PhotoMotionValue)=>()=>void;enabled:boolean;toggle:()=>void;canTilt:boolean;tilting:boolean;enableTilt:()=>void;status:string};
 const Context=createContext<MotionContext|null>(null);
@@ -25,11 +25,11 @@ export function PhotoMotionProvider({enabled:dialogClosed,children}:{enabled:boo
     const pointerX=near?Math.max(-1,Math.min(1,(px-r.left-r.width/2)/(r.width/2))):0;
     const pointerY=near?Math.max(-1,Math.min(1,(py-r.top-r.height/2)/(r.height/2))):0;
     const x=active?Math.max(-1,Math.min(1,tilt.current.x+pointerX*.7)):0;
-    const y=active?Math.max(-1,Math.min(1,scroll*.6+tilt.current.y*.7+pointerY*.3)):0;
-    const m=entry.motion;m.active=active;
+    const y=active?Math.max(-1,Math.min(1,scroll*(tilting?.2:.6)+tilt.current.y+pointerY*.3)):0;
+    const m=entry.motion;m.active=active;m.tilting=tilting;
     m.x+=(x-m.x)*(1-Math.exp(-dt*10));m.y+=(y-m.y)*(1-Math.exp(-dt*10));
     if(Math.abs(m.x-x)+Math.abs(m.y-y)>.0005)moving=true;else{m.x=x;m.y=y;}
-    entry.element.style.setProperty('--photo-x',String(m.x));entry.element.style.setProperty('--photo-y',String(m.y));m.onFrame?.();
+    entry.element.style.setProperty('--photo-scale',tilting?'1.18':'1.06');entry.element.style.setProperty('--photo-travel',tilting?'5%':'1.2%');entry.element.style.setProperty('--photo-x',String(m.x));entry.element.style.setProperty('--photo-y',String(m.y));m.onFrame?.();
    }
    if(moving)frame=requestAnimationFrame(tick);else last=0;
   };
@@ -42,7 +42,7 @@ export function PhotoMotionProvider({enabled:dialogClosed,children}:{enabled:boo
   const transitions=new MutationObserver(start);transitions.observe(document.body,{subtree:true,attributes:true,attributeFilter:['data-changing']});
   window.addEventListener('photo-scene-added',added);window.addEventListener('scroll',start,{passive:true});window.addEventListener('resize',start);window.addEventListener('pointermove',pointer,{passive:true});document.addEventListener('pointerleave',leave);start();
   return()=>{cancelAnimationFrame(frame);observer.disconnect();transitions.disconnect();wake.current=()=>{};window.removeEventListener('photo-scene-added',added);window.removeEventListener('scroll',start);window.removeEventListener('resize',start);window.removeEventListener('pointermove',pointer);document.removeEventListener('pointerleave',leave);for(const entry of collection){entry.motion.active=false;entry.motion.x=entry.motion.y=0;entry.element.style.removeProperty('--photo-x');entry.element.style.removeProperty('--photo-y');}};
- },[allowed]);
+ },[allowed,tilting]);
  useEffect(()=>{
   if(!tilting||!allowed)return;
   baseline.current=null;let received=false;

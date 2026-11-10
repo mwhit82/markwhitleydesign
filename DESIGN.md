@@ -72,9 +72,11 @@ interpretation, not an endorsement. This file defines our site-specific rules.
 - Only Skyline at dusk, Through the pines and Across the valley use estimated depth.
   Normal images stay beneath the lazy renderer and remain the failure fallback.
 - Preserve natural image ratios and stationary captions. The gallery may overscan
-  by 6% for motion; the lightbox always shows the uncropped, static photograph.
+  by 6% for scroll/pointer and 18% for the exaggerated tilt preview; the lightbox always shows the uncropped, static photograph.
 - Local depth estimation never uploads images. Do not generate unseen scenery.
   Depth maps and their model provenance live in data/photography-depth.json.
 - Keep orientation readings in memory only. Ask browser permission from the explicit
   Enable tilt action, calibrate around the current pose, and fall back to scrolling.
+- Tilt preview reaches full movement at 8 degrees, with 4× depth displacement and
+  stronger framed movement. Keep this tuning isolated from scroll/pointer motion.
 - Review depth quality before adding photographs to the three-image pilot.
