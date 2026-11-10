@@ -1,22 +1,22 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
-import { Fraunces, Manrope } from "next/font/google";
+import { Inter, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { FlowFieldBackground } from "@/components/flow-field-background";
 import { SiteShell } from "@/components/site-shell";
 import { ThemeScript } from "@/components/theme-script";
 
-const fraunces = Fraunces({
-  subsets: ["latin"],
-  variable: "--font-display",
-});
-
-const manrope = Manrope({
+const inter = Inter({
   subsets: ["latin"],
   variable: "--font-body",
 });
 
+const mono = Geist_Mono({
+  subsets: ["latin"],
+  variable: "--font-mono",
+});
+
 export const metadata: Metadata = {
+  metadataBase: new URL("https://markwhitley.design"),
   title: "Mark Whitley | Product Design Engineer",
   description:
     "Modern portfolio for Mark Whitley, a senior staff product design engineer building AI-powered experiences.",
@@ -29,9 +29,8 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${fraunces.variable} ${manrope.variable}`}>
+      <body className={`${inter.variable} ${mono.variable}`}>
         <ThemeScript />
-        <FlowFieldBackground />
         <SiteShell>{children}</SiteShell>
       </body>
     </html>

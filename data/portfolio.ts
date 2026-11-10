@@ -29,7 +29,7 @@ const tile = (slug: string): PortfolioTile => {
 };
 export const portfolioTiles: PortfolioTile[] = [
   tile('pendo-for-agents'), tile('leo'), tile('pendo-listen'),
-  {slug:'the-whitley-captures',title:'The Whitley Captures',category:'Photography website',href:'https://www.thewhitleycaptures.com/',tone:'captures',image:'/portfolio/whitley-captures.webp',alt:'Newborn photography by The Whitley Captures',external:true},
+  {slug:'the-whitley-captures',title:'The Whitley Captures',category:'Photography website',description:'A photography website for capturing the first days and the moments that matter.',href:'https://www.thewhitleycaptures.com/',tone:'captures',image:'/portfolio/whitley-captures.webp',alt:'Newborn photography by The Whitley Captures',external:true},
   {...tile('salecycle-design-system'),category:'Design system · Case study coming soon'},
   tile('agent-toolkit'),tile('agent-analytics-in-novus'),tile('frontend-101'),
 ];

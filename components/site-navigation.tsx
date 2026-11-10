@@ -1,12 +1,4 @@
 "use client";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-export const navigation = [
-  {href:'/',label:'Home'}, {href:'/work',label:'Portfolio'},
-  {href:'/playground',label:'Gaming'}, {href:'/photography',label:'Photography'},
-  {href:'/contact',label:'Contact'},
-];
-export function SiteNavigation({className = ''}: {className?:string}) {
-  const pathname = usePathname();
-  return <nav aria-label="Main navigation" className={`editorialNav ${className}`}>{navigation.map(item => <Link key={item.href} href={item.href} aria-current={pathname === item.href ? 'page' : undefined}>{item.label}</Link>)}</nav>;
-}
+import Link from 'next/link';
+export const navigation=[{href:'/?view=design',label:'Design'},{href:'/?view=games',label:'Games'},{href:'/?view=photography',label:'Photography'}];
+export function SiteNavigation({className='',active=''}:{className?:string;active?:string}){return <nav aria-label="Main navigation" className={`editorialNav ${className}`}>{navigation.map(item=><Link key={item.href} href={item.href} scroll={false} aria-current={active===item.label.toLowerCase()?'page':undefined} onClick={event=>{if(location.pathname==='/'&&!event.metaKey&&!event.ctrlKey&&!event.shiftKey&&!event.altKey){event.preventDefault();history.pushState(null,'',item.href);window.scrollTo({top:0,behavior:'instant'});}}}>{item.label}</Link>)}</nav>;}

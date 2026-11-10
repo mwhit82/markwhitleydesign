@@ -22,6 +22,6 @@ export function PhotoImage({photo,priority=false,lightbox=false,sizes}: {photo:P
       <img src={retryUrl(webp?.[0]?.src || photo.src)} srcSet={sourceSet('webp')} sizes={sizes} alt={photo.alt} width={photo.width} height={photo.height} className={className} loading={priority || lightbox ? 'eager' : 'lazy'} fetchPriority={priority ? 'high' : 'auto'} decoding="async" {...events}/>
     </picture> : <Image key={attempt} src={retryUrl(photo.src)} alt={photo.alt} width={photo.width} height={photo.height} sizes={sizes} priority={priority} loading={lightbox ? 'eager' : undefined} className={className} {...events}/>)}
     {lightbox && !loaded && !failed && <span className={styles.loading} role="status">Loading photograph…</span>}
-    {failed && <span className={styles.imageError} role="status">This photograph couldn’t load.{lightbox ? <button type="button" onClick={()=>{setAttempt(value=>value+1);setFailed(false);setLoaded(false);}}>Try again</button> : <span>Open the viewer to retry.</span>}</span>}
+    {failed && <span className={styles.imageError} role="status">This photograph couldn’t load.{lightbox ? <button type="button" onClick={event=>{event.currentTarget.closest('dialog')?.querySelector<HTMLButtonElement>('button')?.focus();setAttempt(value=>value+1);setFailed(false);setLoaded(false);}}>Try again</button> : <span>Open the viewer to retry.</span>}</span>}
   </>;
 }

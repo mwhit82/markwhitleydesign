@@ -40,7 +40,7 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
   const { slug } = await params;
   const study=portfolioStudies.find(p=>p.slug===slug);
   if(study)return <article className={styles.study}>
-    <nav className={styles.studyNav}><Link href="/#portfolio"><Icon icon={ArrowLeft01Icon} className={styles.inlineArrow}/> All projects</Link><span>Mark Whitley</span></nav>
+    <nav className={styles.studyNav}><Link href="/?view=design"><Icon icon={ArrowLeft01Icon} className={styles.inlineArrow}/> All projects</Link><span>Mark Whitley</span></nav>
     <header className={styles.studyHero}><p className={styles.kicker}>{study.category}</p><h1>{study.title}</h1><p>{study.description}</p></header>
     {study.focus && <section className={styles.studyFocus}><h2>Focus</h2><p>{study.focus}</p></section>}
     {study.conceptual && <div className={styles.screenshotPlaceholder}><span>01 / Future project imagery</span><p>Screenshots and process artefacts will be added here.</p></div>}
@@ -53,8 +53,8 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
   }
 
   return (
-    <article className="space-y-10 pb-24 pt-8 md:pt-14">
-      <div className="grid gap-8 rounded-[2rem] border border-[color:var(--border)] bg-[color:var(--surface)] px-6 py-8 shadow-[var(--shadow)] md:grid-cols-[1.2fr_0.8fr] md:px-10">
+    <article className={`${styles.study} space-y-10`}>
+      <div className="grid gap-8 rounded-xl border border-[color:var(--border)] bg-[color:var(--surface)] px-6 py-8 shadow-[var(--shadow)] md:grid-cols-[1.2fr_0.8fr] md:px-10">
         <div className="space-y-5">
           <p className="text-sm uppercase tracking-[0.2em] text-[color:var(--accent)]">
             Case Study
@@ -67,7 +67,7 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
           </p>
           <BadgeList items={project.tags} />
         </div>
-        <div className="grid gap-4 rounded-[1.5rem] border border-[color:var(--border)] bg-[color:var(--surface-strong)] p-5">
+        <div className="grid gap-4 rounded-xl border border-[color:var(--border)] bg-[color:var(--surface-strong)] p-5">
           <Metric label="Role" value={project.role} />
           <Metric label="Focus" value={project.focus} />
           <Metric label="Impact" value={project.impact} />
@@ -86,10 +86,10 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
       </section>
 
       <div className="flex flex-col gap-3 sm:flex-row">
-        <ButtonLink href="/work" variant="secondary">
+        <ButtonLink href="/?view=design" variant="secondary">
           Back to Work
         </ButtonLink>
-        <ButtonLink href="/contact">Start a Conversation</ButtonLink>
+        <ButtonLink href="/?profile=open">Start a Conversation</ButtonLink>
       </div>
     </article>
   );
@@ -97,7 +97,7 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
 
 function Metric({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-2xl border border-[color:var(--border)] bg-[color:var(--surface)] p-4">
+    <div className="rounded-lg border border-[color:var(--border)] bg-[color:var(--surface)] p-4">
       <p className="text-xs uppercase tracking-[0.18em] text-[color:var(--muted)]">{label}</p>
       <p className="mt-2 text-sm font-medium leading-6">{value}</p>
     </div>
@@ -115,7 +115,7 @@ function CaseStudyBlock({
 }) {
   return (
     <section
-      className={`rounded-[1.75rem] border border-[color:var(--border)] bg-[color:var(--surface)] p-6 shadow-[var(--shadow)] ${className}`}
+      className={`rounded-xl border border-[color:var(--border)] bg-[color:var(--surface)] p-6 shadow-[var(--shadow)] ${className}`}
     >
       <h2 className="text-xl font-semibold tracking-[-0.03em]">{title}</h2>
       <p className="mt-4 text-sm leading-7 text-[color:var(--muted)]">{copy}</p>

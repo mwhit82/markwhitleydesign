@@ -1,19 +1,8 @@
-import Link from "next/link";
-import Image from "next/image";
-import { ArrowUpRight01Icon } from "@hugeicons/core-free-icons";
-import { Icon } from "@/components/icon";
-import type { PortfolioTile as Tile } from "@/data/portfolio";
-import styles from "@/app/portfolio.module.css";
-
-export function PortfolioTile({project, index = 0}: {project: Tile; index?: number}) {
-  const content = <>
-    {project.tone === 'sale' ? <div className={styles.systemArt}><Image src="/portfolio/salecycle-logo.svg" alt="SaleCycle" width={360} height={45} className={styles.saleLogo}/><div className={styles.systemModules} aria-hidden="true"><span>Aa</span><span><i/><i/><i/></span><span><Icon icon={ArrowUpRight01Icon}/></span></div><span className={styles.artCaption}>A shared design language.</span></div> :
-    <div className={`${styles.productArt} ${styles[`${project.tone}Art`] || ''}`}>
-      {project.image && <Image src={project.image} alt={project.alt || project.title} fill sizes="(max-width: 700px) 100vw, (max-width: 1440px) 50vw, 650px"/>}
-      {project.conceptual && <span className={styles.conceptLabel}>Concept illustration</span>}
-    </div>}
-    <div className={styles.cardFooter}><div><small>{String(index + 1).padStart(2,'0')} / {project.category}</small><h3>{project.title}</h3>{project.conceptual && <p>{project.description}</p>}</div><Icon icon={ArrowUpRight01Icon} className={styles.inlineArrow}/></div>
-  </>;
-  const className = `${styles.card} ${styles[project.tone] || ''}`;
-  return project.external ? <a href={project.href} target="_blank" rel="noopener noreferrer" className={className}>{content}</a> : <Link href={project.href} className={className}>{content}</Link>;
+import Link from 'next/link';
+import Image from 'next/image';
+import type {PortfolioTile as Tile} from '@/data/portfolio';
+import styles from '@/app/portfolio.module.css';
+export function PortfolioTile({project}:{project:Tile;index?:number}){
+ const content=<><div className={styles.productArt}>{project.tone==='sale'?<Image src="/portfolio/salecycle-logo.svg" alt="SaleCycle" fill className={styles.saleLogo} sizes="(max-width:639px) 100vw, 25vw"/>:project.image?<Image src={project.image} alt={project.alt||project.title} fill sizes="(max-width:639px) 100vw, (max-width:1023px) 50vw, (max-width:1279px) 33vw, 25vw"/>:<div className={styles.fallbackArt} aria-hidden="true"><svg viewBox="0 0 120 90" fill="none" stroke="currentColor"><rect x="10" y="12" width="100" height="66" rx="6"/><path d="M10 28h100M35 28v50M45 40h48M45 50h24M45 60h36"/><circle cx="20" cy="20" r="2"/></svg></div>}{project.conceptual&&<span className={styles.conceptLabel}>Concept illustration</span>}</div><div className={styles.cardFooter}><div><h3>{project.title}</h3><p>{project.description}</p></div><span aria-hidden="true">↗</span></div></>;
+ return project.external?<a className={styles.card} data-build-card href={project.href} target="_blank" rel="noopener noreferrer">{content}</a>:<Link className={styles.card} data-build-card href={project.href}>{content}</Link>;
 }
