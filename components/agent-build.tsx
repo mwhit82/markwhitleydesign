@@ -41,8 +41,10 @@ export function AgentBuild({view,container}:{view:string;container:RefObject<HTM
     const stop=()=>{animations.forEach(animation=>animation.cancel());svg.replaceChildren();};
     const modal=new MutationObserver(()=>{if(document.querySelector('dialog[open]'))stop();});
     modal.observe(document.body,{subtree:true,childList:true,attributes:true,attributeFilter:['open']});
-    window.addEventListener('scroll',stop,{passive:true,once:true});window.addEventListener('resize',stop,{once:true});document.addEventListener('visibilitychange',stop);reduced.addEventListener('change',stop);
-    return()=>{stop();modal.disconnect();window.removeEventListener('scroll',stop);window.removeEventListener('resize',stop);document.removeEventListener('visibilitychange',stop);reduced.removeEventListener('change',stop);};
+    const initialScroll=scrollY;
+    const onScroll=()=>{if(scrollY!==initialScroll)stop();};
+    window.addEventListener('scroll',onScroll,{passive:true});window.addEventListener('resize',stop,{once:true});document.addEventListener('visibilitychange',stop);reduced.addEventListener('change',stop);
+    return()=>{stop();modal.disconnect();window.removeEventListener('scroll',onScroll);window.removeEventListener('resize',stop);document.removeEventListener('visibilitychange',stop);reduced.removeEventListener('change',stop);};
   },[view,container]);
   return <div ref={layer} className="agentBuild" aria-hidden="true"><svg ref={drawing} className="agentDrawing"/>{crew.map((agent,index)=><div className={`agentCursor crew${index}`} key={agent.name}><svg width="23" height="27" viewBox="0 0 23 27" fill="currentColor"><path d="M2 2v20l6-6 5 9 4-2-5-9 9-1Z" stroke="var(--background)" strokeWidth="2"/></svg><span><strong>{agent.name}</strong><small>AI · {agent.task}</small></span></div>)}</div>;
 }
