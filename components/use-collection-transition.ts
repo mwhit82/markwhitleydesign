@@ -25,7 +25,9 @@ export function useCollectionTransition(requested:CollectionView) {
     if(!valid())return;
     animations.forEach(a=>a.cancel());animations.length=0;
     if(!reduced.matches){
-     const entry=node.animate([{opacity:0,transform:'translateY(8px)'},{opacity:1,transform:'translateY(0)'}],{duration:240,easing:'cubic-bezier(.2,.7,.2,1)',fill:'both'});
+     if(requested==='photography')setReady(true);
+     const incoming=requested==='photography'?(node.querySelector('header')||node):node;
+     const entry=incoming.animate([{opacity:0,transform:'translateY(8px)'},{opacity:1,transform:'translateY(0)'}],{duration:240,easing:'cubic-bezier(.2,.7,.2,1)',fill:'both'});
      animations.push(entry,shell.animate([{height:`${height}px`},{height:`${node.getBoundingClientRect().height}px`}],{duration:240,easing:'cubic-bezier(.2,.7,.2,1)',fill:'both'}));
      await entry.finished;
     }

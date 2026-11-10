@@ -139,33 +139,7 @@ The web image files themselves still contain no EXIF metadata.
 Focal length is the actual EXIF lens focal length at capture, not a calculated
 35 mm equivalent. Missing focal lengths are omitted.
 
-## Optional three-photo depth pilot
+## Gallery presentation
 
-The gallery adds gentle framed parallax. Three photos also use locally estimated
-depth: Skyline at dusk, Through the pines and Across the valley. The lightbox stays
-static and uncropped. Photo motion can be switched off; reduced motion overrides it.
-Supported phones offer Enable tilt, which requests orientation permission only
-after tapping. Sensor readings never leave the browser and are not stored.
-
-The model is Depth Anything V2 Small (Apache 2.0), pinned to revision
-`5426e4f0f36572d16453bbda7a8389317b1bef99`. Source and licence:
-https://huggingface.co/depth-anything/Depth-Anything-V2-Small-hf
-
-To regenerate after replacing one of those photos, use an isolated Python 3.11
-environment outside the project (or the ignored `.photo-depth-env/` directory):
-
-```sh
-python3.11 -m venv /tmp/mw-depth-env
-/tmp/mw-depth-env/bin/pip install -r scripts/photo-depth-requirements.txt
-HF_HOME=/tmp/mw-depth-model /tmp/mw-depth-env/bin/python scripts/prepare-photo-depth.py
-node scripts/check-photo-depth.mjs
-```
-
-The first run downloads model weights; inference uses local processed WebP exports.
-Only the three PNG depth maps and `data/photography-depth.json` are published.
-The manifest records source variants, dimensions, strength and model provenance.
-Image-content filenames prevent stale depth caches. Review the strongest tilt and
-scroll positions for stretching or halos before publishing; use lower strength or
-ordinary parallax when depth is distracting (set its manifest strength to zero). Never infer or generate hidden scenery.
-No Python/model files are needed by Vercel. Normal photo imports remain unchanged;
-replacing a pilot export requires regenerating its depth map.
+Moments shows uncropped photographs with white mounts and a one-time soft entrance.
+No tilt, sensor permission, parallax or depth maps are used. The lightbox is static.

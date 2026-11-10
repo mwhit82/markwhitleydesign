@@ -19,6 +19,9 @@ for (const [path, destination] of Object.entries({
 console.log('✓ Legacy listing and contact routes redirect to the shared homepage');
 const design = await page('/');
 assert.match(design, /Selected design/);
+assert.match(design, /Moments<\/a>/);
+assert.match(design, /aria-haspopup="menu"/);
+assert.doesNotMatch(design, /<select/);
 assert.doesNotMatch(design, /Illustrative wireframe|Concept illustration/);
 assert.equal((design.match(/class="interfaceMockup"/g) || []).length, 12, 'Every Design card has reference-style artwork');
 assert.match(design, /<a[^>]*href="\/\?view=design"[^>]*>Mark Whitley<\/a>/, 'Name returns to Design');
@@ -30,6 +33,9 @@ for (const path of projectLinks) {
   assert.match(html, /<h1/, path);
 }
 console.log('✓ All 12 design cards and 11 internal project routes remain available');
+const moments = await page('/?view=photography');
+assert.match(moments, /aria-current="page"[^>]*>Moments<\/a>/);
+assert.doesNotMatch(moments, /Enable tilt|Photo motion|photoDepthCanvas/);
 const games = await page('/?view=games');
 assert.match(games, /<title>Games \| Mark Whitley<\/title>/);
 assert.equal((games.match(/data-build-card=/g) || []).length, 5);
@@ -41,7 +47,7 @@ for (const path of [...new Set([...games.matchAll(/href="(\/playground\/[^"?]+)"
 console.log('✓ Game destinations, full-screen shells and Pocket Racers fallback work');
 const photos = await page('/?view=photography');
 const manifest = JSON.parse(await readFile(new URL('../data/photography-generated.json', import.meta.url)));
-assert.equal((photos.match(/data-build-card=/g) || []).length, Math.min(24, manifest.photos.length));
+assert.equal((photos.match(/aria-label="View photograph /g) || []).length, Math.min(24, manifest.photos.length));
 assert.match(photos, /<title>Photography \| Mark Whitley<\/title>/);
 assert.match(photos, /property="og:image"/);
 assert.match(photos, /rel="canonical" href="https:\/\/markwhitley.design\/\?view=photography"/);
