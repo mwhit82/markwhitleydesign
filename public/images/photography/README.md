@@ -54,11 +54,14 @@ text. No scene descriptions, locations or authorship are inferred from filenames
 
 The catalogue's top-level `featuredIds` array must contain exactly six unique IDs.
 Use the display ID: `replacesId` when replacing a placeholder, otherwise `id`.
-Every selection must exist in the resulting published collection.
+Every selection must exist in the resulting published collection. These selections
+are retained for curation; the current homepage Photography filter displays the
+full collection, in batches of 24.
 
 The numeric `order` field controls gallery order. Equal values use the ID as a
-stable tie-breaker. The first image is the cinematic hero. Choose a landscape for
-that slot; the hero is cropped, but the viewer shows the complete photograph.
+stable tie-breaker. Photographs retain their natural proportions throughout the
+grid and viewer. The first photograph loads with priority. The gallery lives at
+`/?view=photography`; old `/photography` links redirect there.
 
 Initially `includePlaceholders` is true. Set it to false when you have at least
 six published originals and update `featuredIds` to select six of them. Placeholder
@@ -124,7 +127,7 @@ Set the official Meta listing URL in `metaStoreUrl` in `data/games.ts` when read
 
 Preparation reads focal length in millimetres, aperture (f-stop), shutter speed and ISO from the original's
 EXIF data and adds only these four values to the published manifest. Labels show
-these settings below the title on homepage prints, in the gallery and in the
+these settings below the title in the homepage gallery and in the
 viewer—for example `35 mm · f/2.8 · 1/125 s · ISO 800`.
 
 Settings missing from an export are simply omitted; nothing is guessed. Export
