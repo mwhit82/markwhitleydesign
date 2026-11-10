@@ -15,7 +15,7 @@
     "test:coop": "node scripts/test-anomalous-multiplayer.mjs",
     "photos:prepare": "node scripts/prepare-photography.mjs",
     "test:photography": "node --test scripts/test-photography.mjs",
-    "photos:check": "node scripts/check-photography.mjs"
+    "photos:check": "node scripts/check-photography.mjs && node scripts/check-photo-depth.mjs"
   },
   "dependencies": {
     "@hugeicons/core-free-icons": "^4.1.1",

@@ -13,3 +13,7 @@ coverage
 # Private photo masters, drafts, contact sheet and processing cache
 /photography-originals/
 /.photography-work/
+
+# Optional local depth processing environment/model cache
+/.photo-depth-env/
+/.photo-depth-cache/

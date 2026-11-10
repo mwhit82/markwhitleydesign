@@ -1,0 +1,5 @@
+# Optional local tooling only; never installed by Vercel or included in the app.
+torch==2.6.0
+transformers==4.51.3
+Pillow==11.3.0
+numpy==2.4.6

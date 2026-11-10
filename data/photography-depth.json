@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "model": "depth-anything/Depth-Anything-V2-Small-hf",
+  "revision": "5426e4f0f36572d16453bbda7a8389317b1bef99",
+  "license": "Apache-2.0",
+  "photos": [
+    {
+      "id": "nyc-may-day-3-96",
+      "src": "/images/photography/depth/nyc-may-day-3-96-815cac296acd51bd.png",
+      "imageSrc": "/images/photography/generated/1a53afcb897b707c46742961/1600.webp",
+      "width": 1024,
+      "height": 682,
+      "bytes": 52949,
+      "strength": 0.014
+    },
+    {
+      "id": "hamsterley-autumn-fox-4",
+      "src": "/images/photography/depth/hamsterley-autumn-fox-4-15b60df93c8e65ff.png",
+      "imageSrc": "/images/photography/generated/ecd42e26b634ef3e11763474/1600.webp",
+      "width": 1024,
+      "height": 682,
+      "bytes": 106016,
+      "strength": 0.014
+    },
+    {
+      "id": "peak-district-dxr-uk-28",
+      "src": "/images/photography/depth/peak-district-dxr-uk-28-cfce1f0773eaf0eb.png",
+      "imageSrc": "/images/photography/generated/44a5af603b9a2803c17d7f7f/1600.webp",
+      "width": 1024,
+      "height": 683,
+      "bytes": 52585,
+      "strength": 0.014
+    }
+  ]
+}
