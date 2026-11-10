@@ -21,7 +21,8 @@
       "cameraSettings": {
         "aperture": 2,
         "shutterSeconds": 0.003125,
-        "iso": 2000
+        "iso": 2000,
+        "focalLengthMm": 90
       },
       "width": 3840,
       "height": 2560,
@@ -110,7 +111,8 @@
       "cameraSettings": {
         "aperture": 2,
         "shutterSeconds": 0.003125,
-        "iso": 640
+        "iso": 640,
+        "focalLengthMm": 90
       },
       "width": 2560,
       "height": 3840,
@@ -199,7 +201,8 @@
       "cameraSettings": {
         "aperture": 2,
         "shutterSeconds": 0.0016666666666666668,
-        "iso": 320
+        "iso": 320,
+        "focalLengthMm": 35
       },
       "width": 3840,
       "height": 2560,
@@ -288,7 +291,8 @@
       "cameraSettings": {
         "aperture": 1.4,
         "shutterSeconds": 0.008333333333333333,
-        "iso": 6400
+        "iso": 6400,
+        "focalLengthMm": 16
       },
       "width": 3840,
       "height": 2560,
@@ -377,7 +381,8 @@
       "cameraSettings": {
         "aperture": 2,
         "shutterSeconds": 0.00022727272727272727,
-        "iso": 160
+        "iso": 160,
+        "focalLengthMm": 35
       },
       "width": 3840,
       "height": 2560,
@@ -466,7 +471,8 @@
       "cameraSettings": {
         "aperture": 5,
         "shutterSeconds": 5,
-        "iso": 400
+        "iso": 400,
+        "focalLengthMm": 16
       },
       "width": 3840,
       "height": 2560,
@@ -555,7 +561,8 @@
       "cameraSettings": {
         "aperture": 2,
         "shutterSeconds": 0.003125,
-        "iso": 2500
+        "iso": 2500,
+        "focalLengthMm": 35
       },
       "width": 3840,
       "height": 2560,
@@ -644,7 +651,8 @@
       "cameraSettings": {
         "aperture": 2,
         "shutterSeconds": 0.003125,
-        "iso": 2500
+        "iso": 2500,
+        "focalLengthMm": 35
       },
       "width": 3840,
       "height": 2560,
@@ -733,7 +741,8 @@
       "cameraSettings": {
         "aperture": 2,
         "shutterSeconds": 0.006666666666666667,
-        "iso": 6400
+        "iso": 6400,
+        "focalLengthMm": 35
       },
       "width": 3840,
       "height": 2560,
@@ -822,7 +831,8 @@
       "cameraSettings": {
         "aperture": 2,
         "shutterSeconds": 0.003125,
-        "iso": 640
+        "iso": 640,
+        "focalLengthMm": 35
       },
       "width": 2559,
       "height": 3839,
@@ -911,7 +921,8 @@
       "cameraSettings": {
         "aperture": 2,
         "shutterSeconds": 0.003125,
-        "iso": 800
+        "iso": 800,
+        "focalLengthMm": 35
       },
       "width": 3840,
       "height": 2560,
@@ -1000,7 +1011,8 @@
       "cameraSettings": {
         "aperture": 2,
         "shutterSeconds": 0.0002127659574468085,
-        "iso": 160
+        "iso": 160,
+        "focalLengthMm": 35
       },
       "width": 2560,
       "height": 3840,
@@ -1089,7 +1101,8 @@
       "cameraSettings": {
         "aperture": 2,
         "shutterSeconds": 0.000125,
-        "iso": 160
+        "iso": 160,
+        "focalLengthMm": 35
       },
       "width": 3840,
       "height": 2560,
@@ -1178,7 +1191,8 @@
       "cameraSettings": {
         "aperture": 2,
         "shutterSeconds": 0.000125,
-        "iso": 160
+        "iso": 160,
+        "focalLengthMm": 35
       },
       "width": 3840,
       "height": 2560,
@@ -1267,7 +1281,8 @@
       "cameraSettings": {
         "aperture": 2,
         "shutterSeconds": 0.00037037037037037035,
-        "iso": 320
+        "iso": 320,
+        "focalLengthMm": 35
       },
       "width": 3840,
       "height": 2560,
@@ -1356,7 +1371,8 @@
       "cameraSettings": {
         "aperture": 2,
         "shutterSeconds": 0.0016666666666666668,
-        "iso": 160
+        "iso": 160,
+        "focalLengthMm": 35
       },
       "width": 2560,
       "height": 3840,
@@ -1445,7 +1461,8 @@
       "cameraSettings": {
         "aperture": 2,
         "shutterSeconds": 0.0002127659574468085,
-        "iso": 320
+        "iso": 320,
+        "focalLengthMm": 35
       },
       "width": 3840,
       "height": 2560,
@@ -1534,7 +1551,8 @@
       "cameraSettings": {
         "aperture": 2,
         "shutterSeconds": 0.0003125,
-        "iso": 320
+        "iso": 320,
+        "focalLengthMm": 35
       },
       "width": 2560,
       "height": 3840,
@@ -1623,7 +1641,8 @@
       "cameraSettings": {
         "aperture": 2,
         "shutterSeconds": 0.00022727272727272727,
-        "iso": 160
+        "iso": 160,
+        "focalLengthMm": 35
       },
       "width": 2560,
       "height": 3840,
@@ -1712,7 +1731,8 @@
       "cameraSettings": {
         "aperture": 2,
         "shutterSeconds": 0.000125,
-        "iso": 160
+        "iso": 160,
+        "focalLengthMm": 35
       },
       "width": 3766,
       "height": 2511,
@@ -1801,7 +1821,8 @@
       "cameraSettings": {
         "aperture": 2,
         "shutterSeconds": 0.00015625,
-        "iso": 160
+        "iso": 160,
+        "focalLengthMm": 35
       },
       "width": 3840,
       "height": 2560,
@@ -1890,7 +1911,8 @@
       "cameraSettings": {
         "aperture": 2,
         "shutterSeconds": 0.0002631578947368421,
-        "iso": 320
+        "iso": 320,
+        "focalLengthMm": 35
       },
       "width": 3840,
       "height": 2560,

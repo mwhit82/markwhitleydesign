@@ -4,11 +4,12 @@ import styles from "./photography.module.css";
 export function CameraSettings({ photo }: { photo: Photograph }) {
   const settings = photo.cameraSettings;
   if (!settings) return null;
-  const { aperture, shutterSeconds, iso } = settings;
+  const { aperture, shutterSeconds, iso, focalLengthMm } = settings;
   const shutter = shutterSeconds === undefined ? undefined : shutterSeconds < 1
     ? `1/${Number((1 / shutterSeconds).toPrecision(4))} s`
     : `${Number(shutterSeconds.toPrecision(4))} s`;
   const fields = [
+    focalLengthMm !== undefined ? { label: "Focal length", value: `${Number(focalLengthMm.toFixed(2))} mm` } : null,
     aperture !== undefined ? { label: "Aperture", value: `f/${Number(aperture.toPrecision(3))}` } : null,
     shutter ? { label: "Shutter speed", value: shutter } : null,
     iso !== undefined ? { label: "ISO", value: `ISO ${iso}` } : null,

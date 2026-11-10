@@ -14,7 +14,7 @@ export async function checkPhotography(root=process.cwd()) {
     if(photo.cameraSettings !== undefined) {
       const settings=photo.cameraSettings;
       if(!settings || typeof settings!=='object' || Array.isArray(settings))throw new Error(`Invalid camera settings: ${photo.id}`);
-      const limits={aperture:128,shutterSeconds:86400,iso:65534};
+      const limits={aperture:128,shutterSeconds:86400,iso:65534,focalLengthMm:10000};
       for(const [key,value] of Object.entries(settings)) {
         if(!(key in limits) || !Number.isFinite(value) || value<=0 || value>limits[key] || (key==='iso' && !Number.isInteger(value)))throw new Error(`Unexpected camera setting ${key}: ${photo.id}`);
       }

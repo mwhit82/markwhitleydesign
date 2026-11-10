@@ -122,13 +122,16 @@ Set the official Meta listing URL in `metaStoreUrl` in `data/games.ts` when read
 
 ## Camera settings in captions
 
-Preparation reads aperture (f-stop), shutter speed and ISO from the original's
-EXIF data and adds only these three values to the published manifest. Labels show
+Preparation reads focal length in millimetres, aperture (f-stop), shutter speed and ISO from the original's
+EXIF data and adds only these four values to the published manifest. Labels show
 these settings below the title on homepage prints, in the gallery and in the
-viewer—for example `f/2.8 · 1/125 s · ISO 800`.
+viewer—for example `35 mm · f/2.8 · 1/125 s · ISO 800`.
 
 Settings missing from an export are simply omitted; nothing is guessed. Export
 with exposure metadata retained if you want these labels. Run preparation again
 to update captions for existing photos; unchanged web images are not re-encoded.
 GPS, camera serial numbers, owner details and other EXIF fields are not published.
 The web image files themselves still contain no EXIF metadata.
+
+Focal length is the actual EXIF lens focal length at capture, not a calculated
+35 mm equivalent. Missing focal lengths are omitted.

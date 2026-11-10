@@ -115,24 +115,25 @@ test('deployment checks require complete generated files without needing origina
 });
 
 function exposureExif(endian='II') {
-  const tiff=Buffer.alloc(84);tiff.write(endian);
+  const tiff=Buffer.alloc(104);tiff.write(endian);
   const short=(value,offset)=>endian==='II'?tiff.writeUInt16LE(value,offset):tiff.writeUInt16BE(value,offset);
   const long=(value,offset)=>endian==='II'?tiff.writeUInt32LE(value,offset):tiff.writeUInt32BE(value,offset);
   short(42,2);long(8,4);short(1,8);short(0x8769,10);short(4,12);long(1,14);long(26,18);
-  short(3,26);
-  for(const [index,tag,type,value] of [[0,0x829a,5,68],[1,0x829d,5,76],[2,0x8827,3,800]]) {
+  short(4,26);
+  for(const [index,tag,type,value] of [[0,0x829a,5,80],[1,0x829d,5,88],[2,0x8827,3,800],[3,0x920a,5,96]]) {
     const offset=28+index*12;short(tag,offset);short(type,offset+2);long(1,offset+4);
     if(type===3)short(value,offset+8);else long(value,offset+8);
   }
-  long(1,68);long(125,72);long(28,76);long(10,80);
+  long(1,80);long(125,84);long(28,88);long(10,92);long(235,96);long(10,100);
   return Buffer.concat([Buffer.from('Exif\0\0'),tiff]);
 }
 
 test('reads only exposure settings with either EXIF byte order and ignores malformed metadata',async()=>{
   const {cameraSettingsFromExif}=await import('./photo-camera-settings.mjs');
-  for(const endian of ['II','MM'])assert.deepEqual(cameraSettingsFromExif(exposureExif(endian)),{aperture:2.8,shutterSeconds:0.008,iso:800});
+  for(const endian of ['II','MM'])assert.deepEqual(cameraSettingsFromExif(exposureExif(endian)),{aperture:2.8,shutterSeconds:0.008,iso:800,focalLengthMm:23.5});
   for(const data of [undefined,Buffer.from('invalid'),exposureExif().subarray(0,30)])assert.equal(cameraSettingsFromExif(data),undefined);
-  const zero=exposureExif();zero.writeUInt32LE(0,78);assert.equal(cameraSettingsFromExif(zero).shutterSeconds,undefined);
+  const missing=exposureExif();missing.writeUInt16LE(0x920b,70);assert.equal(cameraSettingsFromExif(missing).focalLengthMm,undefined);
+  const zero=exposureExif();zero.writeUInt32LE(0,90);assert.equal(cameraSettingsFromExif(zero).shutterSeconds,undefined);
 });
 
 test('publishes exposure labels from originals even on cached imports while keeping output EXIF stripped',async t=>{
@@ -143,7 +144,7 @@ test('publishes exposure labels from originals even on cached imports while keep
   const original=await fs.readFile(file);await preparePhotography({root});await publish(root);
   const result=await preparePhotography({root});assert.deepEqual(result.unchanged,['coast']);
   const p=(await read(root,'data/photography-generated.json')).photos[0];
-  assert.deepEqual(p.cameraSettings,{aperture:2.8,shutterSeconds:0.008,iso:800});
+  assert.deepEqual(p.cameraSettings,{aperture:2.8,shutterSeconds:0.008,iso:800,focalLengthMm:23.5});
   for(const v of p.variants)assert.equal((await sharp(path.join(root,'public',v.src)).metadata()).exif,undefined);
   assert.deepEqual(await fs.readFile(file),original);
 });
@@ -151,7 +152,7 @@ test('publishes exposure labels from originals even on cached imports while keep
 test('deployment check rejects non-exposure metadata and invalid camera settings',async t=>{
   const root=await fixture(t);await photo(root);await preparePhotography({root});await publish(root);
   const manifest=await read(root,'data/photography-generated.json');
-  for(const cameraSettings of [{gps:'private'},{aperture:-2},{shutterSeconds:0},{iso:12.5}]) {
+  for(const cameraSettings of [{gps:'private'},{aperture:-2},{shutterSeconds:0},{iso:12.5},{focalLengthMm:0},{focalLengthMm:10001}]) {
     manifest.photos[0].cameraSettings=cameraSettings;
     await fs.writeFile(path.join(root,'data/photography-generated.json'),JSON.stringify(manifest));
     await assert.rejects(checkPhotography(root),/Unexpected camera setting/);

@@ -1,4 +1,4 @@
-// Read only the three exposure fields we publish. Never copy arbitrary EXIF tags.
+// Read only the camera settings we publish. Never copy arbitrary EXIF tags.
 export function cameraSettingsFromExif(exif) {
   if (!Buffer.isBuffer(exif)) return undefined;
   const start = exif.subarray(0, 6).equals(Buffer.from('Exif\0\0')) ? 6 : 0;
@@ -35,9 +35,11 @@ export function cameraSettingsFromExif(exif) {
     const aperture = value(0x829d, [5]);
     const shutterSeconds = value(0x829a, [5]);
     const iso = value(0x8827, [3, 4]);
+    const focalLengthMm = value(0x920a, [5]);
     if (Number.isFinite(aperture) && aperture > 0 && aperture <= 128) settings.aperture = aperture;
     if (Number.isFinite(shutterSeconds) && shutterSeconds > 0 && shutterSeconds <= 86400) settings.shutterSeconds = shutterSeconds;
     if (Number.isInteger(iso) && iso > 0 && iso < 65535) settings.iso = iso;
+    if (Number.isFinite(focalLengthMm) && focalLengthMm > 0 && focalLengthMm <= 10000) settings.focalLengthMm = focalLengthMm;
     return Object.keys(settings).length ? settings : undefined;
   } catch {
     // Missing or malformed optional metadata must not prevent photo publication.

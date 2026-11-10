@@ -88,3 +88,5 @@
 .cameraSettings { display: block; margin-top: 0.45rem; font-family: ui-monospace, monospace; font-size: 0.7rem; line-height: 1.6; font-weight: 400; letter-spacing: 0.02em; opacity: 0.8; }
 
 .heroFigure figcaption > .cameraSettings, .galleryFigure figcaption > .cameraSettings { flex-basis: 100%; margin-top: 0; }
+
+.cameraSettings > span { white-space: nowrap; }
