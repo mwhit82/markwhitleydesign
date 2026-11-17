@@ -76,3 +76,8 @@ interpretation, not an endorsement. This file defines our site-specific rules.
 - Moments retains photography URLs. No agent cursors, photo motion controls, sensor access or depth rendering.
 - White mounts are 14px desktop and 10px mobile, square and unchanged by theme. Captions remain outside; the lightbox stays unframed.
 - Photos reveal once after the collection transition: 420ms fade and 6px rise, staggered 45ms up to 225ms. Reduced motion and unavailable animation show static content.
+
+## Design introduction
+- Design alone opens with an editorial name heading (44–112px) and 23–34px personal statement; collection headings retain their existing scale.
+- Original portrait remains unedited. Separate clay, ink and pixel illustrations share circular geometry; portrait opens the résumé and separate accessible buttons select styles.
+- Intro entrance is 240ms; the portrait plays one sequence under five seconds, then rests. Manual selection cancels playback. Disable decorative motion for reduced motion, hidden tabs, offscreen content and dialogs.

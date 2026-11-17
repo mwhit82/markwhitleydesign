@@ -19,6 +19,15 @@ for (const [path, destination] of Object.entries({
 console.log('✓ Legacy listing and contact routes redirect to the shared homepage');
 const design = await page('/');
 assert.match(design, /Selected design/);
+assert.match(design, /Still making things that make people smile/);
+assert.equal((design.match(/<h1[ >]/g) || []).length, 1, 'Design has one primary heading');
+assert.match(design, /id="selected-design"/);
+for (const style of ['clay', 'ink', 'pixel']) {
+  const asset = await fetch(new URL(`/portfolio/avatars/mark-${style}.webp`, base));
+  assert.equal(asset.status, 200);
+  assert.match(asset.headers.get('content-type'), /image\/webp/);
+}
+
 assert.match(design, /Moments<\/a>/);
 assert.match(design, /aria-haspopup="menu"/);
 assert.doesNotMatch(design, /<select/);
@@ -36,7 +45,9 @@ console.log('✓ All 12 design cards and 11 internal project routes remain avail
 const moments = await page('/?view=photography');
 assert.match(moments, /aria-current="page"[^>]*>Moments<\/a>/);
 assert.doesNotMatch(moments, /Enable tilt|Photo motion|photoDepthCanvas/);
+assert.doesNotMatch(moments, /Still making things that make people smile/);
 const games = await page('/?view=games');
+assert.doesNotMatch(games, /Still making things that make people smile/);
 assert.match(games, /<title>Games \| Mark Whitley<\/title>/);
 assert.equal((games.match(/data-build-card=/g) || []).length, 5);
 for (const path of [...new Set([...games.matchAll(/href="(\/playground\/[^"?]+)"/g)].map(match => match[1]))]) {
