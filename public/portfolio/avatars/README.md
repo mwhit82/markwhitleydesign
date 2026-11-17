@@ -9,3 +9,7 @@ Clay: Create a square portrait avatar derived from the provided photo of Mark fo
 Ink: Square personal website avatar: redraw the provided Mark Whitley portrait as sophisticated graphic ink illustration, bold expressive ink contours and flat restrained natural colour fills, subtle paper texture. Preserve his identity, upright swept brown hair, full ginger beard, blue grey eyes, friendly smiling expression and black crewneck shirt. Frontal head and shoulders, hair fully in frame, face centred horizontally and at 47% vertical, neutral pale grey background. No words, no border.
 
 Pixel: Create square retro pixel art personal website avatar of Mark in the reference photo, authentic 32-bit adventure game character portrait, deliberate crisp square pixel clusters, stepped edges and limited natural palette. Recognisably same man: upright swept brown hair, full ginger beard, blue grey eyes, friendly smile and black crewneck shirt. Frontal head and shoulders composition, full hair inside frame, face centred at 50% horizontal and 47% vertical. Neutral pale grey background. No text, borders, props or other people.
+
+## 3D banner
+
+`mark-clay.glb` is the optimized Tripo/Blender derivative of the clay study. Editable source, provenance and rebuild instructions are in `art/portrait/README.md`. This replaces the banner style carousel; the original portrait is retained as a static fallback.
