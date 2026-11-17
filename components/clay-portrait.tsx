@@ -1,43 +1,71 @@
 "use client";
 
-import {useEffect, useRef, useState} from 'react';
+import {useEffect, useRef} from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import styles from './design-intro.module.css';
 
 export function ClayPortrait({ready}: {ready: boolean}) {
   const root = useRef<HTMLAnchorElement>(null);
+  const image = useRef<HTMLImageElement>(null);
   const canvas = useRef<HTMLCanvasElement>(null);
-  const [rendered, setRendered] = useState(false);
+
   useEffect(() => {
-    if (!ready || !root.current || !canvas.current) return;
-    const motion = matchMedia('(prefers-reduced-motion: reduce)');
-    const element = root.current, surface = canvas.current;
+    const host = root.current;
+    const artwork = image.current;
+    const surface = canvas.current;
+    if (!ready || !host || !artwork || !surface) return;
+
+    const reduced = matchMedia('(prefers-reduced-motion: reduce)');
+    let visible = false;
+    let cancelled = false;
+    let loading = false;
     let dispose: (() => void) | undefined;
-    let generation = 0, alive = true, visible = false, loading = false;
-    const load = async () => {
-      if (!alive || motion.matches || !visible || dispose || loading) return;
-      const token = ++generation;
+
+    async function enhance() {
+      if (!host || !artwork || !surface || cancelled || loading || dispose || !visible || reduced.matches) return;
       loading = true;
       try {
-        const {mountPortrait} = await import('@/lib/portrait/scene');
-        if (!alive || token !== generation || motion.matches) return;
-        const cleanup = await mountPortrait(surface, element, () => {if (alive && token === generation) setRendered(true);}, () => {if (alive) setRendered(false);});
-        if (!alive || token !== generation || motion.matches) cleanup(); else dispose = cleanup;
-      } catch { if (alive) setRendered(false); }
-      finally { if (token === generation) loading = false; }
+        const [{mountPortrait}] = await Promise.all([import('@/lib/portrait/scene'), artwork.decode()]);
+        if (!cancelled && visible && !reduced.matches) {
+          dispose = mountPortrait(surface, host, artwork);
+        }
+      } catch {
+        // The artwork underneath the canvas is also the complete static portrait.
+      } finally {
+        loading = false;
+      }
+    }
+
+    function motionChanged() {
+      if (reduced.matches) {
+        dispose?.();
+        dispose = undefined;
+      } else {
+        void enhance();
+      }
+    }
+
+    const observer = new IntersectionObserver(([entry]) => {
+      visible = entry.isIntersecting;
+      if (visible) void enhance();
+    });
+    observer.observe(host);
+    reduced.addEventListener('change', motionChanged);
+    return () => {
+      cancelled = true;
+      observer.disconnect();
+      reduced.removeEventListener('change', motionChanged);
+      dispose?.();
     };
-    const change = () => {
-      if (motion.matches) {generation++; loading = false; dispose?.(); dispose = undefined; setRendered(false);}
-      else void load();
-    };
-    const observer = new IntersectionObserver(entries => {visible = entries[0].isIntersecting; if (visible) void load();}, {rootMargin: '100px'});
-    observer.observe(element);
-    motion.addEventListener('change', change);
-    return () => {alive = false; generation++; observer.disconnect(); motion.removeEventListener('change', change); dispose?.();};
   }, [ready]);
-  return <Link ref={root} href="/?view=design&profile=open" scroll={false} className={styles.portrait} aria-label="Open Mark Whitley's profile">
-    <Image src="/portfolio/mark-whitley.jpg" alt="Mark Whitley, smiling" fill sizes="(max-width: 639px) 192px, (max-width: 1023px) 240px, 300px" priority className={`${styles.image} ${styles.original} ${!rendered ? styles.visible : ''}`}/>
-    <canvas ref={canvas} className={`${styles.clayCanvas} ${rendered ? styles.visible : ''}`} aria-hidden="true"/>
-  </Link>;
+
+  return (
+    <Link ref={root} href="/?view=design&profile=open" scroll={false}
+      className={styles.portrait} aria-label="Open Mark Whitley's profile">
+      <Image ref={image} src="/portfolio/avatars/mark-clay.webp" alt="A smiling clay portrait of Mark Whitley"
+        fill unoptimized priority className={styles.image}/>
+      <canvas ref={canvas} className={styles.clayCanvas} aria-hidden="true"/>
+    </Link>
+  );
 }

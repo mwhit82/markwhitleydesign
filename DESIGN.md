@@ -79,8 +79,7 @@ interpretation, not an endorsement. This file defines our site-specific rules.
 
 ## Design introduction
 - Design alone opens with an editorial name heading (44–112px) and 23–34px personal statement; collection headings retain their existing scale.
-- Original portrait remains unedited and is the loading/error/reduced-motion fallback. A rigged clay bust replaces the style carousel; the circular portrait still opens the résumé.
-- Desktop pointer tracking rotates the head up to 20° yaw/12° pitch; separate eyes add 10°/6°. Smooth the head over 300ms and eyes over 100ms; keep shoulders stationary.
-- Coarse-pointer devices look toward the viewport centre (±8°), adding a scroll-direction bias (±4°) that fades over 400ms. Clamp total pitch to ±12°; no device sensors.
-- Lazy-load 3D only near the viewport and after the intro is ready. Reduced motion never loads 3D. Render only while settling; pause offscreen, in hidden tabs and behind dialogs. Cap DPR at 1 mobile/1.5 desktop.
-- Intro entrance remains 240ms. Keep model under 3MB and 40,000 triangles, with textures no larger than 2K. Source, editable rig and reproducible export live in art/portrait and scripts/blender-portrait.py.
+- The circular résumé link displays the original generated clay illustration. Use the same WebP at first paint, at rest, for reduced motion and when WebGL is unavailable.
+- For pointer input, project the artwork onto a shallow facial surface. Limit the turn to 5.5° horizontally and 4° vertically. Taper movement along the jaw and neck so the shoulders stay still. Within the painted eyelids, the irises can travel 3 horizontal or 1.5 vertical source pixels.
+- Eyes ease toward the pointer over 100ms and the head follows over 300ms. On coarse-pointer devices, use the portrait’s position relative to the viewport centre and a scroll-direction bias that decays over 400ms.
+- Start the enhancement when the intro is ready and the portrait is visible. Keep reduced motion static, and suspend rendering when settled, offscreen, in a hidden tab or behind a dialog.

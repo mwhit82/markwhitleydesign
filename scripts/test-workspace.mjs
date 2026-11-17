@@ -20,6 +20,10 @@ console.log('✓ Legacy listing and contact routes redirect to the shared homepa
 const design = await page('/');
 assert.match(design, /Selected design/);
 assert.match(design, /Still making things that make people smile/);
+const portraitLink = design.match(/<a\b[^>]*href="\/\?view=design&amp;profile=open"[^>]*>([\s\S]*?)<\/a>/);
+assert.ok(portraitLink, 'The banner portrait opens the profile');
+assert.match(portraitLink[1], /<img\b[^>]*src="\/portfolio\/avatars\/mark-clay\.webp"/,
+  'The original clay artwork is visible before JavaScript and when motion is disabled');
 assert.equal((design.match(/<h1[ >]/g) || []).length, 1, 'Design has one primary heading');
 assert.match(design, /id="selected-design"/);
 for (const style of ['clay', 'ink', 'pixel']) {

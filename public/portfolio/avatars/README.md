@@ -10,6 +10,6 @@ Ink: Square personal website avatar: redraw the provided Mark Whitley portrait a
 
 Pixel: Create square retro pixel art personal website avatar of Mark in the reference photo, authentic 32-bit adventure game character portrait, deliberate crisp square pixel clusters, stepped edges and limited natural palette. Recognisably same man: upright swept brown hair, full ginger beard, blue grey eyes, friendly smile and black crewneck shirt. Frontal head and shoulders composition, full hair inside frame, face centred at 50% horizontal and 47% vertical. Neutral pale grey background. No text, borders, props or other people.
 
-## 3D banner
+## Banner portrait
 
-`mark-clay.glb` is the optimized Tripo/Blender derivative of the clay study. Editable source, provenance and rebuild instructions are in `art/portrait/README.md`. This replaces the banner style carousel; the original portrait is retained as a static fallback.
+The banner displays `mark-clay.webp`. Small changes in perspective and eye position animate this same artwork. Reduced motion displays the illustration at rest. The earlier Blender study is preserved as `mark-clay.glb`, with editable source and rebuild instructions in `art/portrait/README.md`.
