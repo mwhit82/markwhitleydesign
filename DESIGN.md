@@ -79,7 +79,8 @@ interpretation, not an endorsement. This file defines our site-specific rules.
 
 ## Design introduction
 - Design alone opens with an editorial name heading (44–112px) and 23–34px personal statement; collection headings retain their existing scale.
+- Inset the desktop portrait farther from the right edge than the text is inset from the left. On phones, keep the portrait centred beneath the copy.
 - The circular résumé link displays the original generated clay illustration. Use the same WebP at first paint, at rest, for reduced motion and when WebGL is unavailable.
-- For pointer input, project the artwork onto a shallow facial surface. Limit the turn to 5.5° horizontally and 4° vertically. Taper movement along the jaw and neck so the shoulders stay still. Within the painted eyelids, the irises can travel 3 horizontal or 1.5 vertical source pixels.
-- Eyes ease toward the pointer over 100ms and the head follows over 300ms. On coarse-pointer devices, use the portrait’s position relative to the viewport centre and a scroll-direction bias that decays over 400ms.
+- For pointer input, project the artwork onto a shallow facial surface. Limit the turn to 8.5° horizontally and 6° vertically. Taper movement along the jaw and neck so the shoulders stay still. Within the painted eyelids, the irises can travel 3.8 horizontal or 1.9 vertical source pixels.
+- Eyes ease toward the pointer over 100ms and the head follows over 300ms. On touchscreens, the portrait looks toward the viewport centre and tilts into each swipe, up to 11° in total. The head responds over 170ms. Hold the swipe response for 90ms, then let it fade over 450ms.
 - Start the enhancement when the intro is ready and the portrait is visible. Keep reduced motion static, and suspend rendering when settled, offscreen, in a hidden tab or behind a dialog.

@@ -1,4 +1,4 @@
-import {neutral, pointerGaze, scrollGaze, settled, smoothGaze} from './gaze';
+import {neutral, pointerGaze, scrollFadeEndMs, scrollGaze, scrollVelocity, settled, smoothGaze} from './gaze';
 import {createRelief} from './relief';
 
 export function mountPortrait(canvas: HTMLCanvasElement, host: HTMLElement, artwork: HTMLImageElement) {
@@ -33,7 +33,7 @@ export function mountPortrait(canvas: HTMLCanvasElement, host: HTMLElement, artw
     const target = targetAt(now);
     const dt = previousFrame ? Math.min((now - previousFrame) / 1000, 0.05) : 1 / 60;
     previousFrame = now;
-    current = smoothGaze(current, target, dt);
+    current = smoothGaze(current, target, dt, !fine.matches);
     const atTarget = settled(current, target);
     if (atTarget) current = target;
 
@@ -45,7 +45,7 @@ export function mountPortrait(canvas: HTMLCanvasElement, host: HTMLElement, artw
       canvas.dataset.moving = 'true';
     }
 
-    const scrollIsDecaying = !fine.matches && velocity !== 0 && now - lastScroll < 400;
+    const scrollIsDecaying = !fine.matches && velocity !== 0 && now - lastScroll < scrollFadeEndMs;
     if (!atTarget || scrollIsDecaying) frame = requestAnimationFrame(paint);
   }
 
@@ -82,7 +82,7 @@ export function mountPortrait(canvas: HTMLCanvasElement, host: HTMLElement, artw
     const position = Math.max(0, Math.min(window.scrollY, maxScroll));
     const delta = position - scrollPosition;
     if (Math.abs(delta) >= 1) {
-      velocity = delta / Math.max(16, now - lastScroll);
+      velocity = scrollVelocity(delta, now - lastScroll);
       lastScroll = now;
       scrollPosition = position;
     }

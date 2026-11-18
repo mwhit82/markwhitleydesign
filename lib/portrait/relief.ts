@@ -2,7 +2,7 @@ import {
   BufferAttribute, Camera, Mesh, PlaneGeometry, Scene, ShaderMaterial,
   SRGBColorSpace, Texture, Vector2, WebGLRenderer,
 } from 'three';
-import {clamp, radians, type Gaze} from './gaze';
+import {clamp, type Gaze} from './gaze';
 
 // All landmarks are in the original 640px image, measured from the top left.
 const size = 640;
@@ -117,13 +117,8 @@ export function createRelief(canvas: HTMLCanvasElement, image: HTMLImageElement)
 
   return {
     render(gaze: Gaze) {
-      const yaw = clamp(gaze.yaw / radians(20), -1, 1);
-      const pitch = clamp(gaze.pitch / radians(12), -1, 1);
-      headAngle.set(yaw * radians(5.5), pitch * radians(4));
-      eyeOffset.set(
-        clamp(gaze.eyeYaw / radians(10), -1, 1) * 3,
-        clamp(gaze.eyePitch / radians(6), -1, 1) * 1.5,
-      );
+      headAngle.set(gaze.yaw, gaze.pitch);
+      eyeOffset.set(gaze.eyeX, gaze.eyeY);
       renderer.render(scene, camera);
     },
     resize(width: number, height: number, dpr: number) {

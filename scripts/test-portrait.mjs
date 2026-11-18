@@ -2,33 +2,48 @@ import test from 'node:test';
 import {fileURLToPath} from 'node:url';
 import assert from 'node:assert/strict';
 import {moduleUrl} from './rally-test-loader.mjs';
-const {pointerGaze,scrollGaze,smoothGaze,neutral,radians,settled}=await import(await moduleUrl(fileURLToPath(new URL('../lib/portrait/gaze.ts',import.meta.url))));
-test('pointer gaze uses portrait centre, follows both axes and clamps extremes',()=>{
- assert.deepEqual(pointerGaze(300,200,300,200,1200,800),neutral);
- const right=pointerGaze(2000,2000,300,200,1200,800);
- assert.equal(right.yaw,radians(20));assert.equal(right.pitch,radians(12));
- assert.equal(right.eyeYaw,radians(10));assert.equal(right.eyePitch,radians(6));
- const left=pointerGaze(-2000,-2000,300,200,1200,800);
- assert.equal(left.yaw,-right.yaw);assert.equal(left.pitch,-right.pitch);
+const {pointerGaze, scrollGaze, scrollVelocity, smoothGaze, neutral, radians, settled} =
+  await import(await moduleUrl(fileURLToPath(new URL('../lib/portrait/gaze.ts', import.meta.url))));
+
+test('pointer gaze starts from the portrait centre and stays inside the painted eyelids', () => {
+  assert.deepEqual(pointerGaze(300, 200, 300, 200, 1200, 800), neutral);
+  const right = pointerGaze(2000, 2000, 300, 200, 1200, 800);
+  assert.deepEqual(right, {yaw: radians(8.5), pitch: radians(6), eyeX: 3.8, eyeY: 1.9});
+  const left = pointerGaze(-2000, -2000, 300, 200, 1200, 800);
+  for (const key of Object.keys(right)) assert.equal(left[key], -right[key]);
 });
-test('mobile position looks into the viewport and scroll direction adds bounded bias',()=>{
- assert.ok(scrollGaze(100,800,0,0).pitch>0);
- assert.ok(scrollGaze(700,800,0,0).pitch<0);
- assert.ok(scrollGaze(400,800,1,0).pitch>0);
- assert.ok(scrollGaze(400,800,-1,0).pitch<0);
- assert.equal(scrollGaze(-1000,800,99,0).pitch,radians(12));
- assert.equal(scrollGaze(2000,800,-99,0).pitch,-radians(12));
- assert.equal(scrollGaze(400,800,1,400).pitch,0);
- assert.equal(scrollGaze(400,800,1,900).pitch,0);
+
+test('touch gaze follows portrait position and can reverse promptly even after a pause', () => {
+  const height = 800;
+  const bottom = scrollGaze(700, height, 0, 0);
+  const top = scrollGaze(100, height, 0, 0);
+  assert.ok(bottom.pitch < 0 && top.pitch > 0);
+
+  const firstSwipe = scrollVelocity(32, 6000);
+  assert.ok(scrollGaze(700, height, firstSwipe, 0).pitch > 0);
+  assert.ok(scrollGaze(100, height, -firstSwipe, 0).pitch < 0);
+  assert.equal(scrollGaze(0, height, firstSwipe, 0).pitch, radians(11));
+  assert.equal(scrollGaze(800, height, -firstSwipe, 0).pitch, -radians(11));
+
+  const atStart = scrollGaze(400, height, firstSwipe, 0);
+  assert.deepEqual(scrollGaze(400, height, firstSwipe, 90), atStart);
+  const fading = scrollGaze(400, height, firstSwipe, 350);
+  assert.ok(fading.pitch > 0 && fading.pitch < atStart.pitch);
+  assert.deepEqual(scrollGaze(400, height, firstSwipe, 540), neutral);
+  assert.deepEqual(scrollGaze(100, height, firstSwipe, 900), top);
+  assert.ok(smoothGaze(neutral, atStart, 0.09, true).pitch > radians(3));
 });
-test('eyes lead head without overshooting and smoothing is frame-rate independent',()=>{
- const target={pitch:.2,yaw:.2,eyePitch:.2,eyeYaw:.2};
- const result=smoothGaze(neutral,target,.1);
- assert.ok(result.eyePitch>result.pitch);assert.ok(result.eyePitch<target.eyePitch);
- let split=neutral;for(let i=0;i<10;i++)split=smoothGaze(split,target,.01);
- for(const key of Object.keys(target))assert.ok(Math.abs(split[key]-result[key])<1e-10);
- let resting=result;for(let i=0;i<180;i++)resting=smoothGaze(resting,neutral,1/60);
- assert.ok(settled(resting,neutral));
+
+test('eyes lead the head and smoothing is frame-rate independent', () => {
+  const target = {pitch: 0.2, yaw: 0.2, eyeX: 0.2, eyeY: 0.2};
+  const result = smoothGaze(neutral, target, 0.1);
+  assert.ok(result.eyeY > result.pitch && result.eyeY < target.eyeY);
+  let split = neutral;
+  for (let i = 0; i < 10; i++) split = smoothGaze(split, target, 0.01);
+  for (const key of Object.keys(target)) assert.ok(Math.abs(split[key] - result[key]) < 1e-10);
+  let resting = result;
+  for (let i = 0; i < 180; i++) resting = smoothGaze(resting, neutral, 1 / 60);
+  assert.ok(settled(resting, neutral));
 });
 
 test('published model meets size, topology and rig contract',async()=>{
