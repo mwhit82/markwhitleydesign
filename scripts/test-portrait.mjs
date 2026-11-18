@@ -19,27 +19,24 @@ test('pointer movement within the portrait visibly turns the head and leads with
   }
 });
 
-test('a short swipe takes precedence over viewport position, then returns to a resting glance', () => {
-  const height = 800;
-  const idle = swipeTravel(24, 4, 2000);
-  assert.equal(idle, 4);
-  let travel = idle;
+test('downward scroll looks screen-left, upward scroll looks screen-right and rest faces forward', () => {
+  let travel = swipeTravel(24, 4, 2000);
+  assert.equal(travel, 4, 'a new swipe starts fresh after a pause');
   for (let i = 0; i < 5; i++) travel = swipeTravel(travel, 4, 30);
-  assert.equal(travel, 24);
 
-  const bottom = scrollGaze(700, height, travel, 0);
-  assert.equal(bottom.pitch, radians(17));
-  assert.equal(bottom.eyeY, 3);
-  assert.ok(smoothGaze(neutral, bottom, 0.12, true).pitch > radians(10));
-  assert.deepEqual(scrollGaze(700, height, travel, 160), bottom);
-  assert.ok(scrollGaze(700, height, travel, 400).pitch < bottom.pitch);
-  const rest = scrollGaze(700, height, 0, 0);
-  assert.ok(rest.pitch < 0);
-  assert.deepEqual(scrollGaze(700, height, travel, 660), rest);
+  const down = scrollGaze(travel, 0);
+  assert.deepEqual(down, {yaw: -radians(15), pitch: 0, eyeX: -7, eyeY: 0});
+  assert.deepEqual(scrollGaze(travel, 160), down);
+  const fading = scrollGaze(travel, 400);
+  assert.ok(fading.yaw > down.yaw && fading.yaw < 0);
+  assert.deepEqual(scrollGaze(travel, 660), neutral);
+  assert.deepEqual(scrollGaze(0, 0), neutral);
 
-  const reversal = swipeTravel(travel, -16, 30);
-  const rising = scrollGaze(100, height, reversal, 0);
-  assert.ok(rising.pitch < -radians(8) && rising.eyeY < 0);
+  const reverse = swipeTravel(travel, -16, 30);
+  const up = scrollGaze(reverse, 0);
+  assert.ok(up.yaw > radians(9) && up.eyeX > 4);
+  assert.equal(up.pitch, 0);
+  assert.equal(up.eyeY, 0);
 });
 
 test('eyes lead the head and smoothing is frame-rate independent', () => {

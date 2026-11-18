@@ -28,17 +28,12 @@ export function swipeTravel(previous: number, delta: number, elapsedMs: number) 
   return clamp((continuing ? previous : 0) + delta, -24, 24);
 }
 
-export function scrollGaze(centreY: number, height: number, travel: number, elapsedMs: number): Gaze {
-  const position = clamp((height / 2 - centreY) / Math.max(height / 2, 1), -1, 1);
+export function scrollGaze(travel: number, elapsedMs: number): Gaze {
   const fade = clamp((scrollFadeEndMs - elapsedMs) / (scrollFadeEndMs - scrollHoldMs), 0, 1);
-  const swipe = clamp(travel / 24, -1, 1) * fade;
-  const restingWeight = 1 - Math.abs(swipe);
-  return {
-    yaw: 0,
-    pitch: radians(position * 10 * restingWeight + swipe * 17),
-    eyeX: 0,
-    eyeY: position * 1.8 * restingWeight + swipe * 3,
-  };
+  if (!travel || !fade) return neutral;
+  // Positive page travel (scrolling down) looks to the viewer's left.
+  const sideways = -clamp(travel / 24, -1, 1) * fade;
+  return {yaw: radians(sideways * 15), pitch: 0, eyeX: sideways * 7, eyeY: 0};
 }
 
 export function smoothGaze(current: Gaze, target: Gaze, seconds: number, touch = false): Gaze {

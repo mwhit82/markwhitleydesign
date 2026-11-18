@@ -47,10 +47,13 @@ function makeReliefGeometry() {
     // the soft studio shadows and highlights are already painted into the image.
     const nose = Math.exp(-((x / 34) ** 2 + ((y - 285) / 48) ** 2));
     relief[index * 2] = 22 + 54 * skull + 33 * nose;
-    const silhouette = 1 - smoothStep(Math.max(0, width - 12), roundedWidth + 45, Math.abs(x));
-    const neck = 1 - smoothStep(471, 551, y);
-    const topEdge = smoothStep(0, 30, y);
-    relief[index * 2 + 1] = silhouette * neck * topEdge;
+    // Both eye openings, the nose and mouth receive the full turn. Ease out
+    // across the cheeks and forehead so the ears, hair and beard keep their outline.
+    const cheekEdge = clamp(width, 110, 148);
+    const cheeks = 1 - smoothStep(80, cheekEdge, Math.abs(x));
+    const forehead = smoothStep(118, 195, y);
+    const chin = 1 - smoothStep(370, 476, y);
+    relief[index * 2 + 1] = cheeks * forehead * chin;
   }
   geometry.setAttribute('relief', new BufferAttribute(relief, 2));
   return geometry;

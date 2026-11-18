@@ -20,10 +20,9 @@ export function mountPortrait(canvas: HTMLCanvasElement, host: HTMLElement, artw
   }
 
   function targetAt(now: number) {
-    const bounds = host.getBoundingClientRect();
-    const centreY = bounds.top + bounds.height / 2;
-    if (touch) return scrollGaze(centreY, innerHeight, travel, now - lastScroll);
+    if (touch) return scrollGaze(travel, now - lastScroll);
     if (!pointer) return neutral;
+    const bounds = host.getBoundingClientRect();
     // The painted eyes sit above the centre of the circular crop.
     const eyesY = bounds.top + bounds.height * (240.5 / 640);
     return pointerGaze(pointer.x, pointer.y, bounds.left + bounds.width / 2, eyesY, bounds.width, bounds.height);
