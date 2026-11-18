@@ -17,17 +17,17 @@ export function ClayPortrait({ready}: {ready: boolean}) {
     if (!ready || !host || !artwork || !surface) return;
 
     const reduced = matchMedia('(prefers-reduced-motion: reduce)');
-    let visible = false;
+    let nearViewport = false;
     let cancelled = false;
     let loading = false;
     let dispose: (() => void) | undefined;
 
     async function enhance() {
-      if (!host || !artwork || !surface || cancelled || loading || dispose || !visible || reduced.matches) return;
+      if (!host || !artwork || !surface || cancelled || loading || dispose || !nearViewport || reduced.matches) return;
       loading = true;
       try {
         const [{mountPortrait}] = await Promise.all([import('@/lib/portrait/scene'), artwork.decode()]);
-        if (!cancelled && visible && !reduced.matches) {
+        if (!cancelled && nearViewport && !reduced.matches) {
           dispose = mountPortrait(surface, host, artwork);
         }
       } catch {
@@ -47,9 +47,9 @@ export function ClayPortrait({ready}: {ready: boolean}) {
     }
 
     const observer = new IntersectionObserver(([entry]) => {
-      visible = entry.isIntersecting;
-      if (visible) void enhance();
-    });
+      nearViewport = entry.isIntersecting;
+      if (nearViewport) void enhance();
+    }, {rootMargin: '200px 0px'});
     observer.observe(host);
     reduced.addEventListener('change', motionChanged);
     return () => {

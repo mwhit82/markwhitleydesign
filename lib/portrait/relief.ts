@@ -7,7 +7,7 @@ import {clamp, type Gaze} from './gaze';
 // All landmarks are in the original 640px image, measured from the top left.
 const size = 640;
 const centreX = 320;
-const neckY = 478;
+const headPivotY = 420;
 const outline = [
   [0, 18], [15, 61], [65, 102], [125, 135], [200, 146],
   [250, 161], [281, 161], [328, 138], [380, 135], [432, 126],
@@ -39,14 +39,17 @@ function makeReliefGeometry() {
     const x = size * uv.getX(index) - centreX;
     const y = size * (1 - uv.getY(index));
     const width = headWidth(y);
-    const skull = Math.sqrt(Math.max(0, 1 - (x / width) ** 2));
+    // Round the silhouette through the narrow tips of the hair and beard.
+    // A sharp depth step here would fold the surface during a large turn.
+    const roundedWidth = Math.max(60, width);
+    const skull = 1 - smoothStep(0.2, 1.3, Math.abs(x) / roundedWidth);
     // The nose sits forward of the cheeks. Depth is used only for parallax:
     // the soft studio shadows and highlights are already painted into the image.
     const nose = Math.exp(-((x / 34) ** 2 + ((y - 285) / 48) ** 2));
     relief[index * 2] = 22 + 54 * skull + 33 * nose;
-    const silhouette = 1 - smoothStep(width - 7, width + 24, Math.abs(x));
-    const neck = 1 - smoothStep(500, 548, y);
-    const topEdge = smoothStep(0, 14, y);
+    const silhouette = 1 - smoothStep(Math.max(0, width - 12), roundedWidth + 45, Math.abs(x));
+    const neck = 1 - smoothStep(471, 551, y);
+    const topEdge = smoothStep(0, 30, y);
     relief[index * 2 + 1] = silhouette * neck * topEdge;
   }
   geometry.setAttribute('relief', new BufferAttribute(relief, 2));
@@ -59,7 +62,7 @@ const vertexShader = `
   varying vec2 portraitUV;
   void main() {
     portraitUV = uv;
-    vec2 pivot = vec2(${centreX.toFixed(1)}, ${neckY.toFixed(1)});
+    vec2 pivot = vec2(${centreX.toFixed(1)}, ${headPivotY.toFixed(1)});
     vec2 pixel = vec2(uv.x, 1.0 - uv.y) * 640.0;
     vec2 offset = pixel - pivot;
     float turnedX = cos(headAngle.x) * offset.x + sin(headAngle.x) * relief.x;
@@ -74,17 +77,61 @@ const fragmentShader = `
   uniform sampler2D portrait;
   uniform vec2 eyeOffset;
   varying vec2 portraitUV;
-  float eyeWeight(vec2 pixel, vec2 centre) {
-    vec2 distance = (pixel - centre) / vec2(24.0, 10.5);
-    return 1.0 - smoothstep(0.38, 1.0, length(distance));
+  vec3 colourAt(vec2 pixel) {
+    return texture2D(portrait, vec2(pixel.x, 640.0 - pixel.y) / 640.0).rgb;
   }
+
+  // Opening is (horizontal centre, corner height, half-width). Lid heights are
+  // measured separately above and below those corners for each painted eye.
+  vec2 lidsAt(float x, vec3 opening, vec2 heights) {
+    float across = (x - opening.x) / opening.z;
+    float arch = max(0.0, 1.0 - across * across);
+    return opening.y + arch * vec2(-heights.x, heights.y);
+  }
+
+  vec3 paintEye(vec3 original, vec2 pixel, vec3 opening, vec2 heights, vec3 iris) {
+    vec2 lids = lidsAt(pixel.x, opening, heights);
+    float rim = min(pixel.y - lids.x, lids.y - pixel.y);
+    float aperture = smoothstep(-0.5, 1.5, rim)
+      * smoothstep(0.0, 2.5, opening.z - abs(pixel.x - opening.x));
+    if (aperture <= 0.0) return original;
+
+    // Reveal the artwork's own sclera colours beneath the moving iris. Sample
+    // both flanks at matching lid height to keep the upper-lid shadow in place.
+    float row = clamp((pixel.y - lids.x) / max(1.0, lids.y - lids.x), 0.0, 1.0);
+    vec2 flanks = iris.x + vec2(-1.0, 1.0) * (iris.z + 2.0);
+    vec2 left = lidsAt(flanks.x, opening, heights);
+    vec2 right = lidsAt(flanks.y, opening, heights);
+    vec3 leftWhite = colourAt(vec2(flanks.x, mix(left.x + 1.5, left.y - 1.5, row)));
+    vec3 rightWhite = colourAt(vec2(flanks.y, mix(right.x + 1.5, right.y - 1.5, row)));
+    vec3 white = mix(leftWhite, rightWhite, smoothstep(flanks.x - 1.0, flanks.y + 1.0, pixel.x));
+    float oldIris = 1.0 - smoothstep(iris.z + 0.8, iris.z + 4.6, distance(pixel, iris.xy));
+    vec3 sclera = mix(original, white, oldIris);
+
+    // Slide the pupil and its original catchlights as one circular texture.
+    // For the tiny iris caps hidden in the source, use pigment at the same
+    // radius from the visible side. This keeps the iris round at full travel.
+    vec2 source = pixel - eyeOffset;
+    float radius = distance(source, iris.xy);
+    float side = source.x < iris.x ? -1.0 : 1.0;
+    vec3 cap = colourAt(iris.xy + vec2(side * min(radius, iris.z - 0.2), 0.0));
+    vec2 sourceLids = lidsAt(source.x, opening, heights);
+    float sourceRim = min(source.y - sourceLids.x, sourceLids.y - source.y);
+    vec3 pigment = mix(cap, colourAt(source), smoothstep(1.2, 2.85, sourceRim));
+    float coverage = 1.0 - smoothstep(iris.z - 0.8, iris.z + 0.35, radius);
+    float travel = smoothstep(0.0, 1.5, length(eyeOffset));
+    return mix(original, mix(sclera, pigment, coverage), travel * aperture);
+  }
+
   void main() {
     vec2 pixel = vec2(portraitUV.x, 1.0 - portraitUV.y) * 640.0;
-    float weight = eyeWeight(pixel, vec2(265.0, 243.0))
-                 + eyeWeight(pixel, vec2(379.0, 238.0));
-    // Move the iris detail inside each original lid, keeping its painted rim fixed.
-    vec2 uvOffset = vec2(eyeOffset.x, -eyeOffset.y) * weight / 640.0;
-    gl_FragColor = texture2D(portrait, portraitUV - uvOffset);
+    vec3 colour = colourAt(pixel);
+    if (abs(pixel.x - 267.0) < 24.0 && abs(pixel.y - 243.0) < 12.0) {
+      colour = paintEye(colour, pixel, vec3(267.0, 246.0, 24.0), vec2(13.0, 8.0), vec3(265.5, 242.6, 11.7));
+    } else if (abs(pixel.x - 377.5) < 25.0 && abs(pixel.y - 238.0) < 12.0) {
+      colour = paintEye(colour, pixel, vec3(377.5, 242.0, 25.0), vec2(13.8, 7.1), vec3(379.0, 237.3, 11.6));
+    }
+    gl_FragColor = vec4(colour, 1.0);
     #include <colorspace_fragment>
   }
 `;

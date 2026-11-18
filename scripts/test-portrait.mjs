@@ -2,36 +2,44 @@ import test from 'node:test';
 import {fileURLToPath} from 'node:url';
 import assert from 'node:assert/strict';
 import {moduleUrl} from './rally-test-loader.mjs';
-const {pointerGaze, scrollGaze, scrollVelocity, smoothGaze, neutral, radians, settled} =
+const {pointerGaze, scrollGaze, swipeTravel, smoothGaze, neutral, radians, settled} =
   await import(await moduleUrl(fileURLToPath(new URL('../lib/portrait/gaze.ts', import.meta.url))));
 
-test('pointer gaze starts from the portrait centre and stays inside the painted eyelids', () => {
-  assert.deepEqual(pointerGaze(300, 200, 300, 200, 1200, 800), neutral);
-  const right = pointerGaze(2000, 2000, 300, 200, 1200, 800);
-  assert.deepEqual(right, {yaw: radians(8.5), pitch: radians(6), eyeX: 3.8, eyeY: 1.9});
-  const left = pointerGaze(-2000, -2000, 300, 200, 1200, 800);
-  for (const key of Object.keys(right)) assert.equal(left[key], -right[key]);
+test('pointer movement within the portrait visibly turns the head and leads with the pupils', () => {
+  for (const width of [192, 240, 300]) {
+    const pose = (offset) => pointerGaze(900 + offset, 300, 900, 300, width, width);
+    assert.deepEqual(pose(0), neutral);
+    const near = pose(width / 4);
+    assert.ok(near.yaw > radians(9) && near.eyeX > 4);
+    const edge = pose(width / 2);
+    assert.ok(edge.yaw > near.yaw && edge.eyeX > near.eyeX);
+    assert.equal(pose(-width / 2).yaw, -edge.yaw);
+    const far = pose(5000);
+    assert.ok(far.yaw <= radians(15) && far.eyeX <= 7);
+  }
 });
 
-test('touch gaze follows portrait position and can reverse promptly even after a pause', () => {
+test('a short swipe takes precedence over viewport position, then returns to a resting glance', () => {
   const height = 800;
-  const bottom = scrollGaze(700, height, 0, 0);
-  const top = scrollGaze(100, height, 0, 0);
-  assert.ok(bottom.pitch < 0 && top.pitch > 0);
+  const idle = swipeTravel(24, 4, 2000);
+  assert.equal(idle, 4);
+  let travel = idle;
+  for (let i = 0; i < 5; i++) travel = swipeTravel(travel, 4, 30);
+  assert.equal(travel, 24);
 
-  const firstSwipe = scrollVelocity(32, 6000);
-  assert.ok(scrollGaze(700, height, firstSwipe, 0).pitch > 0);
-  assert.ok(scrollGaze(100, height, -firstSwipe, 0).pitch < 0);
-  assert.equal(scrollGaze(0, height, firstSwipe, 0).pitch, radians(11));
-  assert.equal(scrollGaze(800, height, -firstSwipe, 0).pitch, -radians(11));
+  const bottom = scrollGaze(700, height, travel, 0);
+  assert.equal(bottom.pitch, radians(17));
+  assert.equal(bottom.eyeY, 3);
+  assert.ok(smoothGaze(neutral, bottom, 0.12, true).pitch > radians(10));
+  assert.deepEqual(scrollGaze(700, height, travel, 160), bottom);
+  assert.ok(scrollGaze(700, height, travel, 400).pitch < bottom.pitch);
+  const rest = scrollGaze(700, height, 0, 0);
+  assert.ok(rest.pitch < 0);
+  assert.deepEqual(scrollGaze(700, height, travel, 660), rest);
 
-  const atStart = scrollGaze(400, height, firstSwipe, 0);
-  assert.deepEqual(scrollGaze(400, height, firstSwipe, 90), atStart);
-  const fading = scrollGaze(400, height, firstSwipe, 350);
-  assert.ok(fading.pitch > 0 && fading.pitch < atStart.pitch);
-  assert.deepEqual(scrollGaze(400, height, firstSwipe, 540), neutral);
-  assert.deepEqual(scrollGaze(100, height, firstSwipe, 900), top);
-  assert.ok(smoothGaze(neutral, atStart, 0.09, true).pitch > radians(3));
+  const reversal = swipeTravel(travel, -16, 30);
+  const rising = scrollGaze(100, height, reversal, 0);
+  assert.ok(rising.pitch < -radians(8) && rising.eyeY < 0);
 });
 
 test('eyes lead the head and smoothing is frame-rate independent', () => {

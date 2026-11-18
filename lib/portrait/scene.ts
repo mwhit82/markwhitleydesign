@@ -1,16 +1,17 @@
-import {neutral, pointerGaze, scrollFadeEndMs, scrollGaze, scrollVelocity, settled, smoothGaze} from './gaze';
+import {neutral, pointerGaze, scrollFadeEndMs, scrollGaze, swipeTravel, settled, smoothGaze} from './gaze';
 import {createRelief} from './relief';
 
 export function mountPortrait(canvas: HTMLCanvasElement, host: HTMLElement, artwork: HTMLImageElement) {
   const relief = createRelief(canvas, artwork);
   const fine = matchMedia('(hover: hover) and (pointer: fine)');
+  let touch = !fine.matches;
   let visible = false;
   let lost = false;
   let frame = 0;
   let previousFrame = 0;
   let current = neutral;
   let pointer: {x: number; y: number} | null = null;
-  let velocity = 0;
+  let travel = 0;
   let lastScroll = performance.now();
   let scrollPosition = window.scrollY;
 
@@ -21,9 +22,11 @@ export function mountPortrait(canvas: HTMLCanvasElement, host: HTMLElement, artw
   function targetAt(now: number) {
     const bounds = host.getBoundingClientRect();
     const centreY = bounds.top + bounds.height / 2;
-    if (!fine.matches) return scrollGaze(centreY, innerHeight, velocity, now - lastScroll);
+    if (touch) return scrollGaze(centreY, innerHeight, travel, now - lastScroll);
     if (!pointer) return neutral;
-    return pointerGaze(pointer.x, pointer.y, bounds.left + bounds.width / 2, centreY, innerWidth, innerHeight);
+    // The painted eyes sit above the centre of the circular crop.
+    const eyesY = bounds.top + bounds.height * (240.5 / 640);
+    return pointerGaze(pointer.x, pointer.y, bounds.left + bounds.width / 2, eyesY, bounds.width, bounds.height);
   }
 
   function paint(now: number) {
@@ -33,7 +36,7 @@ export function mountPortrait(canvas: HTMLCanvasElement, host: HTMLElement, artw
     const target = targetAt(now);
     const dt = previousFrame ? Math.min((now - previousFrame) / 1000, 0.05) : 1 / 60;
     previousFrame = now;
-    current = smoothGaze(current, target, dt, !fine.matches);
+    current = smoothGaze(current, target, dt, touch);
     const atTarget = settled(current, target);
     if (atTarget) current = target;
 
@@ -45,7 +48,7 @@ export function mountPortrait(canvas: HTMLCanvasElement, host: HTMLElement, artw
       canvas.dataset.moving = 'true';
     }
 
-    const scrollIsDecaying = !fine.matches && velocity !== 0 && now - lastScroll < scrollFadeEndMs;
+    const scrollIsDecaying = touch && travel !== 0 && now - lastScroll < scrollFadeEndMs;
     if (!atTarget || scrollIsDecaying) frame = requestAnimationFrame(paint);
   }
 
@@ -65,8 +68,17 @@ export function mountPortrait(canvas: HTMLCanvasElement, host: HTMLElement, artw
     else wake();
   }
 
+  function touchStart(event: PointerEvent) {
+    if (event.pointerType !== 'touch') return;
+    touch = true;
+    pointer = null;
+    travel = 0;
+    wake();
+  }
+
   function move(event: PointerEvent) {
-    if (!fine.matches || event.pointerType === 'touch') return;
+    if (event.pointerType === 'touch') return;
+    touch = false;
     pointer = {x: event.clientX, y: event.clientY};
     wake();
   }
@@ -82,7 +94,7 @@ export function mountPortrait(canvas: HTMLCanvasElement, host: HTMLElement, artw
     const position = Math.max(0, Math.min(window.scrollY, maxScroll));
     const delta = position - scrollPosition;
     if (Math.abs(delta) >= 1) {
-      velocity = scrollVelocity(delta, now - lastScroll);
+      travel = swipeTravel(travel, delta, now - lastScroll);
       lastScroll = now;
       scrollPosition = position;
     }
@@ -92,6 +104,13 @@ export function mountPortrait(canvas: HTMLCanvasElement, host: HTMLElement, artw
   function resize() {
     // The supplied clay artwork has 640 pixels per side.
     relief.resize(host.clientWidth, host.clientHeight, Math.min(devicePixelRatio, 2));
+    wake();
+  }
+
+  function pointerCapabilityChanged() {
+    touch = !fine.matches;
+    pointer = null;
+    travel = 0;
     wake();
   }
 
@@ -111,12 +130,13 @@ export function mountPortrait(canvas: HTMLCanvasElement, host: HTMLElement, artw
   const dialogs = new MutationObserver(sync);
   dialogs.observe(document.body, {subtree: true, childList: true, attributes: true, attributeFilter: ['open']});
 
+  window.addEventListener('pointerdown', touchStart, {passive: true});
   window.addEventListener('pointermove', move, {passive: true});
   document.documentElement.addEventListener('pointerleave', leave);
   window.addEventListener('scroll', scroll, {passive: true});
   window.addEventListener('resize', resize, {passive: true});
   document.addEventListener('visibilitychange', sync);
-  fine.addEventListener('change', resize);
+  fine.addEventListener('change', pointerCapabilityChanged);
   canvas.addEventListener('webglcontextlost', contextLost);
   resize();
 
@@ -125,12 +145,13 @@ export function mountPortrait(canvas: HTMLCanvasElement, host: HTMLElement, artw
     observer.disconnect();
     sizes.disconnect();
     dialogs.disconnect();
+    window.removeEventListener('pointerdown', touchStart);
     window.removeEventListener('pointermove', move);
     document.documentElement.removeEventListener('pointerleave', leave);
     window.removeEventListener('scroll', scroll);
     window.removeEventListener('resize', resize);
     document.removeEventListener('visibilitychange', sync);
-    fine.removeEventListener('change', resize);
+    fine.removeEventListener('change', pointerCapabilityChanged);
     canvas.removeEventListener('webglcontextlost', contextLost);
     delete canvas.dataset.moving;
     relief.dispose();

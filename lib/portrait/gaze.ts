@@ -4,37 +4,46 @@ export const clamp = (value: number, min: number, max: number) => Math.max(min, 
 // Head angles are in radians. Iris offsets are measured on the 640px clay artwork.
 export type Gaze = {pitch: number; yaw: number; eyeX: number; eyeY: number};
 export const neutral: Gaze = {pitch: 0, yaw: 0, eyeX: 0, eyeY: 0};
-const scrollHoldMs = 90;
-export const scrollFadeEndMs = scrollHoldMs + 450;
+const scrollHoldMs = 160;
+const swipeResetMs = 180;
+export const scrollFadeEndMs = scrollHoldMs + 500;
 
+// Scale distance to the portrait radius. The curve responds quickly near the
+// face and still has a little more room to turn as the pointer moves beyond it.
 export function pointerGaze(x: number, y: number, centreX: number, centreY: number, width: number, height: number): Gaze {
-  const horizontal = clamp((x - centreX) / Math.max(width / 2, 1), -1, 1);
-  const vertical = clamp((y - centreY) / Math.max(height / 2, 1), -1, 1);
+  const horizontal = Math.tanh(3.2 * (x - centreX) / Math.max(width, 1));
+  const vertical = Math.tanh(3.2 * (y - centreY) / Math.max(height, 1));
   return {
-    yaw: radians(horizontal * 8.5),
-    pitch: radians(vertical * 6),
-    eyeX: horizontal * 3.8,
-    eyeY: vertical * 1.9,
+    yaw: radians(horizontal * 15),
+    pitch: radians(vertical * 10),
+    eyeX: horizontal * 7,
+    eyeY: vertical * 3,
   };
 }
 
-export function scrollVelocity(delta: number, elapsedMs: number) {
-  // The first event of a swipe only describes that event's movement. Time spent
-  // reading since the previous swipe must not dilute its direction or speed.
-  return delta / clamp(elapsedMs, 8, 32);
+export function swipeTravel(previous: number, delta: number, elapsedMs: number) {
+  // Count distance, so a slow drag and a quick swipe can both reach the full
+  // pose. On reversal the next few pixels immediately drive the other glance.
+  const continuing = elapsedMs < swipeResetMs && Math.sign(delta) === Math.sign(previous);
+  return clamp((continuing ? previous : 0) + delta, -24, 24);
 }
 
-export function scrollGaze(centreY: number, height: number, velocity: number, elapsedMs: number): Gaze {
+export function scrollGaze(centreY: number, height: number, travel: number, elapsedMs: number): Gaze {
   const position = clamp((height / 2 - centreY) / Math.max(height / 2, 1), -1, 1);
   const fade = clamp((scrollFadeEndMs - elapsedMs) / (scrollFadeEndMs - scrollHoldMs), 0, 1);
-  const direction = clamp(velocity / 0.65, -1, 1) * fade;
-  const pitchDegrees = clamp(position * 7 + direction * 8.5, -11, 11);
-  return {yaw: 0, pitch: radians(pitchDegrees), eyeX: 0, eyeY: pitchDegrees / 11 * 1.9};
+  const swipe = clamp(travel / 24, -1, 1) * fade;
+  const restingWeight = 1 - Math.abs(swipe);
+  return {
+    yaw: 0,
+    pitch: radians(position * 10 * restingWeight + swipe * 17),
+    eyeX: 0,
+    eyeY: position * 1.8 * restingWeight + swipe * 3,
+  };
 }
 
 export function smoothGaze(current: Gaze, target: Gaze, seconds: number, touch = false): Gaze {
-  const head = 1 - Math.exp(-Math.max(0, seconds) / (touch ? 0.17 : 0.3));
-  const eyes = 1 - Math.exp(-Math.max(0, seconds) / 0.1);
+  const head = 1 - Math.exp(-Math.max(0, seconds) / (touch ? 0.12 : 0.22));
+  const eyes = 1 - Math.exp(-Math.max(0, seconds) / 0.075);
   return {
     pitch: current.pitch + (target.pitch - current.pitch) * head,
     yaw: current.yaw + (target.yaw - current.yaw) * head,
