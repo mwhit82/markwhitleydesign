@@ -80,7 +80,7 @@ interpretation, not an endorsement. This file defines our site-specific rules.
 ## Design introduction
 - Design alone opens with an editorial name heading (44–112px) and 23–34px personal statement; collection headings retain their existing scale.
 - Inset the desktop portrait farther from the right edge than the text is inset from the left. On phones, keep the portrait centred beneath the copy.
-- The circular résumé link displays the original generated clay illustration. Use the same WebP at first paint, at rest, for reduced motion and when WebGL is unavailable.
-- Scale pointer travel to the portrait itself. Halfway from centre to rim, the head has already turned about 10°. Limit horizontal rotation to 15° and vertical rotation to 10°. Anchor the hair, ears and beard outline while retaining the full turn in the central facial features. Keep shoulders planted and move the painted pupils within their lids by up to 7 horizontal or 3 vertical source pixels.
-- The eyes respond over 75ms and the head follows over 220ms on desktop or 120ms on touch. On mobile a 24px scroll turns the face sideways by 15°, with the pupils following. Scrolling down looks screen-left and scrolling up looks screen-right. Hold for 160ms, then ease back to facing forward over 500ms.
+- The circular résumé link displays the Blender portrait against the oak and glass studio. Show the original clay WebP while loading, for reduced motion and if WebGL is unavailable.
+- Scale pointer travel to the portrait itself. Limit the rigid head to 10° of yaw and 6° of pitch. The eyes lead with up to 7 horizontal or 3 vertical source pixels of pupil travel. The planted collar and shoulders anchor the turn as the studio shifts behind them.
+- On mobile, a 24px scroll reaches the full sideways glance. Scrolling down looks screen-left and scrolling up looks screen-right. Hold for 160ms, then ease back toward centre over 500ms.
 - Start the enhancement when the intro is ready and the portrait comes within 200px of the viewport, so it can follow the first visible swipe. Keep reduced motion static, and suspend rendering when settled, offscreen, in a hidden tab or behind a dialog.

@@ -1,6 +1,6 @@
 # Reference-fitted Blender head
 
-The isolated review route is `/preview/clay-head`. Compare the reference to the skinned Blender bust using Live, Neutral, Left and Right. The original homepage renderer is independent of this preview.
+The isolated review route is `/preview/clay-head`. Compare the reference to the skinned Blender bust using Live, Neutral, Left and Right. The Design banner uses the same model and renderer in Live mode.
 
 Open `clay-head-study.blend` to edit the fitted facial mesh, shaped eyelids and two textured eyeballs. The file contains the embedded front reference, camera and baked atlas. For reproducible changes, edit the landmark pairs, socket dimensions and projection settings in `scripts/blender-clay-study.py` and run from the repository root:
 

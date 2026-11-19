@@ -2,55 +2,17 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import {useEffect, useRef, useState} from 'react';
-import type {Pose} from './viewer';
+import {useState} from 'react';
+import {usePortrait} from '@/lib/portrait/use-portrait';
+import type {Pose} from '@/lib/portrait/scene';
 import styles from './study.module.css';
 
 const choices: Pose[] = ['Live', 'Neutral', 'Left', 'Right'];
 const artwork = '/portfolio/avatars/mark-clay.webp';
-type Status = 'loading' | 'ready' | 'reduced' | 'unavailable';
 
 export function HeadStudy() {
-  const surface = useRef<HTMLCanvasElement>(null);
   const [pose, setPose] = useState<Pose>('Live');
-  const [status, setStatus] = useState<Status>('loading');
-  const choice = useRef<Pose>('Live');
-  const refresh = useRef<() => void>(undefined);
-
-  useEffect(() => {
-    const canvas = surface.current;
-    if (!canvas) return;
-    const motion = matchMedia('(prefers-reduced-motion: reduce)');
-    let controller: AbortController;
-    let dispose: (() => void) | undefined;
-    async function load() {
-      controller?.abort();
-      dispose?.();
-      dispose = undefined;
-      refresh.current = undefined;
-      const request = new AbortController();
-      controller = request;
-      if (motion.matches) {
-        setStatus('reduced');
-        return;
-      }
-      setStatus('loading');
-      try {
-        const {mount} = await import('./viewer');
-        if (request.signal.aborted || !canvas) return;
-        const viewer = await mount(canvas, () => choice.current, request.signal, () => setStatus('unavailable'));
-        if (request.signal.aborted) { viewer.dispose(); return; }
-        dispose = viewer.dispose;
-        refresh.current = viewer.refresh;
-        setStatus('ready');
-      } catch {
-        if (!request.signal.aborted) setStatus('unavailable');
-      }
-    }
-    void load();
-    motion.addEventListener('change', load);
-    return () => { controller.abort(); dispose?.(); refresh.current = undefined; motion.removeEventListener('change', load); };
-  }, []);
+  const {canvas, status} = usePortrait(true, pose);
 
   return <article className={styles.study}>
     <h1>Clay portrait study<span>.</span></h1>
@@ -60,11 +22,11 @@ export function HeadStudy() {
         <h2 id="model-heading">Blender head</h2>
         <Link href="?profile=open" scroll={false} aria-label="Open Mark Whitley's profile" className={styles.circle}>
           <Image src={artwork} alt="" fill unoptimized priority/>
-          <canvas ref={surface} className={status === 'ready' ? styles.ready : undefined} aria-hidden="true"/>
+          <canvas ref={canvas} className={status === 'ready' ? styles.ready : undefined} aria-hidden="true"/>
         </Link>
         <div className={styles.controls} role="group" aria-label="Portrait pose">
           {choices.map(value => <button key={value} type="button" disabled={status !== 'ready'}
-            aria-pressed={pose === value} onClick={() => { choice.current = value; setPose(value); refresh.current?.(); }}>{value}</button>)}
+            aria-pressed={pose === value} onClick={() => setPose(value)}>{value}</button>)}
         </div>
         <div className={styles.status} role="status">
           {status === 'loading' && 'Loading the 3D head…'}

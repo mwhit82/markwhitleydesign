@@ -12,4 +12,4 @@ Pixel: Create square retro pixel art personal website avatar of Mark in the refe
 
 ## Banner portrait
 
-The banner displays `mark-clay.webp`. Small changes in perspective and eye position animate this same artwork. Reduced motion displays the illustration at rest. The earlier Blender study is preserved as `mark-clay.glb`, with editable source and rebuild instructions in `art/portrait/README.md`.
+The Design banner loads `clay-head-study.glb`, the fitted Blender portrait and studio. The original `mark-clay.webp` supplies the loading, reduced-motion and WebGL fallback portrait. Rebuild instructions and the editable scene are in `art/portrait/clay-head-study.md`.

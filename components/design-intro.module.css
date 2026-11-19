@@ -27,5 +27,5 @@
 .words h1{font-size:clamp(44px,12vw,72px);margin-bottom:22px;}.tagline{font-size:25px;}.portrait{width:192px;}.studio{padding:0 0 12px;}.links{gap:0 16px;margin-top:16px;}.links a{font-size:12px;}}
 @media(prefers-reduced-motion:reduce){.hero{animation:none;}.links a svg{transition:none;}.links a:hover svg{transform:none;}}
 
-.clayCanvas{position:absolute;inset:0;width:100%;height:100%;visibility:hidden;pointer-events:none;}.clayCanvas[data-moving]{visibility:visible;}
+.clayCanvas{position:absolute;inset:0;width:100%;height:100%;visibility:hidden;pointer-events:none;}.clayCanvas[data-ready]{visibility:visible;}
 @media(prefers-reduced-motion:reduce){.clayCanvas{display:none;}}

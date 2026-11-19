@@ -65,6 +65,18 @@ def smooth(t):
     t = max(0, min(1,t))
     return t*t*(3-2*t)
 
+# Locally soften the irregular depth jumps in the scanned gumline. The dental
+# arch keeps its curvature and inner surfaces retain their depth ordering.
+for v in body.data.vertices:
+    x,y = pixel(v.co)/.75
+    radius = math.hypot((x-322)/65,(y-355)/17)
+    weight = .82*smooth((1.4-radius)/.48)*smooth((-.32-v.co.y)/.13)
+    if weight:
+        centre = np.interp(y,[334,344,350,355,361,368,378],
+                             [-.72,-.704,-.665,-.627,-.622,-.635,-.639])
+        arch = centre+.000028*(x-322)**2
+        v.co.y += weight*(arch-v.co.y)
+
 def material(name,image,uv_name):
     mat = bpy.data.materials.new(name)
     mat.use_nodes = True
@@ -210,6 +222,12 @@ for v in mesh.vertices:
         amount = 0
     if p.z < .68 and p.y < -.27:
         amount = max(amount, smooth((-.27-p.y)/.12))
+    # The recessed smile exposes both the lip and the front of the teeth.
+    # Give them the same camera paint all the way into the mouth; blending
+    # the scan's differently positioned teeth here leaves pale flecks on the lip.
+    mouth_radius = math.hypot((x-322)/68, (y-357)/20)
+    if p.y < -.32:
+        amount = max(amount, smooth((1.5-mouth_radius)/.5))
     weights.data[v.index].color=(amount,amount,amount,1)
 # Bake the camera projection and the original side colour into a single UV texture.
 hair = runpy.run_path(str(ROOT / 'scripts/blender-clay-hair.py'))
@@ -226,8 +244,14 @@ nt.links.new(side.outputs['Color'],mix.inputs[1])
 nt.links.new(paint.outputs['Color'],mix.inputs[2])
 nt.links.new(mix.outputs[0],next(n for n in nt.nodes if n.type=='EMISSION').inputs[0])
 body.data.materials[0]=bake_mat
-lid_mat=material('Reference-painted eyelids',reference,projected.name)
+lid_mat=material('Reference-painted eyelids and smile',reference,projected.name)
 body.data.materials[1]=lid_mat
+for face in mesh.polygons:
+    x,y = pixel(face.center)/.75
+    if face.center.y < -.25 and math.hypot((x-322)/68,(y-357)/20) < 1:
+        # Direct camera UVs retain the thin dark line between lip and teeth
+        # where the steep surfaces have very little area on the scan atlas.
+        face.material_index = 1
 atlas=bpy.data.images.new('Fitted clay colour',2048,2048,alpha=False)
 for mat in (lid_mat,bake_mat):
     target=mat.node_tree.nodes.new('ShaderNodeTexImage')

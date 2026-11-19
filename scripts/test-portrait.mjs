@@ -53,11 +53,11 @@ test('eyes lead the head and smoothing is frame-rate independent', () => {
 
 test('published model meets size, topology and rig contract',async()=>{
  const {readFile}=await import('node:fs/promises');
- const bytes=await readFile(new URL('../public/portfolio/avatars/mark-clay.glb',import.meta.url));
+ const bytes=await readFile(new URL('../public/portfolio/avatars/clay-head-study.glb',import.meta.url));
  assert.ok(bytes.length<3*1024*1024);
  assert.equal(bytes.toString('ascii',0,4),'glTF');
  const gltf=JSON.parse(bytes.toString('utf8',20,20+bytes.readUInt32LE(12)));
- for(const name of ['Head','EyeLeft','EyeRight'])assert.ok(gltf.nodes.some(node=>node.name===name),name);
+ for(const name of ['Head','EyeLeft','EyeRight','OfficeParallax'])assert.ok(gltf.nodes.some(node=>node.name===name),name);
  const triangles=gltf.meshes.reduce((sum,mesh)=>sum+mesh.primitives.reduce((sum,p)=>sum+gltf.accessors[p.indices].count/3,0),0);
  assert.ok(triangles<40000,`${triangles} triangles`);
  assert.ok(gltf.skins.length>0,'weighted neck rig');
