@@ -1,5 +1,6 @@
 """Build the reference-fitted study. Run in Blender background mode, optionally passing the base .blend after --."""
 import math
+import runpy
 import sys
 import tempfile
 from pathlib import Path
@@ -11,6 +12,7 @@ from mathutils import Matrix, Vector
 from mathutils.bvhtree import BVHTree
 
 ROOT = Path(__file__).resolve().parents[1]
+collar = runpy.run_path(str(ROOT / 'scripts/blender-clay-collar.py'))
 ART = ROOT / 'art/portrait'
 WEB = ROOT / 'public/portfolio/avatars'
 base = Path(sys.argv[sys.argv.index('--') + 1]) if '--' in sys.argv else ART / 'mark-clay-rigged.blend'
@@ -83,6 +85,7 @@ bm = bmesh.new()
 bm.from_mesh(body.data)
 deform = bm.verts.layers.deform.verify()
 head_group = body.vertex_groups['Head'].index
+collar['trim_scan'](bm, head_group, body.vertex_groups['Shoulders'].index)
 image_pixels = np.empty(640*640*4,dtype=np.float32)
 reference.pixels.foreach_get(image_pixels)
 artwork = image_pixels.reshape(640,640,4)[::-1]
@@ -184,6 +187,11 @@ mesh.update()
 projected=mesh.uv_layers.new(name='Portrait camera')
 for loop in mesh.loops:
     x,y=pixel(mesh.vertices[loop.vertex_index].co)
+    # Paint beard fibres around the underside, including the surface revealed in a turn.
+    if y > 300 and mesh.vertices[loop.vertex_index].co.y < -.26:
+        edge = collar['beard_edge'](x/.75)*.75-2
+        if y > edge:
+            y = edge - min(7, (y-edge)*.45)
     projected.data[loop.index].uv=(x/480,1-y/480)
 mesh.uv_layers.active_index=0
 tree=BVHTree.FromPolygons([v.co for v in mesh.vertices],[list(f.vertices) for f in mesh.polygons])
@@ -200,12 +208,9 @@ for v in mesh.vertices:
     r,g,b = artwork[y,x,:3]
     if y < 515 and r > .32 and max(r,g,b)-min(r,g,b) < .095:
         amount = 0
+    if p.z < .68 and p.y < -.27:
+        amount = max(amount, smooth((-.27-p.y)/.12))
     weights.data[v.index].color=(amount,amount,amount,1)
-    # The jaw, hair and beard follow the skull rigidly. Only the neck blends.
-    if p.z>.80 or (p.y<-.32 and p.z>.30):
-        body.vertex_groups['Head'].add([v.index],1,'REPLACE')
-        body.vertex_groups['Shoulders'].add([v.index],0,'REPLACE')
-
 # Bake the camera projection and the original side colour into a single UV texture.
 bake_mat=material('Camera paint with side blend',reference,projected.name)
 nt=bake_mat.node_tree
@@ -236,6 +241,9 @@ body.data.materials[0]=material('Baked clay studio colour',atlas,'UVMap')
 # Returning the collar to the projected UVs keeps razor-thin eyelid detail crisp.
 for n in list(lid_mat.node_tree.nodes):
     if n.type=='TEX_IMAGE' and n.image==atlas: lid_mat.node_tree.nodes.remove(n)
+collar['build_lower_bust'](rig, artwork, material)
+studio = runpy.run_path(str(ROOT / 'scripts/blender-clay-studio.py'))
+studio['build_studio'](ART/'daylight-studio.jpg', material)
 scene.view_settings.view_transform='Standard'
 scene.render.film_transparent=True
 scene.camera.data.ortho_scale=2.2

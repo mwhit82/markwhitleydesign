@@ -9,3 +9,7 @@ Open `clay-head-study.blend` to edit the fitted facial mesh, shaped eyelids and 
 ```
 
 The starting point is the earlier rigged Tripo study. The script fits the frontal landmarks, reshapes the lid openings, gives each eye its own image derived from the reference, and bakes the visible reference colours into the original UV layout. The side and back use the Tripo colours. The camera is orthographic, centred at model height 1, with a square span of 2.2. The renderer uses the baked studio lighting. Front artwork gives the most reliable likeness within the preview's 10° yaw and 6° pitch.
+
+The lower bust has a continuous mesh from the throat through the crewneck binding into the shoulders. In `scripts/blender-clay-collar.py`, the upper loops follow the head and the binding and shoulders stay planted. The underside of the beard has its own closed surface. Both meshes overlap beneath the jaw throughout the preview's turn.
+
+The generated, unbranded office interior is stored in `daylight-studio.jpg`. The Blender export embeds it on a depth-shaped surface built by `scripts/blender-clay-studio.py`. The preview rotates this surface around the bust as the head moves, exposing different amounts of the windows and furniture. Reduced motion uses the original illustration.

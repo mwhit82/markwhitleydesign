@@ -31,7 +31,8 @@ export async function mount(canvas: HTMLCanvasElement, getPose: () => Pose, sign
   const head = model.getObjectByName('Head');
   const left = model.getObjectByName('EyeLeft');
   const right = model.getObjectByName('EyeRight');
-  if (signal.aborted || !head || !left || !right) { releaseModel(); throw new Error('Model unavailable'); }
+  const office = model.getObjectByName('OfficeParallax');
+  if (signal.aborted || !head || !left || !right || !office) { releaseModel(); throw new Error('Model unavailable'); }
   let renderer: WebGLRenderer;
   try { renderer = new WebGLRenderer({canvas, alpha:true, antialias:true, powerPreference:'low-power'}); }
   catch (error) { releaseModel(); throw error; }
@@ -40,6 +41,7 @@ export async function mount(canvas: HTMLCanvasElement, getPose: () => Pose, sign
   const camera = new OrthographicCamera(-1.1,1.1,1.1,-1.1,0.1,20);
   camera.position.set(0,1,6);
   camera.lookAt(0,1,0);
+  const backdrop = office;
   const parts = [head,left,right];
   const rests = parts.map(part => part.quaternion.clone());
   const rotation = new Quaternion();
@@ -76,6 +78,9 @@ export async function mount(canvas: HTMLCanvasElement, getPose: () => Pose, sign
                 i ? Math.asin(current.eyeX/30.5) : current.yaw*(10/15),0,'YXZ');
       part.quaternion.copy(rests[i]).multiply(rotation.setFromEuler(euler));
     });
+    // Orbit the depth-shaped room about the portrait. Its rear windows travel
+    // farther across the frame than its desk, while the collar stays planted.
+    backdrop.rotation.set(current.pitch * .105, current.yaw * .112, 0, 'YXZ');
     renderer.render(scene,camera);
     if (!done || (getPose()==='Live' && touch && travel && now-lastScroll<scrollFadeEndMs)) frame=requestAnimationFrame(render);
   }
