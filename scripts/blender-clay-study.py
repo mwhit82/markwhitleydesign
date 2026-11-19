@@ -212,7 +212,8 @@ for v in mesh.vertices:
         amount = max(amount, smooth((-.27-p.y)/.12))
     weights.data[v.index].color=(amount,amount,amount,1)
 # Bake the camera projection and the original side colour into a single UV texture.
-bake_mat=material('Camera paint with side blend',reference,projected.name)
+hair = runpy.run_path(str(ROOT / 'scripts/blender-clay-hair.py'))
+bake_mat=material('Camera paint with side blend',hair['hair_projection'](artwork),projected.name)
 nt=bake_mat.node_tree
 paint=next(n for n in nt.nodes if n.type=='TEX_IMAGE')
 side=nt.nodes.new('ShaderNodeTexImage');side.image=side_texture
